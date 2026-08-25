@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Outfit, Syne } from "next/font/google";
 import "./globals.css";
+import SoundToggle from "@/components/SoundToggle";
+import CustomCursor from "@/components/CustomCursor";
+import SmoothScroll from "@/components/SmoothScroll";
 
 /* Award-site typography: Syne (avant-garde display) + Outfit (geometric body).
    Legacy CSS var names are kept as aliases so existing components pick them up. */
@@ -49,7 +52,16 @@ export default function RootLayout({
       className={`${display.variable} ${body.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-screen bg-[#090714] text-[#F4F0E8]">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[110] focus:px-4 focus:py-2 focus:bg-cyan/20 focus:text-cyan focus:rounded"
+        >
+          Skip navigation
+        </a>
+        <SmoothScroll />
         {children}
+        <SoundToggle />
+        <CustomCursor />
       </body>
     </html>
   );

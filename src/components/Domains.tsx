@@ -1,57 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { domains } from "@/data/domains";
 
-const domains = [
-  {
-    name: "AI / ML",
-    description: "Artificial Intelligence & Machine Learning — Building intelligent systems that learn and adapt.",
-    icon: "🧠",
-    color: "cyan" as const,
-  },
-  {
-    name: "Web Dev",
-    description: "Full-stack development — From frontend frameworks to backend architectures.",
-    icon: "🌐",
-    color: "magenta" as const,
-  },
-  {
-    name: "Data Science",
-    description: "Data Analytics & Visualization — Turning raw data into actionable insights.",
-    icon: "📊",
-    color: "cyan" as const,
-  },
-  {
-    name: "Coding & CP",
-    description: "Competitive Programming — Sharpening algorithmic thinking and problem-solving.",
-    icon: "⚡",
-    color: "magenta" as const,
-  },
-  {
-    name: "Cybersecurity",
-    description: "Ethical Hacking & Security — Protecting the digital frontier.",
-    icon: "🔐",
-    color: "cyan" as const,
-  },
-  {
-    name: "Cloud & DevOps",
-    description: "Infrastructure & Automation — Scaling systems to millions.",
-    icon: "☁️",
-    color: "magenta" as const,
-  },
-  {
-    name: "UI / UX",
-    description: "Design & Experience — Crafting interfaces that delight and inspire.",
-    icon: "🎨",
-    color: "cyan" as const,
-  },
-  {
-    name: "Open Source",
-    description: "Community & Collaboration — Contributing to the global ecosystem.",
-    icon: "💻",
-    color: "magenta" as const,
-  },
-];
+/* ============================================================================
+   THE DOMAINS — an interactive node map of CSAU's technical ecosystem.
+   Each card is a node linking to its /domains/[slug] micro-world.
+   ========================================================================== */
 
 function DomainCard({
   domain,
@@ -60,11 +16,19 @@ function DomainCard({
   domain: (typeof domains)[number];
   index: number;
 }) {
-  const borderColor = domain.color === "cyan" ? "border-cyan/20 hover:border-cyan/50" : "border-magenta/20 hover:border-magenta/50";
-  const glowColor = domain.color === "cyan"
-    ? "hover:shadow-[0_0_30px_rgba(84,217,232,0.15)]"
-    : "hover:shadow-[0_0_30px_rgba(215,124,203,0.15)]";
-  const iconColor = domain.color === "cyan" ? "text-cyan" : "text-magenta";
+  const borderColor =
+    domain.accent === "cyan"
+      ? "border-cyan/20 hover:border-cyan/50"
+      : "border-magenta/20 hover:border-magenta/50";
+  const glowColor =
+    domain.accent === "cyan"
+      ? "hover:shadow-[0_0_30px_rgba(84,217,232,0.15)]"
+      : "hover:shadow-[0_0_30px_rgba(215,124,203,0.15)]";
+  const iconColor = domain.accent === "cyan" ? "text-cyan" : "text-magenta";
+  const lineColor =
+    domain.accent === "cyan"
+      ? "bg-gradient-to-r from-transparent via-cyan/40 to-transparent"
+      : "bg-gradient-to-r from-transparent via-magenta/40 to-transparent";
 
   return (
     <motion.div
@@ -72,33 +36,34 @@ function DomainCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.08, duration: 0.5 }}
-      className={`group holo-card rounded-xl p-6 border ${borderColor} ${glowColor} cursor-pointer`}
     >
-      {/* Icon + Name — always visible */}
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-3xl" role="img" aria-label={domain.name}>
-          {domain.icon}
-        </span>
-        <h3
-          className={`text-lg font-semibold font-[family-name:var(--font-space-grotesk)] ${iconColor} group-hover:glow-cyan`}
-        >
-          {domain.name}
-        </h3>
-      </div>
+      <Link
+        href={`/domains/${domain.slug}`}
+        data-cursor="EXPLORE"
+        className={`group holo-card rounded-xl p-6 border ${borderColor} ${glowColor} block cursor-pointer`}
+      >
+        {/* Icon + Name — always visible */}
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-3xl" role="img" aria-label={domain.name}>
+            {domain.icon}
+          </span>
+          <h3
+            className={`text-lg font-semibold font-[family-name:var(--font-display)] ${iconColor} group-hover:glow-cyan`}
+          >
+            {domain.name}
+          </h3>
+        </div>
 
-      {/* Description — always visible on touch, reveal on hover for desktop */}
-      <p className="text-sm text-foreground/50 leading-relaxed sm:group-hover:text-foreground/70 transition-colors duration-300">
-        {domain.description}
-      </p>
+        {/* Description */}
+        <p className="text-sm text-foreground/50 leading-relaxed sm:group-hover:text-foreground/70 transition-colors duration-300">
+          {domain.description}
+        </p>
 
-      {/* Decorative bottom glow line */}
-      <div
-        className={`mt-4 h-px w-0 group-hover:w-full transition-all duration-500 ${
-          domain.color === "cyan"
-            ? "bg-gradient-to-r from-transparent via-cyan/40 to-transparent"
-            : "bg-gradient-to-r from-transparent via-magenta/40 to-transparent"
-        }`}
-      />
+        {/* Decorative bottom glow line */}
+        <div
+          className={`mt-4 h-px w-0 group-hover:w-full transition-all duration-500 ${lineColor}`}
+        />
+      </Link>
     </motion.div>
   );
 }
@@ -122,11 +87,11 @@ export default function Domains() {
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             03
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-display)]">
             The Domains
           </h2>
           <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
-            Our technical domains — interconnected realms of innovation and expertise.
+            Different disciplines. One digital ecosystem.
           </p>
           <div className="section-divider mt-6" />
         </motion.div>
@@ -134,7 +99,7 @@ export default function Domains() {
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {domains.map((domain, i) => (
-            <DomainCard key={domain.name} domain={domain} index={i} />
+            <DomainCard key={domain.slug} domain={domain} index={i} />
           ))}
         </div>
       </div>

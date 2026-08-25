@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getAudio, isAmbienceOn, startDrone, stopDrone } from "@/lib/sound";
 
 /* ============================================================================
    THE GATE — the CEG main building, hand-drawn line-by-line in pure JS.
@@ -226,35 +227,11 @@ function schedule(paths: Path[], start = 0.04, end = 0.9, overlap = 0.35) {
 
 type Phase = "drawing" | "ready" | "entering";
 
-/* ---- pencil-scratch sound, synthesized with Web Audio (no assets) ------- */
-const audioRef: { current: { ctx: AudioContext; noise: AudioBuffer } | null } = {
-  current: null,
-};
-
-function ensureAudio() {
-  if (audioRef.current) {
-    if (audioRef.current.ctx.state === "suspended") void audioRef.current.ctx.resume();
-    return audioRef.current;
-  }
-  try {
-    const AC =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return null;
-    const ctx = new AC();
-    const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const d = noise.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    audioRef.current = { ctx, noise };
-    return audioRef.current;
-  } catch {
-    return null;
-  }
-}
+/* ---- preloader-specific micro-sounds (shared engine in @/lib/sound) ----- */
 
 /** rising whoosh — noise sweep 180Hz→5kHz + tonal rise, for the colour flood */
 function whoosh() {
-  const a = ensureAudio();
+  const a = getAudio();
   if (!a || a.ctx.state !== "running") return;
   const { ctx, noise } = a;
   const t = ctx.currentTime;
@@ -293,70 +270,9 @@ function whoosh() {
   o.stop(t + dur + 0.1);
 }
 
-/** deep ambient drone — detuned low sines with a slow breathing LFO */
-const droneRef: {
-  current: { oscs: OscillatorNode[]; gain: GainNode; lfo: OscillatorNode } | null;
-} = { current: null };
-
-function startDrone() {
-  const a = ensureAudio();
-  if (!a || droneRef.current || a.ctx.state !== "running") return;
-  const { ctx } = a;
-  const gain = ctx.createGain();
-  gain.gain.value = 0;
-  const lp = ctx.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = 220;
-  const oscs: OscillatorNode[] = [];
-  const specs: [number, OscillatorType, number][] = [
-    [55, "sine", 1], // A0 — the foundation
-    [55.7, "sine", 0.8], // detuned twin — slow beating
-    [110.3, "triangle", 0.22], // faint octave shimmer
-  ];
-  for (const [f, type, amp] of specs) {
-    const o = ctx.createOscillator();
-    o.type = type;
-    o.frequency.value = f;
-    const g = ctx.createGain();
-    g.gain.value = amp;
-    o.connect(g);
-    g.connect(lp);
-    o.start();
-    oscs.push(o);
-  }
-  /* breathing LFO on the drone volume */
-  const lfo = ctx.createOscillator();
-  lfo.frequency.value = 0.08;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 0.011;
-  lfo.connect(lfoGain);
-  lfoGain.connect(gain.gain);
-  lfo.start();
-  lp.connect(gain);
-  gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.032, ctx.currentTime + 2.5);
-  droneRef.current = { oscs, gain, lfo };
-}
-
-function stopDrone(fade = 1.6) {
-  const d = droneRef.current;
-  const a = audioRef.current;
-  if (!d || !a) return;
-  droneRef.current = null;
-  const t = a.ctx.currentTime;
-  d.gain.gain.cancelScheduledValues(t);
-  d.gain.gain.setValueAtTime(d.gain.gain.value, t);
-  d.gain.gain.linearRampToValueAtTime(0.0001, t + fade);
-  setTimeout(() => {
-    d.oscs.forEach((o) => o.stop());
-    d.lfo.stop();
-  }, fade * 1000 + 100);
-}
-
 /** one short filtered-noise burst — sounds like a pencil stroke */
 function scratch(dur = 0.15, vol = 1) {
-  const a = ensureAudio();
+  const a = getAudio();
   if (!a || a.ctx.state !== "running") return;
   const { ctx, noise } = a;
   const src = ctx.createBufferSource();
@@ -447,9 +363,10 @@ export default function Preloader() {
     let doneStrokes = 0;
 
     /* audio unlocks on the first user gesture (browser autoplay policy) */
+    /* ambience is opt-in — only resume if the user has it enabled */
     const unlock = () => {
-      ensureAudio();
-      if (phaseRef.current !== "entering") startDrone();
+      getAudio();
+      if (isAmbienceOn() && phaseRef.current !== "entering") startDrone();
     };
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });

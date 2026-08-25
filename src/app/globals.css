@@ -24,9 +24,23 @@
   --font-space-grotesk: var(--font-display);
 }
 
-/* ===== Base ===== */
+/* ===== Base =====
+   Native smooth scrolling for reduced-motion users / no-JS fallbacks.
+   Lenis disables this itself via the .lenis-smooth class below. */
 html {
   scroll-behavior: smooth;
+}
+
+/* ===== Lenis smooth scroll ===== */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 body {
@@ -151,6 +165,25 @@ body {
   background: linear-gradient(90deg, transparent, rgba(84, 217, 232, 0.3), transparent);
   margin: 0 auto;
   max-width: 600px;
+}
+
+/* ===== Loader line ===== */
+@keyframes loader-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.loader-line { animation: loader-line 1.2s ease-in-out infinite; }
+
+/* ===== Custom cursor =====
+   When the CustomCursor component is active (desktop fine pointers) the
+   native cursor is hidden; everything else keeps native behaviour. */
+@media (pointer: fine) {
+  .csau-custom-cursor,
+  .csau-custom-cursor a,
+  .csau-custom-cursor button,
+  .csau-custom-cursor [role="button"] {
+    cursor: none;
+  }
 }
 
 /* ===== Cinematic gate-open zoom =====

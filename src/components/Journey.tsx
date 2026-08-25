@@ -3,25 +3,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
+import Link from "next/link";
+import { milestones, journeyProgress } from "@/data/journey";
 
-const milestones = [
-  { day: 1, label: "Getting Started", description: "Set up your environment, pick a language, write your first line of code." },
-  { day: 10, label: "First Steps", description: "Variables, loops, and conditionals. You're speaking the machine's language." },
-  { day: 25, label: "Building Momentum", description: "Functions, data structures, and solving your first real problems." },
-  { day: 50, label: "Halfway Hero", description: "APIs, databases, and building complete mini-projects." },
-  { day: 75, label: "Advanced Terrain", description: "Algorithms, system design, and open-source contributions." },
-  { day: 100, label: "Digital Realm Master", description: "You've completed the journey. A new developer is born." },
-];
+/* milestone data comes from @/data/journey (single source of truth) */
 
 const stats = [
-  { label: "Days Completed", value: "72" },
-  { label: "Active Participants", value: "120+" },
-  { label: "Lines of Code", value: "500K+" },
+  { label: "Days Completed", value: String(journeyProgress.daysCompleted) },
+  { label: "Active Participants", value: journeyProgress.participants },
+  { label: "Lines of Code", value: journeyProgress.linesOfCode },
 ];
 
 function DayNode({ day, index, isActive, onClick }: { day: number; index: number; isActive: boolean; onClick: () => void }) {
   const isMilestone = milestones.some((m) => m.day === day);
-  const completed = day <= 72; // simulated progress
+  const completed = day <= journeyProgress.daysCompleted;
 
   return (
     <motion.button
@@ -109,7 +104,7 @@ export default function Journey() {
             <div className="h-1 bg-foreground/10 rounded-full">
               <motion.div
                 initial={{ width: 0 }}
-                whileInView={{ width: "72%" }}
+                whileInView={{ width: `${journeyProgress.daysCompleted}%` }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
                 className="h-1 bg-gradient-to-r from-cyan to-magenta rounded-full"
@@ -165,7 +160,7 @@ export default function Journey() {
             <div className="text-magenta text-sm font-[family-name:var(--font-geist-mono)] mb-1">
               CHECKPOINT — DAY {selectedMilestone.day}
             </div>
-            <h3 className="text-xl font-semibold font-[family-name:var(--font-space-grotesk)] text-foreground/90 mb-2">
+            <h3 className="text-xl font-semibold font-[family-name:var(--font-display)] text-foreground/90 mb-2">
               {selectedMilestone.label}
             </h3>
             <p className="text-sm text-foreground/50 leading-relaxed">
@@ -173,6 +168,17 @@ export default function Journey() {
             </p>
           </motion.div>
         )}
+
+        {/* Full journey link */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/journey"
+            data-cursor="EXPLORE"
+            className="neon-underline text-sm tracking-[0.25em] uppercase text-foreground/40 hover:text-cyan transition-colors font-[family-name:var(--font-geist-mono)]"
+          >
+            Traverse the full journey →
+          </Link>
+        </div>
       </div>
     </section>
   );

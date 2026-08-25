@@ -1,83 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { teamMembers } from "@/data/team";
 
-const team = [
-  {
-    name: "Arun Kumar",
-    role: "President",
-    domain: "AI / ML",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "AK",
-    color: "cyan" as const,
-  },
-  {
-    name: "Priya Sharma",
-    role: "Vice President",
-    domain: "Web Dev",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "PS",
-    color: "magenta" as const,
-  },
-  {
-    name: "Rajesh Patel",
-    role: "Technical Lead",
-    domain: "Cloud & DevOps",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "RP",
-    color: "cyan" as const,
-  },
-  {
-    name: "Sneha Reddy",
-    role: "AI Lead",
-    domain: "AI / ML",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "SR",
-    color: "magenta" as const,
-  },
-  {
-    name: "Vikram Singh",
-    role: "Web Dev Lead",
-    domain: "Web Dev",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "VS",
-    color: "cyan" as const,
-  },
-  {
-    name: "Ananya Nair",
-    role: "Design Lead",
-    domain: "UI / UX",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "AN",
-    color: "magenta" as const,
-  },
-  {
-    name: "Karthik Iyer",
-    role: "CP Lead",
-    domain: "Coding & CP",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "KI",
-    color: "cyan" as const,
-  },
-  {
-    name: "Deepa Krishnan",
-    role: "Security Lead",
-    domain: "Cybersecurity",
-    social: { github: "#", linkedin: "#", twitter: "#" },
-    initials: "DK",
-    color: "magenta" as const,
-  },
-];
+/* team data comes from @/data/team (single source of truth) */
+import type { TeamMember } from "@/data/team";
 
-function TeamCard({ member, index }: { member: (typeof team)[number]; index: number }) {
+function TeamCard({ member, index }: { member: TeamMember; index: number }) {
   const borderGlow =
-    member.color === "cyan"
+    member.accent === "cyan"
       ? "border-cyan/20 hover:border-cyan/50"
       : "border-magenta/20 hover:border-magenta/50";
   const avatarBg =
-    member.color === "cyan" ? "bg-cyan/10 text-cyan" : "bg-magenta/10 text-magenta";
+    member.accent === "cyan" ? "bg-cyan/10 text-cyan" : "bg-magenta/10 text-magenta";
   const avatarBorder =
-    member.color === "cyan"
+    member.accent === "cyan"
       ? "border-cyan/30 group-hover:border-cyan/60"
       : "border-magenta/30 group-hover:border-magenta/60";
 
@@ -127,13 +65,6 @@ function TeamCard({ member, index }: { member: (typeof team)[number]; index: num
             </svg>
           </a>
         )}
-        {member.social.twitter && (
-          <a href={member.social.twitter} className="text-foreground/40 hover:text-cyan transition-colors" aria-label="Twitter">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-          </a>
-        )}
       </div>
     </motion.div>
   );
@@ -159,20 +90,31 @@ export default function People() {
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             06
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-display)]">
             The People
           </h2>
           <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
-            The people behind the system — meet the minds building CSAU.
+            Technology is built by people — meet the minds building CSAU.
           </p>
           <div className="section-divider mt-6" />
         </motion.div>
 
         {/* Team Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {team.map((member, i) => (
+          {teamMembers.map((member, i) => (
             <TeamCard key={member.name} member={member} index={i} />
           ))}
+        </div>
+
+        {/* Full roster link */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/team"
+            data-cursor="VIEW"
+            className="neon-underline text-sm tracking-[0.25em] uppercase text-foreground/40 hover:text-cyan transition-colors font-[family-name:var(--font-geist-mono)]"
+          >
+            Connect with everyone →
+          </Link>
         </div>
       </div>
     </section>
