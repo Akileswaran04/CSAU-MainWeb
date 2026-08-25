@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  --background: #090714;
+  --foreground: #F4F0E8;
+  --cyan: #54D9E8;
+  --magenta: #D77CCB;
+  --bg-card: rgba(15, 12, 40, 0.7);
+  --bg-glass: rgba(9, 7, 20, 0.6);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cyan: var(--cyan);
+  --color-magenta: var(--magenta);
+  --color-bg-card: var(--bg-card);
+  --color-bg-glass: var(--bg-glass);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+  /* legacy aliases — existing components reference these names */
+  --font-geist-sans: var(--font-body);
+  --font-space-grotesk: var(--font-display);
+}
+
+/* ===== Base ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), Outfit, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ===== 16:9 cinematic stage =====
+   Each section is a full-viewport slide; its content is capped to a width
+   derived from the viewport height so the composition holds a 16:9 frame
+   on any display. */
+.stage-16x9 {
+  width: 100%;
+  max-width: calc((100svh - 10rem) * 16 / 9);
+  margin-inline: auto;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 3px; }
+
+/* ===== Selection ===== */
+::selection {
+  background: rgba(84, 217, 232, 0.3);
+  color: #fff;
+}
+
+/* ===== Glow utilities ===== */
+.glow-cyan { text-shadow: 0 0 20px rgba(84, 217, 232, 0.5), 0 0 40px rgba(84, 217, 232, 0.2); }
+.glow-magenta { text-shadow: 0 0 20px rgba(215, 124, 203, 0.5), 0 0 40px rgba(215, 124, 203, 0.2); }
+.glow-border-cyan { box-shadow: 0 0 15px rgba(84, 217, 232, 0.3), inset 0 0 15px rgba(84, 217, 232, 0.05); }
+.glow-border-magenta { box-shadow: 0 0 15px rgba(215, 124, 203, 0.3), inset 0 0 15px rgba(215, 124, 203, 0.05); }
+
+/* ===== Pulse animation ===== */
+@keyframes pulse-cyan {
+  0%, 100% { box-shadow: 0 0 10px rgba(84, 217, 232, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(84, 217, 232, 0.8), 0 0 50px rgba(84, 217, 232, 0.3); }
+}
+.animate-pulse-cyan { animation: pulse-cyan 2s ease-in-out infinite; }
+
+/* ===== Float animation ===== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+/* ===== Grid lines background ===== */
+@keyframes grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
+}
+.bg-grid-lines {
+  background-image:
+    linear-gradient(rgba(84, 217, 232, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(84, 217, 232, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: grid-move 20s linear infinite;
+}
+
+/* ===== Particle shimmer ===== */
+@keyframes shimmer {
+  0% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+  100% { opacity: 0.2; transform: scale(1); }
+}
+
+/* ===== Holographic card effect ===== */
+.holo-card {
+  background: linear-gradient(135deg, rgba(84, 217, 232, 0.05), rgba(215, 124, 203, 0.05), rgba(84, 217, 232, 0.05));
+  border: 1px solid rgba(84, 217, 232, 0.15);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.holo-card:hover {
+  border-color: rgba(84, 217, 232, 0.4);
+  box-shadow: 0 0 30px rgba(84, 217, 232, 0.15), inset 0 0 30px rgba(84, 217, 232, 0.05);
+  transform: translateY(-4px);
+}
+
+/* ===== Circuit trace ===== */
+@keyframes circuit-trace {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* ===== Neon underline ===== */
+.neon-underline {
+  position: relative;
+}
+.neon-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(84, 217, 232, 0.6);
+  transition: width 0.3s ease;
+}
+.neon-underline:hover::after,
+.neon-underline.active::after {
+  width: 100%;
+}
+
+/* ===== Glassmorphism ===== */
+.glass {
+  background: rgba(9, 7, 20, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(84, 217, 232, 0.1);
+}
+
+/* ===== Section divider ===== */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(84, 217, 232, 0.3), transparent);
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+/* ===== Cinematic gate-open zoom =====
+   The page starts slightly zoomed-in behind the preloader and eases out
+   to scale(1) when the preloader begins its exit. */
+@media (prefers-reduced-motion: no-preference) {
+  #page-root {
+    transform: scale(1.045);
+    transform-origin: 50% 35%;
+    transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .csau-entered #page-root {
+    transform: scale(1);
+  }
+}
