@@ -388,6 +388,7 @@ export default function Preloader() {
   const cpRef = useRef(0); // colour-flood progress
   const [phase, setPhase] = useState<Phase>("drawing");
   const [gone, setGone] = useState(false);
+  const [btnTop, setBtnTop] = useState<number | null>(null);
 
   const enter = () => {
     if (phaseRef.current !== "ready") return;
@@ -399,9 +400,14 @@ export default function Preloader() {
     document.body.style.overflow = "hidden";
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
+    /* offscreen buffer — the reflection is rendered here once, then blitted
+       in slices with a ripple offset */
+    const off = document.createElement("canvas");
+    const octx = off.getContext("2d")!;
     let raf = 0;
     let W = 0;
     let H = 0;
+    let dpr = 1;
 
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
     interface Star { x: number; y: number; r: number; tw: number }
@@ -410,11 +416,13 @@ export default function Preloader() {
     const petals: Petal[] = [];
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
       W = window.innerWidth;
       H = window.innerHeight;
       canvas.width = W * dpr;
       canvas.height = H * dpr;
+      off.width = canvas.width;
+      off.height = canvas.height;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       stars = Array.from({ length: 110 }, () => ({
         x: Math.random() * W,
@@ -446,7 +454,7 @@ export default function Preloader() {
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
 
-    function drawPartial(pts: Pt[], frac: number) {
+    function drawPartial(g: CanvasRenderingContext2D, pts: Pt[], frac: number) {
       if (frac <= 0 || pts.length < 2) return;
       let total = 0;
       const segs: number[] = [];
@@ -456,22 +464,22 @@ export default function Preloader() {
         total += l;
       }
       let remain = total * frac;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
+      g.beginPath();
+      g.moveTo(pts[0].x, pts[0].y);
       for (let i = 1; i < pts.length && remain > 0; i++) {
         if (segs[i - 1] <= remain) {
-          ctx.lineTo(pts[i].x, pts[i].y);
+          g.lineTo(pts[i].x, pts[i].y);
           remain -= segs[i - 1];
         } else {
           const f = remain / segs[i - 1];
-          ctx.lineTo(
+          g.lineTo(
             pts[i - 1].x + (pts[i].x - pts[i - 1].x) * f,
             pts[i - 1].y + (pts[i].y - pts[i - 1].y) * f
           );
           remain = 0;
         }
       }
-      ctx.stroke();
+      g.stroke();
     }
 
     function beginExit() {
@@ -526,31 +534,51 @@ export default function Preloader() {
       ctx.translate(W / 2 - 500 * S, topY - 5 * S);
       ctx.scale(S, S);
 
-      /* reflection in the wet ground below the base line (y=560),
-         mirrored, slightly squashed, fading out with depth */
+      /* reflection in the wet ground — rendered once to an offscreen buffer,
+         then blitted in horizontal slices with a gentle sine ripple that
+         grows with depth, fading out into the background */
       const rAlpha = smooth((P - 0.1) / 0.8) * (0.15 + cp * 0.08);
       if (rAlpha > 0.005) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(-60, 561, 1120, 420);
-        ctx.clip();
-        ctx.translate(0, 560 * 1.86);
-        ctx.scale(1, -0.86);
-        ctx.globalAlpha = rAlpha;
+        octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        octx.clearRect(0, 0, W, H);
+        octx.save();
+        octx.translate(W / 2 - 500 * S, topY - 5 * S);
+        octx.scale(S, S);
+        octx.translate(0, 560 * 1.86);
+        octx.scale(1, -0.86);
         for (const p of paths) {
           const frac = smooth((P - p.t0) / (p.t1 - p.t0));
           if (frac <= 0) continue;
-          ctx.strokeStyle = `rgba(${WHITE[0]},${WHITE[1]},${WHITE[2]},0.9)`;
-          ctx.lineWidth = p.w * (1 + cp * 0.4);
-          drawPartial(p.pts, frac);
+          octx.strokeStyle = `rgba(${WHITE[0]},${WHITE[1]},${WHITE[2]},0.9)`;
+          octx.lineWidth = p.w * (1 + cp * 0.4);
+          drawPartial(octx, p.pts, frac);
         }
-        ctx.restore();
-        /* depth fade — reflection melts into the background */
-        const fade = ctx.createLinearGradient(0, 561, 0, 800);
-        fade.addColorStop(0, "rgba(9,7,20,0)");
-        fade.addColorStop(1, "rgba(9,7,20,1)");
-        ctx.fillStyle = fade;
-        ctx.fillRect(-60, 561, 1120, 420);
+        octx.restore();
+
+        const groundY = topY + 555 * S;
+        const reflH = Math.min(H - groundY, 470 * S);
+        if (reflH > 4) {
+          const slices = 22;
+          const sh = Math.ceil(reflH / slices);
+          for (let i = 0; i < slices; i++) {
+            const sy = groundY + i * sh;
+            const amp = 1.2 + (i / slices) * 6; // deeper = wider sway
+            const dx = Math.sin(now / 1100 + i * 0.55) * amp;
+            ctx.globalAlpha = rAlpha;
+            ctx.drawImage(
+              off,
+              0, sy * dpr, W * dpr, (sh + 1) * dpr,
+              dx - 8, sy, W + 16, sh + 1
+            );
+            ctx.globalAlpha = 1;
+          }
+          /* depth fade — reflection melts into the background */
+          const fade = ctx.createLinearGradient(0, groundY, 0, groundY + reflH);
+          fade.addColorStop(0, "rgba(9,7,20,0)");
+          fade.addColorStop(1, "rgba(9,7,20,1)");
+          ctx.fillStyle = fade;
+          ctx.fillRect(0, groundY, W, reflH);
+        }
       }
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
@@ -565,7 +593,7 @@ export default function Preloader() {
         ctx.shadowColor = `rgba(${col[0]},${col[1]},${col[2]},0.85)`;
         ctx.lineWidth = p.w * (1 + cp * 0.4);
         ctx.shadowBlur = cp > 0 ? (p.glow + 4) * frac * breathe * (1 + cp * 2) * cp : 0;
-        drawPartial(p.pts, frac);
+        drawPartial(ctx, p.pts, frac);
       }
       ctx.shadowBlur = 0;
 
@@ -638,6 +666,10 @@ export default function Preloader() {
       /* phase transition: drawing complete */
       if (ph === "drawing" && P >= 1) {
         phaseRef.current = "ready";
+        /* park the ENTER button just below the building's ground line
+           (screen y of virtual y=560), clamped to stay on screen */
+        const groundY = topY + 555 * S;
+        setBtnTop(Math.min(Math.max(groundY + 14, H * 0.55), H - 110));
         setPhase("ready");
       }
 
@@ -692,10 +724,11 @@ export default function Preloader() {
         </span>
       </div>
 
-      {/* ENTER — appears once the drawing completes */}
+      {/* ENTER — appears once the drawing completes, just below the building */}
       <div
-        className="absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-700"
+        className="absolute left-1/2 flex flex-col items-center gap-4 transition-all duration-700"
         style={{
+          top: btnTop ?? "72%",
           opacity: phase === "ready" ? 1 : 0,
           transform: `translateX(-50%) translateY(${phase === "ready" ? 0 : 14}px)`,
           pointerEvents: phase === "ready" ? "auto" : "none",
