@@ -143,85 +143,27 @@ export default function People() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Team cards — stagger from alternating sides
+      gsap.fromTo(headerRef.current, { opacity: 0, y: 30 }, {
+        opacity: 1, y: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: headerRef.current, start: "top 85%", toggleActions: "play none none none" },
+      });
       const cards = gridRef.current?.querySelectorAll(".holo-card");
       if (cards) {
-        cards.forEach((card, i) => {
-          const fromLeft = i % 2 === 0;
-          gsap.fromTo(
-            card,
-            {
-              opacity: 0,
-              x: fromLeft ? -40 : 40,
-              y: 20,
-            },
-            {
-              opacity: 1,
-              x: 0,
-              y: 0,
-              duration: 0.6,
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: card,
-                start: "top 88%",
-                toggleActions: "play none none none",
-              },
-            }
-          );
+        gsap.fromTo(cards, { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: "power2.out",
+          scrollTrigger: { trigger: gridRef.current, start: "top 85%", toggleActions: "play none none none" },
         });
       }
-
-      // Background blobs parallax
-      gsap.to(".people-cyan-blob", {
-        y: -60,
-        x: 20,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1.5,
-        },
-      });
-      gsap.to(".people-magenta-blob", {
-        y: 40,
-        x: -20,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1.5,
-        },
-      });
     }, sectionRef);
-
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="people" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="people" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24 bg-cyber-grid">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-20" />
-      <div className="people-cyan-blob absolute top-1/3 right-0 w-80 h-80 bg-cyan/5 rounded-full blur-3xl" />
-      <div className="people-magenta-blob absolute bottom-1/3 left-0 w-80 h-80 bg-magenta/5 rounded-full blur-3xl" />
+      <div className="people-cyan-blob absolute top-1/3 right-0 w-80 h-80 bg-neon-green/2 rounded-full blur-[60px]" />
+      <div className="people-magenta-blob absolute bottom-1/3 left-0 w-80 h-80 bg-magenta/3 rounded-full blur-[60px]" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
@@ -229,13 +171,13 @@ export default function People() {
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             06
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
-            The People
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Centrion', var(--font-space-grotesk)" }}>
+            <span className="glow-cyan">The People</span>
           </h2>
           <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
             The people behind the system — meet the minds building CSAU.
           </p>
-          <div className="section-divider mt-6" />
+          <div className="cyber-divider mt-6" />
         </div>
 
         {/* Team Grid */}

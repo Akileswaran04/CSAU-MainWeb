@@ -60,101 +60,21 @@ export default function Portal() {
     setSubmitted(true);
   };
 
-  // ScrollTrigger reveal
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Portal visual — slide in from left + scale
-      gsap.fromTo(
-        visualRef.current,
-        { opacity: 0, x: -60, scale: 0.9 },
-        {
-          opacity: 1,
-          x: 0,
-          scale: 1,
-          duration: 1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: visualRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Form — slide in from right
-      gsap.fromTo(
-        formRef.current,
-        { opacity: 0, x: 60 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: formRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Portal rings — speed up on scroll through section
-      const rings = [ring1Ref.current, ring2Ref.current, ring3Ref.current].filter(Boolean);
-      if (rings.length) {
-        gsap.to(rings, {
-          rotation: "+=360",
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 2,
-          },
-        });
-      }
-
-      // Background glow pulse on scroll
-      gsap.to(".portal-glow-cyan", {
-        scale: 1.3,
-        opacity: 0.08,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "center center",
-          scrub: 1,
-        },
+      gsap.fromTo(headerRef.current, { opacity: 0, y: 30 }, {
+        opacity: 1, y: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: headerRef.current, start: "top 85%", toggleActions: "play none none none" },
       });
-      gsap.to(".portal-glow-magenta", {
-        scale: 1.5,
-        opacity: 0.06,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "center center",
-          scrub: 1,
-        },
+      gsap.fromTo(visualRef.current, { opacity: 0, x: -30 }, {
+        opacity: 1, x: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: visualRef.current, start: "top 85%", toggleActions: "play none none none" },
+      });
+      gsap.fromTo(formRef.current, { opacity: 0, x: 30 }, {
+        opacity: 1, x: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: formRef.current, start: "top 85%", toggleActions: "play none none none" },
       });
     }, sectionRef);
-
     return () => ctx.revert();
   }, []);
 
@@ -189,27 +109,26 @@ export default function Portal() {
 
   return (
     <>
-      <section ref={sectionRef} id="portal" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+      <section ref={sectionRef} id="portal" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24 bg-cyber-grid">
         {/* Background */}
         <div className="absolute inset-0 bg-grid-lines opacity-20" />
 
         {/* Portal glow */}
-        <div className="portal-glow-cyan absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan/5 rounded-full blur-3xl" />
-        <div className="portal-glow-magenta absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-magenta/5 rounded-full blur-2xl" />
+        <div className="portal-glow-cyan absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan/3 rounded-full blur-[60px]" />
+        <div className="portal-glow-magenta absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-magenta/3 rounded-full blur-[50px]" />
 
         <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
           {/* Section Header */}
           <div ref={headerRef} className="text-center mb-16 opacity-0">
             <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
               07
-            </p>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
-              The Portal
+            </p>              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Centrion', var(--font-space-grotesk)" }}>
+              <span className="glow-magenta">The Portal</span>
             </h2>
             <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
               Ready to enter the digital realm? Join 500+ members and start your journey.
             </p>
-            <div className="section-divider mt-6" />
+            <div className="cyber-divider mt-6" />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">
@@ -342,7 +261,7 @@ export default function Portal() {
               <span className="text-xl font-bold text-cyan font-[family-name:var(--font-space-grotesk)]">
                 CSAU
               </span>
-              <p className="text-xs text-foreground/30 mt-1">The Digital Realm</p>
+              <p className="text-xs text-foreground/30 mt-1">The Cyberpunk Realm</p>
             </div>
 
             {/* Social */}

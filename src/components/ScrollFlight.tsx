@@ -2,41 +2,37 @@
 
 import { useEffect, useRef } from "react";
 
-/* ============================================================================
-   SCROLL FLIGHT — a fixed canvas behind the whole page.
-   Techniques ported from the "scroll-world" scrub engine (oso95/scroll-world):
-     • scroll position scrubs a camera flying forward through a particle field
-     • linger easing settles the camera mid-scene and moves quicker at seams
-     • accent colour shifts per section (cyan → magenta → orange)
-     • atmosphere: drifting particles + horizon grid, all in pure JS
+/* ==========================================================================
+   SCROLL FLIGHT — intense cyberpunk scroll engine.
+   Camera flies forward through a neon particle field with a city silhouette
+   on the horizon, hyperspace streaks, and dramatic colour shifts per section.
    ========================================================================== */
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-/** linger easing from the scrub engine — f(0)=0, f(1)=1, settles mid-way */
+
 function lingerEase(x: number, L: number) {
-  x = clamp(x);
-  L = clamp(L);
+  x = clamp(x); L = clamp(L);
   const c = x - 0.5;
   return (1 - L) * x + L * (4 * c * c * c + 0.5);
 }
 
-/* accent stops across the page journey */
+/* cyberpunk accent palette */
 const ACCENTS: [number, number, number][] = [
-  [84, 217, 232], // cyan    — the gate
-  [84, 217, 232], // origin
-  [84, 217, 232], // domains
-  [215, 124, 203], // archive — sakura
-  [215, 124, 203], // journey
-  [240, 163, 91], // people  — warm
-  [240, 163, 91], // portal
+  [0, 240, 255],    // cyan — the gate
+  [0, 240, 255],    // origin
+  [0, 240, 255],    // domains
+  [255, 0, 170],    // archive — magenta
+  [255, 230, 0],    // journey — neon yellow
+  [57, 255, 20],    // people — neon green
+  [255, 0, 170],    // portal — magenta
 ];
+
 function accentAt(f: number): [number, number, number] {
   const n = ACCENTS.length - 1;
   const x = clamp(f) * n;
   const i = Math.min(Math.floor(x), n - 1);
   const t = x - i;
-  const a = ACCENTS[i];
-  const b = ACCENTS[i + 1];
+  const a = ACCENTS[i]; const b = ACCENTS[i + 1];
   return [
     Math.round(a[0] + (b[0] - a[0]) * t),
     Math.round(a[1] + (b[1] - a[1]) * t),
@@ -44,11 +40,7 @@ function accentAt(f: number): [number, number, number] {
   ];
 }
 
-interface Star {
-  x: number; // world x (units)
-  y: number;
-  z: number; // depth ahead of camera
-}
+interface Star { x: number; y: number; z: number }
 
 export default function ScrollFlight() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -57,42 +49,43 @@ export default function ScrollFlight() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     let raf = 0;
-    let W = 0;
-    let H = 0;
-    let dpr = 1;
+    let W = 0, H = 0, dpr = 1;
 
-    /* ---- config ---------------------------------------------------------- */
-    const N_STARS = 260;
-    const SPREAD = 1400; // world units wide/tall
-    const DEPTH = 9000; // total flight length in world units
+    const N_STARS = 350;
+    const SPREAD = 1600;
+    const DEPTH = 10000;
     const FOV = 520;
     const SECTIONS = 7;
     const LINGER = 0.35;
 
     const stars: Star[] = [];
-    function spawn(s?: Star): Star {
-      const st =
-        s ??
-        ({ x: 0, y: 0, z: 0 } as Star);
-      st.x = (Math.random() - 0.5) * SPREAD;
-      st.y = (Math.random() - 0.5) * SPREAD;
-      st.z = DEPTH + Math.random() * 4000;
-      return st;
+    function spawn(): Star {
+      return {
+        x: (Math.random() - 0.5) * SPREAD,
+        y: (Math.random() - 0.5) * SPREAD,
+        z: Math.random() * (DEPTH + 4000),
+      };
     }
 
-    let camZ = 0;
-    let prevCamZ = 0;
-    let smoothScroll = 0;
-    let targetScroll = 0;
-
+    let camZ = 0, prevCamZ = 0;
+    let smoothScroll = 0, targetScroll = 0;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* city silhouette buildings (static data, drawn at horizon) */
+    interface Building { x: number; w: number; h: number }
+    const cityBuildings: Building[] = [];
+    for (let i = 0; i < 40; i++) {
+      cityBuildings.push({
+        x: i * 50 - 10,
+        w: 20 + Math.random() * 30,
+        h: 30 + Math.random() * 120,
+      });
+    }
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = W * dpr;
-      canvas.height = H * dpr;
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resize();
@@ -108,11 +101,8 @@ export default function ScrollFlight() {
     window.addEventListener("scroll", onScroll, { passive: true });
 
     function frame() {
-      /* smoothed scroll → camera position with linger easing per section */
-      smoothScroll += (targetScroll - smoothScroll) * 0.08;
+      smoothScroll += (targetScroll - smoothScroll) * 0.06;
 
-      /* remap global progress through per-section linger so the camera
-         dwells mid-section and moves quicker between sections */
       const n = SECTIONS;
       const segF = smoothScroll * n;
       const i = Math.min(Math.floor(segF), n - 1);
@@ -122,7 +112,7 @@ export default function ScrollFlight() {
       prevCamZ = camZ;
       camZ = eased * DEPTH;
       const dz = camZ - prevCamZ;
-      const speed = clamp(Math.abs(dz) / 40); // 0..1 streak intensity
+      const speed = clamp(Math.abs(dz) / 30);
 
       const [r, g, b] = accentAt(smoothScroll);
 
@@ -130,11 +120,11 @@ export default function ScrollFlight() {
       const cx = W / 2;
       const cy = H / 2;
 
-      /* ---- recede / recycle stars & draw ---- */
+      /* ---- stars ---- */
       for (const s of stars) {
         s.z -= dz;
         if (s.z < camZ + 60) {
-          s.z += DEPTH + Math.random() * 1500;
+          s.z += DEPTH + Math.random() * 2000;
           s.x = (Math.random() - 0.5) * SPREAD;
           s.y = (Math.random() - 0.5) * SPREAD;
         } else if (s.z > camZ + DEPTH + 6000) {
@@ -148,64 +138,90 @@ export default function ScrollFlight() {
         const sy = cy + s.y * k;
         if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) continue;
 
-        const size = clamp(k * 2.2, 0.3, 3.4);
-        const alpha = clamp((1 - rel / (DEPTH * 0.9)) * 0.9, 0.04, 0.9);
+        const size = clamp(k * 2.5, 0.3, 4);
+        const alpha = clamp((1 - rel / (DEPTH * 0.9)) * 0.95, 0.05, 0.95);
 
-        /* streak when scrolling fast — hyperspace feel */
-        if (speed > 0.06 && !reduceMotion) {
+        if (speed > 0.05 && !reduceMotion) {
+          /* hyperspace streak */
           const relPrev = rel + dz;
           const kPrev = FOV / Math.max(relPrev, 40);
-          ctx.strokeStyle = `rgba(${r},${g},${b},${alpha * speed})`;
-          ctx.lineWidth = size;
+          const streakLen = speed * 3;
+          ctx.strokeStyle = `rgba(${r},${g},${b},${alpha * Math.min(speed * 2, 1)})`;
+          ctx.lineWidth = size * 0.8;
           ctx.beginPath();
           ctx.moveTo(cx + s.x * kPrev, cy + s.y * kPrev);
-          ctx.lineTo(sx, sy);
+          ctx.lineTo(sx + (sx - (cx + s.x * kPrev)) * streakLen, sy + (sy - (cy + s.y * kPrev)) * streakLen);
           ctx.stroke();
         } else {
-          ctx.fillStyle = `rgba(${Math.min(r + 120, 255)},${Math.min(g + 100, 255)},255,${alpha})`;
+          ctx.fillStyle = `rgba(${Math.min(r + 100, 255)},${Math.min(g + 80, 255)},255,${alpha})`;
           ctx.beginPath();
           ctx.arc(sx, sy, size, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      /* ---- horizon wireframe grid flying beneath ---- */
-      if (!reduceMotion || true) {
-        const horizonY = cy + 190;
-        const gap = 420;
-        const off = ((camZ % gap) + gap) % gap;
-        ctx.lineWidth = 1;
-        for (let row = 0; row < 14; row++) {
-          const z = row * gap + gap - off;
-          const rel = z;
-          if (rel < 80) continue;
-          const y = horizonY + (FOV * 130) / rel;
-          if (y > H + 20) continue;
-          const a = clamp((1 - row / 14) * 0.22, 0, 0.22);
-          ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(W, y);
-          ctx.stroke();
-        }
-        /* converging verticals */
-        for (let cIdx = -7; cIdx <= 7; cIdx++) {
-          const wx = cIdx * 300;
-          const xNear = cx + wx * (FOV / 500);
-          const a = 0.12;
-          ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
-          ctx.beginPath();
-          ctx.moveTo(cx + wx * (FOV / 6000), horizonY);
-          ctx.lineTo(xNear, horizonY + (FOV * 130) / 500);
-          ctx.stroke();
+      /* ---- horizon wireframe grid ---- */
+      const horizonY = cy + 200;
+      const gap = 400;
+      const off = ((camZ % gap) + gap) % gap;
+      ctx.lineWidth = 1;
+      for (let row = 0; row < 16; row++) {
+        const z = row * gap + gap - off;
+        if (z < 80) continue;
+        const y = horizonY + (FOV * 140) / z;
+        if (y > H + 20) continue;
+        const a = clamp((1 - row / 16) * 0.25, 0, 0.25);
+        ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      for (let cIdx = -8; cIdx <= 8; cIdx++) {
+        const wx = cIdx * 280;
+        const xNear = cx + wx * (FOV / 450);
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.1)`;
+        ctx.beginPath();
+        ctx.moveTo(cx + wx * (FOV / 6000), horizonY);
+        ctx.lineTo(xNear, horizonY + (FOV * 140) / 450);
+        ctx.stroke();
+      }
+
+      /* ---- city silhouette at horizon ---- */
+      const cityAlpha = 0.15 + speed * 0.15;
+      ctx.fillStyle = `rgba(${r},${g},${b},${cityAlpha * 0.3})`;
+      ctx.strokeStyle = `rgba(${r},${g},${b},${cityAlpha * 0.6})`;
+      ctx.lineWidth = 0.8;
+      for (const bld of cityBuildings) {
+        const bx = (bld.x / 2000) * W + W * 0.05;
+        const bw = (bld.w / 2000) * W;
+        const bh = bld.h * (0.8 + speed * 0.4);
+        const by = horizonY - bh;
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeRect(bx, by, bw, bh);
+        /* neon window dots */
+        for (let wy = by + 8; wy < horizonY - 5; wy += 10) {
+          for (let wx = bx + 4; wx < bx + bw - 3; wx += 7) {
+            if (Math.random() > 0.6) {
+              ctx.fillStyle = `rgba(${r},${g},${b},${0.3 + Math.random() * 0.3})`;
+              ctx.fillRect(wx, wy, 2, 3);
+            }
+          }
         }
       }
 
-      /* ---- ambient glow that follows the active accent ---- */
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.55);
-      grad.addColorStop(0, `rgba(${r},${g},${b},0.05)`);
-      grad.addColorStop(1, "rgba(9,7,20,0)");
+      /* ---- ambient glow ---- */
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.6);
+      grad.addColorStop(0, `rgba(${r},${g},${b},0.06)`);
+      grad.addColorStop(1, "rgba(10,10,18,0)");
       ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      /* ---- vignette ---- */
+      const vig = ctx.createRadialGradient(cx, cy, W * 0.3, cx, cy, W * 0.8);
+      vig.addColorStop(0, "rgba(10,10,18,0)");
+      vig.addColorStop(1, "rgba(10,10,18,0.4)");
+      ctx.fillStyle = vig;
       ctx.fillRect(0, 0, W, H);
 
       raf = requestAnimationFrame(frame);

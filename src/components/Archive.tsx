@@ -122,70 +122,20 @@ export default function Archive() {
       ? events
       : events.filter((e) => e.category === activeCategory);
 
-  // ScrollTrigger reveal
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Filter tabs — stagger up
-      const tabs = tabsRef.current?.querySelectorAll("button");
-      if (tabs) {
-        gsap.fromTo(
-          tabs,
-          { opacity: 0, y: 15 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.4,
-            stagger: 0.05,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: tabsRef.current,
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }
-
-      // Cards — stagger wave
+      gsap.fromTo(headerRef.current, { opacity: 0, y: 30 }, {
+        opacity: 1, y: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: headerRef.current, start: "top 85%", toggleActions: "play none none none" },
+      });
       const cards = gridRef.current?.querySelectorAll(".holo-card");
       if (cards) {
-        gsap.fromTo(
-          cards,
-          { opacity: 0, y: 30, scale: 0.95 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.45,
-            stagger: 0.06,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: gridRef.current,
-              start: "top 80%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
+        gsap.fromTo(cards, { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.4, stagger: 0.04, ease: "power2.out",
+          scrollTrigger: { trigger: gridRef.current, start: "top 85%", toggleActions: "play none none none" },
+        });
       }
     }, sectionRef);
-
     return () => ctx.revert();
   }, []);
 
@@ -202,10 +152,10 @@ export default function Archive() {
   }, [activeCategory]);
 
   return (
-    <section ref={sectionRef} id="archive" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="archive" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24 bg-cyber-grid">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-20" />
-      <div className="absolute top-0 left-1/4 w-80 h-80 bg-cyan/5 rounded-full blur-3xl" />
+      <div className="absolute top-0 left-1/4 w-80 h-80 bg-magenta/3 rounded-full blur-[60px]" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
@@ -213,13 +163,13 @@ export default function Archive() {
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             04
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
-            The Archive
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Centrion', var(--font-space-grotesk)" }}>
+            <span className="glow-magenta">The Archive</span>
           </h2>
           <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
             Mission logs from our past events — workshops, hackathons, bootcamps, and competitions.
           </p>
-          <div className="section-divider mt-6" />
+          <div className="cyber-divider mt-6" />
         </div>
 
         {/* Filter Tabs */}

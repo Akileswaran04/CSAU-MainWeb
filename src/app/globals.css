@@ -1,12 +1,31 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Centrion';
+  src: url('/fonts/Centrion-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Centrion';
+  src: url('/fonts/Centrion-High.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #090714;
-  --foreground: #F4F0E8;
-  --cyan: #54D9E8;
-  --magenta: #D77CCB;
-  --bg-card: rgba(15, 12, 40, 0.7);
-  --bg-glass: rgba(9, 7, 20, 0.6);
+  --background: #0a0a12;
+  --foreground: #e0e0e8;
+  --cyan: #00f0ff;
+  --magenta: #ff00aa;
+  --neon-yellow: #ffe600;
+  --neon-green: #39ff14;
+  --neon-red: #ff003c;
+  --bg-card: rgba(10, 10, 25, 0.85);
+  --bg-glass: rgba(10, 10, 20, 0.7);
 }
 
 @theme inline {
@@ -14,19 +33,21 @@
   --color-foreground: var(--foreground);
   --color-cyan: var(--cyan);
   --color-magenta: var(--magenta);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-neon-green: var(--neon-green);
+  --color-neon-red: var(--neon-red);
   --color-bg-card: var(--bg-card);
   --color-bg-glass: var(--bg-glass);
   --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display);
-  /* legacy aliases — existing components reference these names */
+  --font-display: 'Centrion', var(--font-display);
   --font-geist-sans: var(--font-body);
-  --font-space-grotesk: var(--font-display);
+  --font-space-grotesk: 'Centrion', var(--font-display);
 }
 
 /* ===== Base ===== */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
@@ -36,10 +57,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ===== 16:9 cinematic stage =====
-   Each section is a full-viewport slide; its content is capped to a width
-   derived from the viewport height so the composition holds a 16:9 frame
-   on any display. */
+/* ===== 16:9 cinematic stage ===== */
 .stage-16x9 {
   width: 100%;
   max-width: calc((100svh - 10rem) * 16 / 9);
@@ -47,26 +65,26 @@ body {
 }
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--background); }
-::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 3px; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0a0a12; }
+::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 2px; box-shadow: 0 0 8px var(--cyan); }
 
 /* ===== Selection ===== */
 ::selection {
-  background: rgba(84, 217, 232, 0.3);
+  background: rgba(0, 240, 255, 0.3);
   color: #fff;
 }
 
 /* ===== Glow utilities ===== */
-.glow-cyan { text-shadow: 0 0 20px rgba(84, 217, 232, 0.5), 0 0 40px rgba(84, 217, 232, 0.2); }
-.glow-magenta { text-shadow: 0 0 20px rgba(215, 124, 203, 0.5), 0 0 40px rgba(215, 124, 203, 0.2); }
-.glow-border-cyan { box-shadow: 0 0 15px rgba(84, 217, 232, 0.3), inset 0 0 15px rgba(84, 217, 232, 0.05); }
-.glow-border-magenta { box-shadow: 0 0 15px rgba(215, 124, 203, 0.3), inset 0 0 15px rgba(215, 124, 203, 0.05); }
+.glow-cyan { text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 30px rgba(0, 240, 255, 0.4), 0 0 60px rgba(0, 240, 255, 0.15); }
+.glow-magenta { text-shadow: 0 0 10px rgba(255, 0, 170, 0.8), 0 0 30px rgba(255, 0, 170, 0.4), 0 0 60px rgba(255, 0, 170, 0.15); }
+.glow-border-cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.08); }
+.glow-border-magenta { box-shadow: 0 0 15px rgba(255, 0, 170, 0.4), inset 0 0 15px rgba(255, 0, 170, 0.08); }
 
 /* ===== Pulse animation ===== */
 @keyframes pulse-cyan {
-  0%, 100% { box-shadow: 0 0 10px rgba(84, 217, 232, 0.4); }
-  50% { box-shadow: 0 0 25px rgba(84, 217, 232, 0.8), 0 0 50px rgba(84, 217, 232, 0.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 240, 255, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(0, 240, 255, 1), 0 0 40px rgba(0, 240, 255, 0.4), 0 0 60px rgba(0, 240, 255, 0.15); }
 }
 .animate-pulse-cyan { animation: pulse-cyan 2s ease-in-out infinite; }
 
@@ -77,43 +95,118 @@ body {
 }
 .animate-float { animation: float 4s ease-in-out infinite; }
 
-/* ===== Grid lines background ===== */
-@keyframes grid-move {
-  0% { background-position: 0 0; }
-  100% { background-position: 40px 40px; }
-}
-.bg-grid-lines {
+/* ===== Cyberpunk grid ===== */
+.bg-cyber-grid {
   background-image:
-    linear-gradient(rgba(84, 217, 232, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(84, 217, 232, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: grid-move 20s linear infinite;
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-/* ===== Particle shimmer ===== */
-@keyframes shimmer {
-  0% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.5); }
-  100% { opacity: 0.2; transform: scale(1); }
+
+/* ===== Glitch text effect ===== */
+@keyframes glitch-1 {
+  0%, 100% { clip-path: inset(40% 0 61% 0); transform: translate(-2px, 2px); }
+  20% { clip-path: inset(92% 0 1% 0); transform: translate(1px, -1px); }
+  40% { clip-path: inset(43% 0 1% 0); transform: translate(-1px, 3px); }
+  60% { clip-path: inset(25% 0 58% 0); transform: translate(3px, 1px); }
+  80% { clip-path: inset(54% 0 7% 0); transform: translate(-3px, -2px); }
+}
+@keyframes glitch-2 {
+  0%, 100% { clip-path: inset(25% 0 58% 0); transform: translate(2px, -1px); }
+  20% { clip-path: inset(54% 0 7% 0); transform: translate(-1px, 2px); }
+  40% { clip-path: inset(40% 0 61% 0); transform: translate(1px, -3px); }
+  60% { clip-path: inset(92% 0 1% 0); transform: translate(-2px, 1px); }
+  80% { clip-path: inset(43% 0 1% 0); transform: translate(3px, 2px); }
+}
+.glitch {
+  position: relative;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.glitch::before {
+  color: var(--cyan);
+  animation: glitch-1 3s infinite linear alternate-reverse;
+  z-index: -1;
+}
+.glitch::after {
+  color: var(--magenta);
+  animation: glitch-2 2s infinite linear alternate-reverse;
+  z-index: -1;
+}
+
+/* ===== Neon flicker ===== */
+@keyframes neon-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 7px var(--cyan),
+      0 0 10px var(--cyan),
+      0 0 21px var(--cyan),
+      0 0 42px var(--cyan);
+    opacity: 1;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+    opacity: 0.6;
+  }
+}
+.neon-flicker {
+  animation: neon-flicker 4s infinite alternate;
+}
+
+/* ===== Cyber divider ===== */
+.cyber-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 20%, var(--magenta) 50%, var(--cyan) 80%, transparent 100%);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
+  margin: 0 auto;
+  max-width: 500px;
+  position: relative;
+}
+.cyber-divider::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 3px;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
 }
 
 /* ===== Holographic card effect ===== */
 .holo-card {
-  background: linear-gradient(135deg, rgba(84, 217, 232, 0.05), rgba(215, 124, 203, 0.05), rgba(84, 217, 232, 0.05));
-  border: 1px solid rgba(84, 217, 232, 0.15);
-  backdrop-filter: blur(10px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.04), rgba(255, 0, 170, 0.04), rgba(0, 240, 255, 0.04));
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  backdrop-filter: blur(12px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.holo-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(255, 0, 170, 0.15));
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: -1;
 }
 .holo-card:hover {
-  border-color: rgba(84, 217, 232, 0.4);
-  box-shadow: 0 0 30px rgba(84, 217, 232, 0.15), inset 0 0 30px rgba(84, 217, 232, 0.05);
-  transform: translateY(-4px);
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.15), 0 0 40px rgba(0, 240, 255, 0.05);
+  transform: translateY(-3px);
 }
-
-/* ===== Circuit trace ===== */
-@keyframes circuit-trace {
-  0% { stroke-dashoffset: 1000; }
-  100% { stroke-dashoffset: 0; }
+.holo-card:hover::before {
+  opacity: 1;
 }
 
 /* ===== Neon underline ===== */
@@ -129,7 +222,7 @@ body {
   width: 0;
   height: 2px;
   background: var(--cyan);
-  box-shadow: 0 0 10px rgba(84, 217, 232, 0.6);
+  box-shadow: 0 0 8px var(--cyan), 0 0 16px rgba(0, 240, 255, 0.3);
   transition: width 0.3s ease;
 }
 .neon-underline:hover::after,
@@ -139,23 +232,47 @@ body {
 
 /* ===== Glassmorphism ===== */
 .glass {
-  background: rgba(9, 7, 20, 0.6);
+  background: rgba(10, 10, 20, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(84, 217, 232, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.08);
 }
 
-/* ===== Section divider ===== */
+/* ===== Section separator ===== */
+.section-sep {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.15), transparent);
+  margin: 0 auto;
+}
+
+/* ===== Smooth buttons ===== */
+.cyber-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.cyber-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.cyber-btn:hover::after {
+  opacity: 1;
+}
+
+/* ===== Section divider (legacy compat) ===== */
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(84, 217, 232, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
   margin: 0 auto;
   max-width: 600px;
 }
 
-/* ===== Cinematic gate-open zoom =====
-   The page starts slightly zoomed-in behind the preloader and eases out
-   to scale(1) when the preloader begins its exit. */
+/* ===== Cinematic gate-open zoom ===== */
 @media (prefers-reduced-motion: no-preference) {
   #page-root {
     transform: scale(1.045);
@@ -165,4 +282,17 @@ body {
   .csau-entered #page-root {
     transform: scale(1);
   }
+}
+
+/* ===== Cyberpunk character silhouette ===== */
+@keyframes char-idle {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-3px) scaleY(1.01); }
+}
+.char-idle { animation: char-idle 3s ease-in-out infinite; }
+
+/* ===== Rain particles ===== */
+@keyframes rain-fall {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
 }

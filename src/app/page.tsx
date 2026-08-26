@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Preloader from "@/components/Preloader";
-import ScrollFlight from "@/components/ScrollFlight";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Origin from "@/components/Origin";
@@ -15,7 +14,6 @@ export default function Home() {
   return (
     <>
       <Preloader />
-      <ScrollFlight />
       <Navbar />
       <main id="page-root">
         <Hero />

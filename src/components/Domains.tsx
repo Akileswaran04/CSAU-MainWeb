@@ -105,89 +105,26 @@ export default function Domains() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header reveal
-      gsap.fromTo(
-        headerRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: headerRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Cards — stagger wave from bottom
+      gsap.fromTo(headerRef.current, { opacity: 0, y: 30 }, {
+        opacity: 1, y: 0, duration: 0.7, ease: "power2.out",
+        scrollTrigger: { trigger: headerRef.current, start: "top 85%", toggleActions: "play none none none" },
+      });
       const cards = gridRef.current?.querySelectorAll(".holo-card");
       if (cards) {
-        gsap.fromTo(
-          cards,
-          { opacity: 0, y: 50, scale: 0.9 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.6,
-            stagger: {
-              each: 0.08,
-              from: "start",
-            },
-            ease: "back.out(1.2)",
-            scrollTrigger: {
-              trigger: gridRef.current,
-              start: "top 80%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
+        gsap.fromTo(cards, { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: "power2.out",
+          scrollTrigger: { trigger: gridRef.current, start: "top 85%", toggleActions: "play none none none" },
+        });
       }
-
-      // Section divider line draw
-      const divider = sectionRef.current?.querySelector(".section-divider");
-      if (divider) {
-        gsap.fromTo(
-          divider,
-          { scaleX: 0 },
-          {
-            scaleX: 1,
-            duration: 1,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: divider,
-              start: "top 90%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }
-
-      // Background glow parallax
-      gsap.to(".domains-glow", {
-        y: -50,
-        scale: 1.1,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1.5,
-        },
-      });
     }, sectionRef);
-
     return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="domains" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="domains" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24 bg-cyber-grid">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-30" />
-      <div className="domains-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan/3 rounded-full blur-3xl" />
+      <div className="domains-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan/3 rounded-full blur-[60px]" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
@@ -195,13 +132,13 @@ export default function Domains() {
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             03
           </p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold font-[family-name:var(--font-space-grotesk)]">
-            The Domains
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Centrion', var(--font-space-grotesk)" }}>
+            <span className="glow-cyan">The Domains</span>
           </h2>
           <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
             Our technical domains — interconnected realms of innovation and expertise.
           </p>
-          <div className="section-divider mt-6" />
+          <div className="cyber-divider mt-6" />
         </div>
 
         {/* Grid */}
