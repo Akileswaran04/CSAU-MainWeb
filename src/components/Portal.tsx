@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
+import anime from "animejs";
 import clsx from "clsx";
 
 /* ---------- Social links data ---------- */
@@ -37,6 +38,14 @@ export default function Portal() {
   const [form, setForm] = useState({ name: "", email: "", dept: "", interests: [] as string[] });
   const [submitted, setSubmitted] = useState(false);
 
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const visualRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const ring1Ref = useRef<HTMLDivElement>(null);
+  const ring2Ref = useRef<HTMLDivElement>(null);
+  const ring3Ref = useRef<HTMLDivElement>(null);
+
   const toggleInterest = (interest: string) => {
     setForm((prev) => ({
       ...prev,
@@ -51,25 +60,146 @@ export default function Portal() {
     setSubmitted(true);
   };
 
+  // ScrollTrigger reveal
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Portal visual — slide in from left + scale
+      gsap.fromTo(
+        visualRef.current,
+        { opacity: 0, x: -60, scale: 0.9 },
+        {
+          opacity: 1,
+          x: 0,
+          scale: 1,
+          duration: 1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: visualRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Form — slide in from right
+      gsap.fromTo(
+        formRef.current,
+        { opacity: 0, x: 60 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: formRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Portal rings — speed up on scroll through section
+      const rings = [ring1Ref.current, ring2Ref.current, ring3Ref.current].filter(Boolean);
+      if (rings.length) {
+        gsap.to(rings, {
+          rotation: "+=360",
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 2,
+          },
+        });
+      }
+
+      // Background glow pulse on scroll
+      gsap.to(".portal-glow-cyan", {
+        scale: 1.3,
+        opacity: 0.08,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1,
+        },
+      });
+      gsap.to(".portal-glow-magenta", {
+        scale: 1.5,
+        opacity: 0.06,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1,
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Portal ring animations using anime.js (continuous spin)
+  useEffect(() => {
+    if (!ring1Ref.current || !ring2Ref.current || !ring3Ref.current) return;
+
+    anime({
+      targets: ring1Ref.current,
+      rotate: "1turn",
+      duration: 20000,
+      loop: true,
+      easing: "linear",
+    });
+
+    anime({
+      targets: ring2Ref.current,
+      rotate: "-1turn",
+      duration: 30000,
+      loop: true,
+      easing: "linear",
+    });
+
+    anime({
+      targets: ring3Ref.current,
+      rotate: "1turn",
+      duration: 15000,
+      loop: true,
+      easing: "linear",
+    });
+  }, []);
+
   return (
     <>
-      <section id="portal" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+      <section ref={sectionRef} id="portal" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
         {/* Background */}
         <div className="absolute inset-0 bg-grid-lines opacity-20" />
 
         {/* Portal glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-magenta/5 rounded-full blur-2xl" />
+        <div className="portal-glow-cyan absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan/5 rounded-full blur-3xl" />
+        <div className="portal-glow-magenta absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-magenta/5 rounded-full blur-2xl" />
 
         <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
           {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
+          <div ref={headerRef} className="text-center mb-16 opacity-0">
             <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
               07
             </p>
@@ -80,32 +210,23 @@ export default function Portal() {
               Ready to enter the digital realm? Join 500+ members and start your journey.
             </p>
             <div className="section-divider mt-6" />
-          </motion.div>
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Left — Portal Visual */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="flex flex-col items-center justify-center"
-            >
+            <div ref={visualRef} className="flex flex-col items-center justify-center opacity-0">
               {/* Animated portal ring */}
               <div className="relative w-64 h-64 sm:w-80 sm:h-80">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                <div
+                  ref={ring1Ref}
                   className="absolute inset-0 rounded-full border border-cyan/30"
                 />
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                <div
+                  ref={ring2Ref}
                   className="absolute inset-4 rounded-full border border-magenta/20"
                 />
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                <div
+                  ref={ring3Ref}
                   className="absolute inset-8 rounded-full border border-cyan/20"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -118,21 +239,12 @@ export default function Portal() {
               <p className="mt-8 text-foreground/40 text-sm text-center max-w-xs">
                 Become part of something bigger. Collaborate, learn, and build the future with CSAU.
               </p>
-            </motion.div>
+            </div>
 
             {/* Right — Form */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-            >
+            <div ref={formRef} className="opacity-0">
               {submitted ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="holo-card rounded-xl p-8 text-center"
-                >
+                <div className="holo-card rounded-xl p-8 text-center">
                   <div className="text-5xl mb-4">✨</div>
                   <h3 className="text-2xl font-bold font-[family-name:var(--font-space-grotesk)] text-cyan mb-2">
                     Welcome to the Realm
@@ -140,7 +252,7 @@ export default function Portal() {
                   <p className="text-foreground/60">
                     Your application has been received. We&apos;ll be in touch soon!
                   </p>
-                </motion.div>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="holo-card rounded-xl p-8 space-y-6">
                   <h3 className="text-xl font-semibold font-[family-name:var(--font-space-grotesk)] text-foreground/90">
@@ -216,7 +328,7 @@ export default function Portal() {
                   </button>
                 </form>
               )}
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>

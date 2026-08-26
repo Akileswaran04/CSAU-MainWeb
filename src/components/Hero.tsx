@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEntered } from "@/hooks/useEntered";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 /* ============================================================
    Particles + Circuit SVG — rendered on the client only
@@ -19,7 +24,6 @@ function ParticleCanvas() {
     let animId: number;
     const particles: { x: number; y: number; vx: number; vy: number; r: number; o: number }[] = [];
 
-    // Capture narrowed references
     const cvs = canvas;
     const context = ctx;
 
@@ -30,7 +34,6 @@ function ParticleCanvas() {
     resize();
     window.addEventListener("resize", resize);
 
-    // create particles
     for (let i = 0; i < 80; i++) {
       particles.push({
         x: Math.random() * cvs.width,
@@ -57,7 +60,6 @@ function ParticleCanvas() {
         context.fill();
       }
 
-      // draw connecting lines
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -98,9 +100,113 @@ function ParticleCanvas() {
    ============================================================ */
 export default function Hero() {
   const ready = useEntered();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
+  const descRef = useRef<HTMLParagraphElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const arrowRef = useRef<HTMLSpanElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    const tl = gsap.timeline({ delay: 0.2 });
+
+    tl.fromTo(
+      titleRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }
+    )
+      .fromTo(
+        subtitleRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
+        "-=0.4"
+      )
+      .fromTo(
+        descRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
+        "-=0.5"
+      )
+      .fromTo(
+        ctaRef.current,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.7)" },
+        "-=0.3"
+      )
+      .fromTo(
+        scrollRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 1, ease: "power2.out" },
+        "-=0.2"
+      );
+
+    // Arrow bounce animation (infinite)
+    gsap.to(arrowRef.current, {
+      x: 6,
+      duration: 0.75,
+      ease: "power1.inOut",
+      repeat: -1,
+      yoyo: true,
+    });
+
+    // Scroll indicator bounce
+    const scrollLine = scrollRef.current?.querySelector("div");
+    if (scrollLine) {
+      gsap.to(scrollLine, {
+        y: 8,
+        duration: 0.75,
+        ease: "power1.inOut",
+        repeat: -1,
+        yoyo: true,
+      });
+    }
+
+    // Parallax on Hero background elements as user scrolls down
+    gsap.to(".hero-cyan-glow", {
+      y: -120,
+      scale: 0.7,
+      opacity: 0,
+      ease: "none",
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: "top top",
+        end: "bottom top",
+        scrub: 1,
+      },
+    });
+    gsap.to(".hero-magenta-glow", {
+      y: -80,
+      x: 40,
+      opacity: 0,
+      ease: "none",
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: "top top",
+        end: "bottom top",
+        scrub: 1,
+      },
+    });
+
+    // Fade out hero content on scroll
+    gsap.to(".hero-content", {
+      y: -60,
+      opacity: 0,
+      ease: "none",
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: "30% top",
+        end: "80% top",
+        scrub: 1,
+      },
+    });
+  }, [ready]);
 
   return (
     <section
+      ref={sectionRef}
       id="gate"
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-grid-lines"
     >
@@ -108,9 +214,9 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#090714] via-transparent to-[#090714] z-0" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#090714]/50 via-transparent to-[#090714]/50 z-0" />
 
-      {/* Radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan/5 rounded-full blur-3xl z-0" />
-      <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-magenta/5 rounded-full blur-3xl z-0" />
+      {/* Radial glow — parallax targets */}
+      <div className="hero-cyan-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan/5 rounded-full blur-3xl z-0" />
+      <div className="hero-magenta-glow absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-magenta/5 rounded-full blur-3xl z-0" />
 
       {/* Particle canvas */}
       <ParticleCanvas />
@@ -141,74 +247,58 @@ export default function Hero() {
         <circle cx="900" cy="80" r="4" fill="rgba(215,124,203,0.5)" />
       </svg>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={ready ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter font-[family-name:var(--font-space-grotesk)] text-foreground glow-cyan">
+      {/* Content — parallax fade target */}
+      <div className="hero-content relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div>
+          <h1
+            ref={titleRef}
+            className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter font-[family-name:var(--font-space-grotesk)] text-foreground glow-cyan"
+          >
             CSAU
           </h1>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={ready ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 0.8, delay: 0.5 }}
-        >
-          <p className="mt-4 text-sm sm:text-base md:text-lg tracking-[0.3em] uppercase text-foreground/60 font-[family-name:var(--font-geist-mono)]">
+        <div>
+          <p
+            ref={subtitleRef}
+            className="mt-4 text-sm sm:text-base md:text-lg tracking-[0.3em] uppercase text-foreground/60 font-[family-name:var(--font-geist-mono)]"
+          >
             Computer Society of Anna University
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={ready ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
-          <p className="mt-6 text-lg sm:text-xl text-foreground/50 max-w-xl mx-auto leading-relaxed">
+        <div>
+          <p
+            ref={descRef}
+            className="mt-6 text-lg sm:text-xl text-foreground/50 max-w-xl mx-auto leading-relaxed"
+          >
             Building the future of technology, one line of code at a time.
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={ready ? { opacity: 1, scale: 1 } : false}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          className="mt-12"
-        >
+        <div ref={ctaRef} className="mt-12">
           <a
             href="#origin"
             className="inline-flex items-center gap-3 px-8 py-4 border border-cyan rounded-lg text-cyan font-medium tracking-wide hover:bg-cyan/10 transition-all duration-300 animate-pulse-cyan group"
           >
             <span>ENTER THE WORLD</span>
-            <motion.span
-              animate={{ x: [0, 6, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="text-lg"
-            >
+            <span ref={arrowRef} className="text-lg inline-block">
               →
-            </motion.span>
+            </span>
           </a>
-        </motion.div>
+        </div>
       </div>
 
       {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={ready ? { opacity: 1 } : false}
-        transition={{ delay: 1 }}
+      <div
+        ref={scrollRef}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10"
       >
-        <span className="text-xs tracking-widest text-foreground/30 uppercase">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-px h-8 bg-gradient-to-b from-cyan/60 to-transparent"
-        />
-      </motion.div>
+        <span className="text-xs tracking-widest text-foreground/30 uppercase">
+          Scroll
+        </span>
+        <div className="w-px h-8 bg-gradient-to-b from-cyan/60 to-transparent" />
+      </div>
     </section>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import clsx from "clsx";
 
 const milestones = [
@@ -19,16 +19,12 @@ const stats = [
   { label: "Lines of Code", value: "500K+" },
 ];
 
-function DayNode({ day, index, isActive, onClick }: { day: number; index: number; isActive: boolean; onClick: () => void }) {
+function DayNode({ day, isActive, onClick }: { day: number; isActive: boolean; onClick: () => void }) {
   const isMilestone = milestones.some((m) => m.day === day);
-  const completed = day <= 72; // simulated progress
+  const completed = day <= 72;
 
   return (
-    <motion.button
-      initial={{ opacity: 0, scale: 0 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.01, duration: 0.3 }}
+    <button
       onClick={onClick}
       className={clsx(
         "relative rounded-full transition-all duration-300 cursor-pointer",
@@ -50,21 +46,135 @@ export default function Journey() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const selectedMilestone = milestones.find((m) => m.day === selectedDay);
 
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statsBarRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const nodesContainerRef = useRef<HTMLDivElement>(null);
+  const milestoneRef = useRef<HTMLDivElement>(null);
+
+  // ScrollTrigger reveal
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Stats bar
+      gsap.fromTo(
+        statsBarRef.current,
+        { opacity: 0, y: 25 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: statsBarRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Progress bar — fills as section scrolls into view
+      gsap.fromTo(
+        progressBarRef.current,
+        { scaleX: 0 },
+        {
+          scaleX: 1,
+          duration: 1.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: progressBarRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Day nodes — stagger pop in
+      const nodes = nodesContainerRef.current?.querySelectorAll("button");
+      if (nodes) {
+        gsap.fromTo(
+          nodes,
+          { opacity: 0, scale: 0 },
+          {
+            opacity: 1,
+            scale: 1,
+            duration: 0.3,
+            stagger: {
+              each: 0.008,
+              from: "start",
+            },
+            ease: "back.out(2.5)",
+            scrollTrigger: {
+              trigger: nodesContainerRef.current,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }
+
+      // Milestone labels — stagger fade in
+      const milestoneButtons = sectionRef.current?.querySelectorAll(".milestone-label");
+      if (milestoneButtons) {
+        gsap.fromTo(
+          milestoneButtons,
+          { opacity: 0, y: 10 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            stagger: 0.08,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: milestoneButtons[0],
+              start: "top 90%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Animate milestone card on selection
+  useEffect(() => {
+    if (selectedMilestone && milestoneRef.current) {
+      gsap.fromTo(
+        milestoneRef.current,
+        { opacity: 0, y: 15, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.5)" }
+      );
+    }
+  }, [selectedMilestone]);
+
   return (
-    <section id="journey" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="journey" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-20" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-magenta/5 rounded-full blur-3xl" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
+        <div ref={headerRef} className="text-center mb-16 opacity-0">
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             05
           </p>
@@ -75,44 +185,31 @@ export default function Journey() {
             100 Days of Code — track your progress through the digital skill tree.
           </p>
           <div className="section-divider mt-6" />
-        </motion.div>
+        </div>
 
         {/* Stats Bar */}
-        <div className="flex justify-center gap-8 sm:gap-16 mb-16">
+        <div ref={statsBarRef} className="flex justify-center gap-8 sm:gap-16 mb-16 opacity-0">
           {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
+            <div key={stat.label} className="text-center">
               <div className="text-2xl sm:text-3xl font-bold text-cyan font-[family-name:var(--font-space-grotesk)]">
                 {stat.value}
               </div>
               <div className="text-xs text-foreground/40 mt-1 tracking-wider uppercase">
                 {stat.label}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Interactive Timeline */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="mb-10"
-        >
+        <div className="mb-10">
           {/* Progress bar */}
           <div className="relative mb-8">
-            <div className="h-1 bg-foreground/10 rounded-full">
-              <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: "72%" }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                className="h-1 bg-gradient-to-r from-cyan to-magenta rounded-full"
+            <div className="h-1 bg-foreground/10 rounded-full overflow-hidden">
+              <div
+                ref={progressBarRef}
+                className="h-full bg-gradient-to-r from-cyan to-magenta rounded-full origin-left"
+                style={{ transform: "scaleX(0)" }}
               />
             </div>
             <div className="flex justify-between mt-2 text-xs text-foreground/30 font-[family-name:var(--font-geist-mono)]">
@@ -122,12 +219,11 @@ export default function Journey() {
           </div>
 
           {/* Day nodes */}
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-            {Array.from({ length: 100 }, (_, i) => i + 1).map((day, index) => (
+          <div ref={nodesContainerRef} className="flex flex-wrap justify-center gap-2 sm:gap-3">
+            {Array.from({ length: 100 }, (_, i) => i + 1).map((day) => (
               <DayNode
                 key={day}
                 day={day}
-                index={index}
                 isActive={selectedDay === day}
                 onClick={() => setSelectedDay(selectedDay === day ? null : day)}
               />
@@ -141,7 +237,7 @@ export default function Journey() {
                 key={m.day}
                 onClick={() => setSelectedDay(selectedDay === m.day ? null : m.day)}
                 className={clsx(
-                  "text-xs font-[family-name:var(--font-geist-mono)] px-3 py-1 rounded-full transition-all",
+                  "milestone-label text-xs font-[family-name:var(--font-geist-mono)] px-3 py-1 rounded-full transition-all",
                   selectedDay === m.day
                     ? "bg-magenta/20 text-magenta border border-magenta/40"
                     : "text-foreground/40 hover:text-foreground/60 border border-foreground/10"
@@ -151,15 +247,13 @@ export default function Journey() {
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Selected milestone detail */}
         {selectedMilestone && (
-          <motion.div
+          <div
             key={selectedMilestone.day}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            ref={milestoneRef}
             className="max-w-lg mx-auto holo-card rounded-xl p-6 text-center border border-magenta/20"
           >
             <div className="text-magenta text-sm font-[family-name:var(--font-geist-mono)] mb-1">
@@ -171,7 +265,7 @@ export default function Journey() {
             <p className="text-sm text-foreground/50 leading-relaxed">
               {selectedMilestone.description}
             </p>
-          </motion.div>
+          </div>
         )}
       </div>
     </section>

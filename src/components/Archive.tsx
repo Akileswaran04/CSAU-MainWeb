@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import clsx from "clsx";
 
 const categories = ["All", "Workshop", "Hackathon", "Bootcamp", "Competition"];
@@ -58,7 +58,7 @@ const events = [
   },
 ];
 
-function EventCard({ event, index }: { event: (typeof events)[number]; index: number }) {
+function EventCard({ event }: { event: (typeof events)[number] }) {
   const categoryColor: Record<string, string> = {
     Workshop: "bg-cyan/20 text-cyan",
     Hackathon: "bg-magenta/20 text-magenta",
@@ -67,13 +67,7 @@ function EventCard({ event, index }: { event: (typeof events)[number]; index: nu
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ delay: index * 0.05, duration: 0.4 }}
+    <div
       className={clsx(
         "holo-card rounded-xl p-6 group cursor-pointer",
         event.pinned && "ring-1 ring-cyan/30"
@@ -112,33 +106,110 @@ function EventCard({ event, index }: { event: (typeof events)[number]; index: nu
         <span className="text-cyan/50">&gt;</span>
         <span className="group-hover:text-cyan/70 transition-colors">View Mission Brief</span>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 export default function Archive() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const filtered =
     activeCategory === "All"
       ? events
       : events.filter((e) => e.category === activeCategory);
 
+  // ScrollTrigger reveal
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Filter tabs — stagger up
+      const tabs = tabsRef.current?.querySelectorAll("button");
+      if (tabs) {
+        gsap.fromTo(
+          tabs,
+          { opacity: 0, y: 15 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            stagger: 0.05,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: tabsRef.current,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }
+
+      // Cards — stagger wave
+      const cards = gridRef.current?.querySelectorAll(".holo-card");
+      if (cards) {
+        gsap.fromTo(
+          cards,
+          { opacity: 0, y: 30, scale: 0.95 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.45,
+            stagger: 0.06,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: gridRef.current,
+              start: "top 80%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Animate cards on filter change
+  useEffect(() => {
+    const cards = gridRef.current?.querySelectorAll(".holo-card");
+    if (cards && cards.length > 0) {
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 20, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.35, stagger: 0.04, ease: "power2.out" }
+      );
+    }
+  }, [activeCategory]);
+
   return (
-    <section id="archive" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="archive" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-20" />
       <div className="absolute top-0 left-1/4 w-80 h-80 bg-cyan/5 rounded-full blur-3xl" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
+        <div ref={headerRef} className="text-center mb-12 opacity-0">
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             04
           </p>
@@ -149,10 +220,10 @@ export default function Archive() {
             Mission logs from our past events — workshops, hackathons, bootcamps, and competitions.
           </p>
           <div className="section-divider mt-6" />
-        </motion.div>
+        </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
+        <div ref={tabsRef} className="flex flex-wrap justify-center gap-2 mb-10">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -170,12 +241,10 @@ export default function Archive() {
         </div>
 
         {/* Event Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((event, i) => (
-              <EventCard key={event.title} event={event} index={i} />
-            ))}
-          </AnimatePresence>
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((event) => (
+            <EventCard key={event.title} event={event} />
+          ))}
         </div>
       </div>
     </section>

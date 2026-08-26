@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 
 const team = [
   {
@@ -69,7 +70,7 @@ const team = [
   },
 ];
 
-function TeamCard({ member, index }: { member: (typeof team)[number]; index: number }) {
+function TeamCard({ member }: { member: (typeof team)[number] }) {
   const borderGlow =
     member.color === "cyan"
       ? "border-cyan/20 hover:border-cyan/50"
@@ -82,11 +83,7 @@ function TeamCard({ member, index }: { member: (typeof team)[number]; index: num
       : "border-magenta/30 group-hover:border-magenta/60";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.08, duration: 0.5 }}
+    <div
       className={`holo-card rounded-xl p-6 border ${borderGlow} group cursor-pointer`}
     >
       {/* Avatar */}
@@ -135,27 +132,100 @@ function TeamCard({ member, index }: { member: (typeof team)[number]; index: num
           </a>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 export default function People() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Team cards — stagger from alternating sides
+      const cards = gridRef.current?.querySelectorAll(".holo-card");
+      if (cards) {
+        cards.forEach((card, i) => {
+          const fromLeft = i % 2 === 0;
+          gsap.fromTo(
+            card,
+            {
+              opacity: 0,
+              x: fromLeft ? -40 : 40,
+              y: 20,
+            },
+            {
+              opacity: 1,
+              x: 0,
+              y: 0,
+              duration: 0.6,
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 88%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      }
+
+      // Background blobs parallax
+      gsap.to(".people-cyan-blob", {
+        y: -60,
+        x: 20,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        },
+      });
+      gsap.to(".people-magenta-blob", {
+        y: 40,
+        x: -20,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="people" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
+    <section ref={sectionRef} id="people" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24">
       {/* Background */}
       <div className="absolute inset-0 bg-grid-lines opacity-20" />
-      <div className="absolute top-1/3 right-0 w-80 h-80 bg-cyan/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/3 left-0 w-80 h-80 bg-magenta/5 rounded-full blur-3xl" />
+      <div className="people-cyan-blob absolute top-1/3 right-0 w-80 h-80 bg-cyan/5 rounded-full blur-3xl" />
+      <div className="people-magenta-blob absolute bottom-1/3 left-0 w-80 h-80 bg-magenta/5 rounded-full blur-3xl" />
 
       <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
+        <div ref={headerRef} className="text-center mb-16 opacity-0">
           <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
             06
           </p>
@@ -166,12 +236,12 @@ export default function People() {
             The people behind the system — meet the minds building CSAU.
           </p>
           <div className="section-divider mt-6" />
-        </motion.div>
+        </div>
 
         {/* Team Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {team.map((member, i) => (
-            <TeamCard key={member.name} member={member} index={i} />
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {team.map((member) => (
+            <TeamCard key={member.name} member={member} />
           ))}
         </div>
       </div>

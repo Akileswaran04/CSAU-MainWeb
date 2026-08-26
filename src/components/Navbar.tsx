@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
 import clsx from "clsx";
 import { useEntered } from "@/hooks/useEntered";
 
@@ -19,6 +19,10 @@ export default function Navbar() {
   const ready = useEntered();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
+  const linksContainerRef = useRef<HTMLDivElement>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -26,21 +30,63 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Animate navbar slide-in on ready
   useEffect(() => {
+    if (ready && navRef.current) {
+      gsap.fromTo(
+        navRef.current,
+        { y: -100 },
+        { y: 0, duration: 0.6, ease: "power2.out", delay: 0.3 }
+      );
+    }
+  }, [ready]);
+
+  // Mobile overlay animation
+  useEffect(() => {
+    if (!mobileRef.current || !linksContainerRef.current) return;
+
     if (mobileOpen) {
       document.body.style.overflow = "hidden";
+      const tl = gsap.timeline();
+      tlRef.current = tl;
+
+      tl.fromTo(
+        mobileRef.current,
+        { opacity: 0, x: "100%" },
+        { opacity: 1, x: "0%", duration: 0.3, ease: "power2.inOut" }
+      );
+
+      const linkEls = linksContainerRef.current.querySelectorAll("a");
+      tl.fromTo(
+        linkEls,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          stagger: 0.05,
+          ease: "power2.out",
+        },
+        "-=0.15"
+      );
     } else {
       document.body.style.overflow = "";
+      if (tlRef.current) {
+        tlRef.current.kill();
+        tlRef.current = null;
+      }
+      gsap.set(mobileRef.current, { opacity: 0, x: "100%" });
     }
-    return () => { document.body.style.overflow = ""; };
+
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   return (
     <>
-      <motion.nav
-        initial={{ y: -100 }}
-        animate={ready ? { y: 0 } : false}
-        transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+      <nav
+        ref={navRef}
         className={clsx(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           scrolled
@@ -86,58 +132,55 @@ export default function Navbar() {
             className="lg:hidden flex flex-col gap-1.5 p-2"
             aria-label="Toggle menu"
           >
-            <motion.span
-              animate={mobileOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              className="block w-6 h-0.5 bg-cyan"
+            <span
+              className={clsx(
+                "block w-6 h-0.5 bg-cyan transition-transform duration-300 origin-center",
+                mobileOpen && "rotate-45 translate-y-[7px]"
+              )}
             />
-            <motion.span
-              animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-              className="block w-6 h-0.5 bg-cyan"
+            <span
+              className={clsx(
+                "block w-6 h-0.5 bg-cyan transition-opacity duration-300",
+                mobileOpen && "opacity-0"
+              )}
             />
-            <motion.span
-              animate={mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              className="block w-6 h-0.5 bg-cyan"
+            <span
+              className={clsx(
+                "block w-6 h-0.5 bg-cyan transition-transform duration-300 origin-center",
+                mobileOpen && "-rotate-45 -translate-y-[7px]"
+              )}
             />
           </button>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed inset-0 z-40 bg-[#090714]/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8"
-          >
-            {navLinks.map((link, i) => (
-              <motion.a
+      {mobileOpen && (
+        <div
+          ref={mobileRef}
+          className="fixed inset-0 z-40 bg-[#090714]/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8"
+        >
+          <div ref={linksContainerRef} className="flex flex-col items-center gap-8">
+            {navLinks.map((link) => (
+              <a
                 key={link.href}
                 href={link.href}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
                 onClick={() => setMobileOpen(false)}
                 className="text-2xl font-[family-name:var(--font-space-grotesk)] text-foreground/80 hover:text-cyan transition-colors"
               >
                 {link.label}
-              </motion.a>
+              </a>
             ))}
-            <motion.a
+            <a
               href="#portal"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: navLinks.length * 0.05 }}
               onClick={() => setMobileOpen(false)}
               className="mt-4 px-8 py-3 border border-cyan rounded text-cyan font-medium hover:bg-cyan/10 transition-all"
             >
               ENTER
-            </motion.a>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </a>
+          </div>
+        </div>
+      )}
     </>
   );
 }
