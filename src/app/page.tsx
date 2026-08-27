@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Preloader from "@/components/Preloader";
+import ScrollFlight from "@/components/ScrollFlight";
+import RealmProgress from "@/components/RealmProgress";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Origin from "@/components/Origin";
@@ -15,6 +17,7 @@ export default function Home() {
     <>
       <Preloader />
       <Navbar />
+      <RealmProgress />
       <main id="page-root">
         <Hero />
         <Origin />
