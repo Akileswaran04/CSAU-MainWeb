@@ -124,6 +124,88 @@ function playDust() {
 }
 
 /* ==========================================================================
+   Wood plank helper — generates realistic bark/log textures via CSS
+   ========================================================================== */
+
+/* Seeded pseudo-random for consistent grain per board */
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function woodGrainStyle(index: number, half: "top" | "bottom") {
+  const rng = seededRandom(index * 137 + (half === "top" ? 0 : 71));
+  const baseHue = 22 + Math.floor(rng() * 12);   // warm brown hue
+  const baseSat = 38 + Math.floor(rng() * 18);    // moderate saturation
+  const baseLit = 18 + Math.floor(rng() * 10);    // dark-to-mid brown
+  const darkLit = baseLit - 6;
+  const ringCount = 3 + Math.floor(rng() * 4);    // grain ring density
+  const grainAngle = -2 + rng() * 4;              // slight tilt
+
+  // Build repeating grain lines
+  const grainLayers: string[] = [];
+  for (let r = 0; r < ringCount; r++) {
+    const offset = 8 + rng() * 84;
+    const thickness = 1 + rng() * 2;
+    const alpha = 0.04 + rng() * 0.06;
+    grainLayers.push(
+      `linear-gradient(${grainAngle}deg, transparent ${offset - thickness}%, rgba(0,0,0,${alpha}) ${offset}%, transparent ${offset + thickness}%)`
+    );
+  }
+
+  // Wood knot (only some boards)
+  const hasKnot = rng() > 0.6;
+  const knotX = 15 + Math.floor(rng() * 70);
+  const knotY = half === "top" ? 25 + Math.floor(rng() * 50) : 20 + Math.floor(rng() * 55);
+  const knotSize = 6 + Math.floor(rng() * 6);
+  const knotShadow = `radial-gradient(ellipse ${knotSize}px ${knotSize * 0.7}px at ${knotX}% ${knotY}%, rgba(30,15,5,0.7) 0%, rgba(50,25,10,0.4) 50%, transparent 100%)`;
+
+  // Nail holes
+  const nailCount = Math.floor(rng() * 3) + 1;
+  const nails: string[] = [];
+  for (let n = 0; n < nailCount; n++) {
+    const nx = 4 + Math.floor(rng() * 12);
+    const ny = half === "top" ? 50 + Math.floor(rng() * 40) : 10 + Math.floor(rng() * 40);
+    const ns = 2 + Math.floor(rng() * 2);
+    nails.push(
+      `radial-gradient(circle ${ns}px at ${nx}% ${ny}%, rgba(15,8,2,0.9) 0%, rgba(40,25,12,0.3) 60%, transparent 100%)`
+    );
+  }
+
+  // Combine all layers
+  const allLayers = [
+    // Base wood color
+    `linear-gradient(180deg, hsl(${baseHue}, ${baseSat}%, ${baseLit}%) 0%, hsl(${baseHue - 2}, ${baseSat - 4}%, ${darkLit}%) 100%)`,
+    // Grain rings
+    ...grainLayers,
+  ];
+
+  if (hasKnot) allLayers.push(knotShadow);
+  allLayers.push(...nails);
+
+  // Add edge darkening for 3D effect
+  const edgeTop = half === "top"
+    ? "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 12%)"
+    : "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, transparent 8%)";
+  const edgeBot = half === "top"
+    ? "linear-gradient(0deg, rgba(0,0,0,0.3) 0%, transparent 15%)"
+    : "linear-gradient(0deg, rgba(0,0,0,0.25) 0%, transparent 12%)";
+
+  allLayers.push(edgeTop);
+  allLayers.push(edgeBot);
+
+  return {
+    background: allLayers.join(", "),
+    boxShadow: half === "top"
+      ? "inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -2px 0 rgba(0,0,0,0.5)"
+      : "inset 0 2px 0 rgba(0,0,0,0.4), inset 0 -1px 0 rgba(255,255,255,0.03), 0 3px 8px rgba(0,0,0,0.6)",
+  } as React.CSSProperties;
+}
+
+/* ==========================================================================
    Main Component
    ========================================================================== */
 
@@ -224,11 +306,11 @@ export default function Preloader() {
     };
   }, [breakBoard]);
 
-  /* ---- Cave reveal ---- */
+  /* ---- Cave reveal — enters from below (reversed) ---- */
   useEffect(() => {
     if (phase !== "cave") return;
     if (caveRef.current) {
-      gsap.fromTo(caveRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9, ease: "power2.out" });
+      gsap.fromTo(caveRef.current, { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 1.1, ease: "power2.out" });
     }
     if (warningRef.current) {
       gsap.fromTo(warningRef.current, { opacity: 0, y: -15 }, { opacity: 1, y: 0, duration: 0.7, delay: 0.3, ease: "back.out(1.3)" });
@@ -276,15 +358,18 @@ export default function Preloader() {
 
     tl.to([enterBtnRef.current, warningRef.current], { opacity: 0, duration: 0.3 }, 0);
     tl.call(() => playHum(), undefined, 0.2);
+    // Light fades from bottom instead of center — reversed direction
     tl.to(lightOverlayRef.current, { opacity: 1, duration: 1.4, ease: "power2.inOut" }, 0.4);
 
+    // Tunnel arches light up — from outermost to innermost (reversed)
     archRefs.current.forEach((arch, i) => {
       if (arch) {
-        tl.to(arch, { borderColor: "rgba(232,228,220,0.22)", boxShadow: "0 0 10px rgba(232,228,220,0.06)", duration: 0.3 }, 0.6 + i * 0.12);
+        tl.to(arch, { borderColor: "rgba(232,228,220,0.22)", boxShadow: "0 0 10px rgba(232,228,220,0.06)", duration: 0.3 }, 0.6 + (ARCH_COUNT - 1 - i) * 0.12);
       }
     });
 
-    tl.to(tunnelRef.current, { scale: 4.5, duration: 3, ease: "power2.in" }, 1.2);
+    // Tunnel zoom — scaled from bottom-center instead of center
+    tl.to(tunnelRef.current, { scale: 4.5, y: 120, duration: 3, ease: "power2.in" }, 1.2);
 
     WORDS.forEach((_, i) => {
       const t = 4.5 + i * 3.2;
@@ -349,6 +434,7 @@ export default function Preloader() {
   if (gone) return null;
 
   const boardH = 10; // vh per board
+  const ARCH_COUNT = 9;
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-[100] overflow-hidden" style={{ background: "#000" }}>
@@ -375,7 +461,7 @@ export default function Preloader() {
         </div>
       </div>
 
-      {/* ═══ Layer z-100: Wooden boards ═══ */}
+      {/* ═══ Layer z-100: Wooden boards (realistic logs) ═══ */}
       <div
         ref={boardsRef}
         className="absolute inset-0"
@@ -384,18 +470,27 @@ export default function Preloader() {
         {[...Array(BOARD_COUNT)].map((_, i) => {
           const topPct = (BOARD_COUNT - 1 - i) * boardH;
           const wPct = 68 + i * 3.2;
-          const hueShift = i * 2;
+          const woodStyle = woodGrainStyle(i, "top");
+          const woodStyleBot = woodGrainStyle(i, "bottom");
           return (
             <div key={i} data-board={i} style={{ position: "absolute", top: `${topPct}vh`, left: "50%", transform: "translateX(-50%)", width: `${wPct}%`, height: `${boardH}vh`, overflow: "visible" }}>
-              {/* Top half */}
+              {/* Top half — realistic bark/log texture */}
               <div data-board={i} data-half="top" style={{
                 position: "absolute", top: 0, left: 0, right: 0, height: "50%",
-                background: `repeating-linear-gradient(${1 + i * 0.4}deg, transparent, transparent 6px, rgba(0,0,0,0.06) 6px, rgba(0,0,0,0.06) 7px), linear-gradient(180deg, hsl(${38 + hueShift}, 58%, 32%) 0%, hsl(${36 + hueShift}, 52%, 28%) 50%, hsl(${34 + hueShift}, 55%, 30%) 100%)`,
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.4)",
+                ...woodStyle,
                 borderRadius: "2px 2px 0 0", transformOrigin: "center bottom",
               }}>
-                <div style={{ position: "absolute", left: "6%", bottom: "30%", width: "3px", height: "3px", borderRadius: "50%", background: "radial-gradient(circle, #2a1a08, #4a3018)" }} />
-                <div style={{ position: "absolute", right: "6%", bottom: "30%", width: "3px", height: "3px", borderRadius: "50%", background: "radial-gradient(circle, #2a1a08, #4a3018)" }} />
+                {/* Saw marks / cut lines */}
+                <div style={{
+                  position: "absolute", top: "35%", left: "3%", right: "3%", height: "1px",
+                  background: `linear-gradient(90deg, transparent, rgba(0,0,0,0.12) ${20 + i * 5}%, rgba(0,0,0,0.08) ${50 + i * 3}%, transparent)`,
+                  opacity: 0.5,
+                }} />
+                <div style={{
+                  position: "absolute", top: "65%", left: "5%", right: "5%", height: "1px",
+                  background: `linear-gradient(90deg, transparent, rgba(0,0,0,0.08) ${30 + i * 4}%, transparent)`,
+                  opacity: 0.4,
+                }} />
               </div>
               {/* Crack line */}
               <div data-board={i} data-crack style={{
@@ -403,15 +498,18 @@ export default function Preloader() {
                 background: "rgba(0,0,0,0.8)", opacity: 0, zIndex: 2, transform: "translateY(-1px)",
                 boxShadow: "0 0 6px rgba(0,0,0,0.6)",
               }} />
-              {/* Bottom half */}
+              {/* Bottom half — realistic bark/log texture */}
               <div data-board={i} data-half="bottom" style={{
                 position: "absolute", bottom: 0, left: 0, right: 0, height: "50%",
-                background: `repeating-linear-gradient(${1 + i * 0.4}deg, transparent, transparent 6px, rgba(0,0,0,0.06) 6px, rgba(0,0,0,0.06) 7px), linear-gradient(180deg, hsl(${34 + hueShift}, 55%, 30%) 0%, hsl(${32 + hueShift}, 50%, 26%) 50%, hsl(${30 + hueShift}, 48%, 24%) 100%)`,
-                boxShadow: "inset 0 1px 0 rgba(0,0,0,0.3), inset 0 -1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.5)",
+                ...woodStyleBot,
                 borderRadius: "0 0 2px 2px", transformOrigin: "center top",
               }}>
-                <div style={{ position: "absolute", left: "6%", top: "30%", width: "3px", height: "3px", borderRadius: "50%", background: "radial-gradient(circle, #2a1a08, #4a3018)" }} />
-                <div style={{ position: "absolute", right: "6%", top: "30%", width: "3px", height: "3px", borderRadius: "50%", background: "radial-gradient(circle, #2a1a08, #4a3018)" }} />
+                {/* Saw marks / cut lines */}
+                <div style={{
+                  position: "absolute", top: "30%", left: "4%", right: "4%", height: "1px",
+                  background: `linear-gradient(90deg, transparent, rgba(0,0,0,0.1) ${25 + i * 4}%, rgba(0,0,0,0.06) ${60 + i * 2}%, transparent)`,
+                  opacity: 0.4,
+                }} />
               </div>
             </div>
           );
@@ -486,9 +584,9 @@ export default function Preloader() {
         )}
       </div>
 
-      {/* ═══ Layer z-85: Tunnel arches ═══ */}
-      <div ref={tunnelRef} className="absolute inset-0 pointer-events-none" style={{ opacity: 0, transformOrigin: "50% 58%", zIndex: 85 }}>
-        {[...Array(9)].map((_, i) => (
+      {/* ═══ Layer z-85: Tunnel arches — reversed: enter from bottom ═══ */}
+      <div ref={tunnelRef} className="absolute inset-0 pointer-events-none" style={{ opacity: 0, transformOrigin: "50% 100%", zIndex: 85 }}>
+        {[...Array(ARCH_COUNT)].map((_, i) => (
           <div key={i} ref={(el) => { if (el) archRefs.current[i] = el; }} style={{
             position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
             width: `${86 - i * 8}%`, height: `${92 - i * 8}%`,
@@ -498,7 +596,7 @@ export default function Preloader() {
         ))}
         <div ref={lightOverlayRef} style={{
           position: "absolute", inset: 0,
-          background: "radial-gradient(ellipse at 50% 62%, rgba(232,218,190,0.1) 0%, rgba(180,150,100,0.04) 40%, transparent 75%)",
+          background: "linear-gradient(0deg, rgba(232,218,190,0.12) 0%, rgba(180,150,100,0.05) 30%, transparent 70%)",
           opacity: 0,
         }} />
       </div>
