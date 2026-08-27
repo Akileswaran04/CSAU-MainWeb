@@ -4,6 +4,7 @@ import "./globals.css";
 import SoundToggle from "@/components/SoundToggle";
 import CustomCursor from "@/components/CustomCursor";
 import SmoothScroll from "@/components/SmoothScroll";
+import RouteTransition from "@/components/RouteTransition";
 
 /* Award-site typography: Syne (avant-garde display) + Outfit (geometric body).
    Legacy CSS var names are kept as aliases so existing components pick them up. */
@@ -59,7 +60,7 @@ export default function RootLayout({
           Skip navigation
         </a>
         <SmoothScroll />
-        {children}
+        <RouteTransition>{children}</RouteTransition>
         <SoundToggle />
         <CustomCursor />
       </body>

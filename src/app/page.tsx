@@ -1,32 +1,33 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import Preloader from "@/components/Preloader";
-import ScrollFlight from "@/components/ScrollFlight";
-import RealmProgress from "@/components/RealmProgress";
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import Origin from "@/components/Origin";
-import Domains from "@/components/Domains";
-import Archive from "@/components/Archive";
-import Journey from "@/components/Journey";
-import People from "@/components/People";
-import Portal from "@/components/Portal";
+import dynamic from "next/dynamic";
+
+/* ============================================================
+   HOME — THE DIGITAL REALM (Client Component)
+   
+   Uses dynamic import with ssr:false to lazy-load all
+   heavy client-side components (Three.js, GSAP, etc.)
+   ============================================================ */
+
+const HomeClient = dynamic(() => import("@/components/HomeClient"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-[#090714] flex items-center justify-center">
+      <div className="text-center">
+        <h1
+          className="text-6xl font-bold tracking-tighter glow-cyan mb-4"
+          style={{ fontFamily: "'Kenfolg', 'Centrion', sans-serif" }}
+        >
+          CSAU
+        </h1>
+        <p className="text-xs tracking-[0.4em] uppercase text-cyan/40 font-[family-name:var(--font-geist-mono)]">
+          The Digital Realm
+        </p>
+      </div>
+    </div>
+  ),
+});
 
 export default function Home() {
-  return (
-    <>
-      <Preloader />
-      <Navbar />
-      <RealmProgress />
-      <main id="page-root">
-        <Hero />
-        <Origin />
-        <Domains />
-        <Archive />
-        <Journey />
-        <People />
-        <Portal />
-      </main>
-    </>
-  );
+  return <HomeClient />;
 }

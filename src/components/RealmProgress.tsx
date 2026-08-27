@@ -10,13 +10,12 @@ import { useEffect, useState } from "react";
    ========================================================================== */
 
 const SECTIONS = [
-  { index: "01", label: "GATE", anchor: "gate" },
-  { index: "02", label: "ORIGIN", anchor: "origin" },
-  { index: "03", label: "DOMAINS", anchor: "domains" },
-  { index: "04", label: "ARCHIVE", anchor: "archive" },
-  { index: "05", label: "JOURNEY", anchor: "journey" },
-  { index: "06", label: "PEOPLE", anchor: "people" },
-  { index: "07", label: "PORTAL", anchor: "portal" },
+  { index: "01", label: "GATEWAY", anchor: "gate" },
+  { index: "02", label: "CORE", anchor: "origin" },
+  { index: "03", label: "GROUNDS", anchor: "domains" },
+  { index: "04", label: "VAULT", anchor: "archive" },
+  { index: "05", label: "COMMAND", anchor: "people" },
+  { index: "06", label: "PORTAL", anchor: "portal" },
 ];
 
 export default function RealmProgress() {
@@ -64,7 +63,7 @@ export default function RealmProgress() {
           CSAU / DIGITAL REALM
         </p>
         <p className="text-xs tracking-[0.25em] text-cyan font-[family-name:var(--font-geist-mono)] mt-1">
-          {SECTIONS[active].index} / 07 — {SECTIONS[active].label}
+          {SECTIONS[active].index} / 06 — {SECTIONS[active].label}
         </p>
       </div>
 

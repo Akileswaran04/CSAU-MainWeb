@@ -30,6 +30,8 @@ export default function SoundToggle() {
     const next = !on;
     setOn(next);
     setAmbienceOn(next);
+    // Notify AmbientSound component of toggle
+    window.dispatchEvent(new CustomEvent("csau:ambience-toggle"));
     if (next) {
       getAudio();
       startDrone();

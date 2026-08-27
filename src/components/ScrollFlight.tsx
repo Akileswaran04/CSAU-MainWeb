@@ -18,13 +18,12 @@ function lingerEase(x: number, L: number) {
 
 /* cyberpunk accent palette */
 const ACCENTS: [number, number, number][] = [
-  [0, 240, 255],    // cyan — the gate
-  [0, 240, 255],    // origin
-  [0, 240, 255],    // domains
-  [255, 0, 170],    // archive — magenta
-  [255, 230, 0],    // journey — neon yellow
-  [57, 255, 20],    // people — neon green
-  [255, 0, 170],    // portal — magenta
+  [0, 240, 255],    // cyan — the gateway
+  [0, 240, 255],    // cyan — the core
+  [255, 0, 170],    // magenta — training grounds
+  [0, 240, 255],    // cyan — data vault
+  [57, 255, 20],    // neon green — command center
+  [255, 0, 170],    // magenta — portal
 ];
 
 function accentAt(f: number): [number, number, number] {
@@ -55,7 +54,7 @@ export default function ScrollFlight() {
     const SPREAD = 1600;
     const DEPTH = 10000;
     const FOV = 520;
-    const SECTIONS = 7;
+    const SECTIONS = 6;
     const LINGER = 0.35;
 
     const stars: Star[] = [];

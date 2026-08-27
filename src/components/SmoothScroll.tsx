@@ -6,7 +6,6 @@ import Lenis from "lenis";
 /* ============================================================================
    SMOOTH SCROLL — Lenis-driven inertia scrolling for the whole realm.
    • Disabled entirely under prefers-reduced-motion (native scrolling stays).
-   • Pauses while the preloader holds the page, resumes on csau:entered.
    • Intercepts same-page anchor clicks and initial #hashes so navigation
      glides instead of jumping. Other routes keep native behaviour.
    • ScrollFlight / RealmProgress read window.scrollY, which Lenis keeps
@@ -58,18 +57,9 @@ export default function SmoothScroll() {
       if (el) requestAnimationFrame(() => requestAnimationFrame(() => scrollToEl(el)));
     }
 
-    /* hold still while the preloader owns the screen */
-    let onEntered: (() => void) | null = null;
-    if (document.getElementById("preloader")) {
-      lenis.stop();
-      onEntered = () => lenis.start();
-      window.addEventListener("csau:entered", onEntered, { once: true });
-    }
-
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("click", onClick);
-      if (onEntered) window.removeEventListener("csau:entered", onEntered);
       lenis.destroy();
     };
   }, []);

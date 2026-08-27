@@ -3,20 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import clsx from "clsx";
-import { useEntered } from "@/hooks/useEntered";
 
 const navLinks = [
-  { label: "The Gate", href: "#gate" },
-  { label: "The Origin", href: "#origin" },
-  { label: "The Domains", href: "#domains" },
-  { label: "The Archive", href: "#archive" },
-  { label: "The Journey", href: "#journey" },
-  { label: "The People", href: "#people" },
+  { label: "The Gateway", href: "#gate" },
+  { label: "The Core", href: "#origin" },
+  { label: "Training Grounds", href: "#domains" },
+  { label: "Data Vault", href: "#archive" },
+  { label: "Command Center", href: "#people" },
   { label: "The Portal", href: "#portal" },
 ];
 
 export default function Navbar() {
-  const ready = useEntered();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
@@ -30,16 +27,16 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Animate navbar slide-in on ready
+  // Animate navbar slide-in
   useEffect(() => {
-    if (ready && navRef.current) {
+    if (navRef.current) {
       gsap.fromTo(
         navRef.current,
         { y: -100 },
         { y: 0, duration: 0.6, ease: "power2.out", delay: 0.3 }
       );
     }
-  }, [ready]);
+  }, []);
 
   // Mobile overlay animation
   useEffect(() => {

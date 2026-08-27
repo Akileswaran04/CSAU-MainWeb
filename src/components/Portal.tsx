@@ -2,10 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
-import anime from "animejs";
 import clsx from "clsx";
+import { useParallax } from "@/hooks/useParallax";
 
-/* ---------- Social links data ---------- */
+/* ============================================================
+   PORTAL — THE SWIRLING PORTAL
+   
+   A swirling, animated portal that invites users to join CSAU.
+   The text says: "Ready to join the guild? Enter the portal."
+   ============================================================ */
+
 const socials = [
   { name: "Instagram", href: "#", icon: (
     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -34,17 +40,31 @@ const interestOptions = [
   "Cybersecurity", "Cloud & DevOps", "UI / UX", "Open Source",
 ];
 
+/* Background glows with parallax */
+function PortalBg() {
+  const ref1 = useParallax<HTMLDivElement>({ speed: -0.45 });
+  const ref2 = useParallax<HTMLDivElement>({ speed: -0.2 });
+  return (
+    <>
+      <div ref={ref1} className="absolute top-1/2 left-[30%] -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-cyan/4 rounded-full blur-[80px]" />
+      <div ref={ref2} className="absolute top-1/2 left-[30%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-magenta/4 rounded-full blur-[60px]" />
+    </>
+  );
+}
+
 export default function Portal() {
   const [form, setForm] = useState({ name: "", email: "", dept: "", interests: [] as string[] });
   const [submitted, setSubmitted] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const visualRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const ring1Ref = useRef<HTMLDivElement>(null);
   const ring2Ref = useRef<HTMLDivElement>(null);
   const ring3Ref = useRef<HTMLDivElement>(null);
+  const ring4Ref = useRef<HTMLDivElement>(null);
+  const ring5Ref = useRef<HTMLDivElement>(null);
 
   const toggleInterest = (interest: string) => {
     setForm((prev) => ({
@@ -66,159 +86,207 @@ export default function Portal() {
         opacity: 1, y: 0, duration: 0.7, ease: "power2.out",
         scrollTrigger: { trigger: headerRef.current, start: "top 85%", toggleActions: "play none none none" },
       });
-      gsap.fromTo(visualRef.current, { opacity: 0, x: -30 }, {
-        opacity: 1, x: 0, duration: 0.7, ease: "power2.out",
-        scrollTrigger: { trigger: visualRef.current, start: "top 85%", toggleActions: "play none none none" },
+      gsap.fromTo(portalRef.current, { opacity: 0, scale: 0.8, filter: "blur(8px)" }, {
+        opacity: 1, scale: 1, filter: "blur(0px)", duration: 1, ease: "back.out(1.2)",
+        scrollTrigger: { trigger: portalRef.current, start: "top 80%", toggleActions: "play none none none" },
       });
-      gsap.fromTo(formRef.current, { opacity: 0, x: 30 }, {
+      gsap.fromTo(formRef.current, { opacity: 0, x: 40 }, {
         opacity: 1, x: 0, duration: 0.7, ease: "power2.out",
-        scrollTrigger: { trigger: formRef.current, start: "top 85%", toggleActions: "play none none none" },
+        scrollTrigger: { trigger: formRef.current, start: "top 80%", toggleActions: "play none none none" },
       });
     }, sectionRef);
     return () => ctx.revert();
   }, []);
 
-  // Portal ring animations using anime.js (continuous spin)
+  // Portal ring animations — continuous CSS animation via inline styles
   useEffect(() => {
-    if (!ring1Ref.current || !ring2Ref.current || !ring3Ref.current) return;
+    // Use GSAP for continuous rotation instead of anime.js
+    const rings = [
+      { el: ring1Ref.current, dur: 20, dir: 1 },
+      { el: ring2Ref.current, dur: 28, dir: -1 },
+      { el: ring3Ref.current, dur: 16, dir: 1 },
+      { el: ring4Ref.current, dur: 24, dir: -1 },
+      { el: ring5Ref.current, dur: 12, dir: 1 },
+    ];
 
-    anime({
-      targets: ring1Ref.current,
-      rotate: "1turn",
-      duration: 20000,
-      loop: true,
-      easing: "linear",
+    const tweens = rings.map(({ el, dur, dir }) => {
+      if (!el) return null;
+      return gsap.to(el, { rotation: dir * 360, duration: dur, repeat: -1, ease: "none" });
     });
 
-    anime({
-      targets: ring2Ref.current,
-      rotate: "-1turn",
-      duration: 30000,
-      loop: true,
-      easing: "linear",
-    });
-
-    anime({
-      targets: ring3Ref.current,
-      rotate: "1turn",
-      duration: 15000,
-      loop: true,
-      easing: "linear",
-    });
+    return () => { tweens.forEach(t => t?.kill()); };
   }, []);
 
   return (
     <>
       <section ref={sectionRef} id="portal" className="relative min-h-[100svh] flex items-center overflow-hidden py-20 sm:py-24 bg-cyber-grid">
         {/* Background */}
-        <div className="absolute inset-0 bg-grid-lines opacity-20" />
+        <div className="absolute inset-0 bg-grid-lines opacity-15" />
 
-        {/* Portal glow */}
-        <div className="portal-glow-cyan absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan/3 rounded-full blur-[60px]" />
-        <div className="portal-glow-magenta absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-magenta/3 rounded-full blur-[50px]" />
+        {/* Portal ambient glow — parallax layers */}
+        <PortalBg />
 
         <div className="stage-16x9 relative z-10 px-5 sm:px-8 lg:px-12">
           {/* Section Header */}
-          <div ref={headerRef} className="text-center mb-16 opacity-0">
-            <p className="text-cyan text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
-              07
-            </p>              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Centrion', var(--font-space-grotesk)" }}>
+          <div ref={headerRef} className="text-center mb-14 opacity-0">
+            <p className="text-magenta text-sm tracking-[0.3em] uppercase font-[family-name:var(--font-geist-mono)] mb-3">
+              GUILD RECRUITMENT
+            </p>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold" style={{ fontFamily: "'Kenfolg', 'Centrion', var(--font-space-grotesk)" }}>
               <span className="glow-magenta">The Portal</span>
             </h2>
-            <p className="mt-4 text-foreground/50 max-w-xl mx-auto">
-              Ready to enter the digital realm? Join 500+ members and start your journey.
+            <p className="mt-4 text-foreground/50 max-w-xl mx-auto" style={{ fontFamily: "var(--font-creme), 'Creme', serif" }}>
+              Ready to join the guild? Step through the portal and begin your journey.
             </p>
             <div className="cyber-divider mt-6" />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Left — Portal Visual */}
-            <div ref={visualRef} className="flex flex-col items-center justify-center opacity-0">
-              {/* Animated portal ring */}
-              <div className="relative w-64 h-64 sm:w-80 sm:h-80">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left — Swirling Portal Visual */}
+            <div ref={portalRef} className="flex flex-col items-center justify-center opacity-0">
+              <div className="relative w-72 h-72 sm:w-96 sm:h-96">
+                {/* Outermost ring */}
                 <div
                   ref={ring1Ref}
-                  className="absolute inset-0 rounded-full border border-cyan/30"
+                  className="absolute inset-0 rounded-full border border-cyan/20"
+                  style={{ borderStyle: "dashed" }}
                 />
+                {/* Ring 2 */}
                 <div
                   ref={ring2Ref}
-                  className="absolute inset-4 rounded-full border border-magenta/20"
+                  className="absolute inset-4 rounded-full border border-magenta/15"
                 />
+                {/* Ring 3 */}
                 <div
                   ref={ring3Ref}
-                  className="absolute inset-8 rounded-full border border-cyan/20"
+                  className="absolute inset-8 rounded-full border-2 border-cyan/25"
+                  style={{ borderStyle: "dotted" }}
                 />
+                {/* Ring 4 */}
+                <div
+                  ref={ring4Ref}
+                  className="absolute inset-12 rounded-full border border-magenta/20"
+                />
+                {/* Ring 5 (innermost) */}
+                <div
+                  ref={ring5Ref}
+                  className="absolute inset-16 rounded-full border border-cyan/30"
+                />
+
+                {/* Center vortex */}
+                <div className="absolute inset-20 sm:inset-24 rounded-full overflow-hidden">
+                  <div
+                    className="w-full h-full rounded-full"
+                    style={{
+                      background: "radial-gradient(circle, rgba(255,0,170,0.15) 0%, rgba(0,240,255,0.1) 40%, rgba(10,10,18,0.9) 70%)",
+                    }}
+                  />
+                </div>
+
+                {/* Center icon */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-cyan/20 to-magenta/20 flex items-center justify-center">
+                  <div className="text-center">
                     <span className="text-4xl sm:text-5xl">🚀</span>
+                    <p className="text-[9px] tracking-[0.3em] text-foreground/30 uppercase font-[family-name:var(--font-geist-mono)] mt-2">
+                      PORTAL ACTIVE
+                    </p>
                   </div>
                 </div>
+
+                {/* Particle dots around the portal */}
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-cyan/40"
+                    style={{
+                      top: `${50 + 45 * Math.sin((i * Math.PI * 2) / 8)}%`,
+                      left: `${50 + 45 * Math.cos((i * Math.PI * 2) / 8)}%`,
+                      animation: `portal-pulse ${2 + i * 0.3}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
               </div>
 
-              <p className="mt-8 text-foreground/40 text-sm text-center max-w-xs">
-                Become part of something bigger. Collaborate, learn, and build the future with CSAU.
+              <p className="mt-8 text-foreground/40 text-sm text-center max-w-xs" style={{ fontFamily: "var(--font-creme), 'Creme', serif" }}>
+                Become part of something bigger. Collaborate, learn, and build the future with 500+ members.
               </p>
             </div>
 
-            {/* Right — Form */}
+            {/* Right — Join Form (Quest acceptance terminal) */}
             <div ref={formRef} className="opacity-0">
               {submitted ? (
-                <div className="holo-card rounded-xl p-8 text-center">
+                <div className="holo-card rounded-xl p-8 text-center border border-cyan/20">
                   <div className="text-5xl mb-4">✨</div>
                   <h3 className="text-2xl font-bold font-[family-name:var(--font-space-grotesk)] text-cyan mb-2">
                     Welcome to the Realm
                   </h3>
-                  <p className="text-foreground/60">
-                    Your application has been received. We&apos;ll be in touch soon!
+                  <p className="text-foreground/60 text-sm" style={{ fontFamily: "var(--font-creme), 'Creme', serif" }}>
+                    Your application has been received. We&apos;ll be in touch soon, adventurer.
                   </p>
+                  <div className="mt-4 text-[10px] text-foreground/30 font-[family-name:var(--font-geist-mono)]">
+                    &gt; QUEST ACCEPTED — AWAITING INSTRUCTIONS
+                  </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="holo-card rounded-xl p-8 space-y-6">
-                  <h3 className="text-xl font-semibold font-[family-name:var(--font-space-grotesk)] text-foreground/90">
-                    Join CSAU
+                <form onSubmit={handleSubmit} className="holo-card rounded-xl p-8 space-y-5 border border-foreground/5">
+                  {/* Terminal header */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-foreground/5">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-neon-red/50" />
+                      <div className="w-2 h-2 rounded-full bg-neon-yellow/50" />
+                      <div className="w-2 h-2 rounded-full bg-neon-green/50" />
+                    </div>
+                    <span className="text-[10px] tracking-[0.2em] text-foreground/30 uppercase font-[family-name:var(--font-geist-mono)]">
+                      JOIN_QUEST // RECRUITMENT
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-semibold font-[family-name:var(--font-space-grotesk)] text-foreground/90">
+                    Ready to join the guild?
                   </h3>
 
                   {/* Name */}
                   <div>
-                    <label className="block text-sm text-foreground/50 mb-1">Name</label>
+                    <label className="block text-xs text-foreground/40 mb-1.5 font-[family-name:var(--font-geist-mono)]">NAME</label>
                     <input
                       type="text"
                       required
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-3 bg-foreground/5 border border-foreground/10 rounded-lg text-foreground/90 placeholder:text-foreground/30 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/30 transition-all"
-                      placeholder="Your full name"
+                      className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded text-sm text-foreground/90 placeholder:text-foreground/25 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/20 transition-all font-[family-name:var(--font-geist-mono)]"
+                      placeholder="Enter your name"
                     />
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label className="block text-sm text-foreground/50 mb-1">Email</label>
+                    <label className="block text-xs text-foreground/40 mb-1.5 font-[family-name:var(--font-geist-mono)]">EMAIL</label>
                     <input
                       type="email"
                       required
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-3 bg-foreground/5 border border-foreground/10 rounded-lg text-foreground/90 placeholder:text-foreground/30 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/30 transition-all"
+                      className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded text-sm text-foreground/90 placeholder:text-foreground/25 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/20 transition-all font-[family-name:var(--font-geist-mono)]"
                       placeholder="your@email.com"
                     />
                   </div>
 
-                  {/* Department / Year */}
+                  {/* Department */}
                   <div>
-                    <label className="block text-sm text-foreground/50 mb-1">Department / Year</label>
+                    <label className="block text-xs text-foreground/40 mb-1.5 font-[family-name:var(--font-geist-mono)]">DEPARTMENT / YEAR</label>
                     <input
                       type="text"
                       value={form.dept}
                       onChange={(e) => setForm({ ...form, dept: e.target.value })}
-                      className="w-full px-4 py-3 bg-foreground/5 border border-foreground/10 rounded-lg text-foreground/90 placeholder:text-foreground/30 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/30 transition-all"
+                      className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded text-sm text-foreground/90 placeholder:text-foreground/25 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/20 transition-all font-[family-name:var(--font-geist-mono)]"
                       placeholder="e.g. CSE, 3rd Year"
                     />
                   </div>
 
                   {/* Interests */}
                   <div>
-                    <label className="block text-sm text-foreground/50 mb-2">Areas of Interest</label>
+                    <label className="block text-xs text-foreground/40 mb-2 font-[family-name:var(--font-geist-mono)]">SELECT YOUR GUILD</label>
                     <div className="flex flex-wrap gap-2">
                       {interestOptions.map((interest) => (
                         <button
@@ -226,10 +294,10 @@ export default function Portal() {
                           type="button"
                           onClick={() => toggleInterest(interest)}
                           className={clsx(
-                            "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+                            "px-3 py-1.5 rounded text-[11px] font-medium transition-all duration-200 border font-[family-name:var(--font-geist-mono)]",
                             form.interests.includes(interest)
-                              ? "bg-cyan/20 text-cyan border-cyan/40"
-                              : "text-foreground/40 border-foreground/10 hover:border-foreground/30"
+                              ? "bg-cyan/15 text-cyan border-cyan/40"
+                              : "text-foreground/35 border-foreground/8 hover:border-foreground/25 hover:text-foreground/50"
                           )}
                         >
                           {interest}
@@ -241,10 +309,14 @@ export default function Portal() {
                   {/* Submit */}
                   <button
                     type="submit"
-                    className="w-full py-3 bg-cyan/10 border border-cyan/40 text-cyan rounded-lg font-medium hover:bg-cyan/20 transition-all duration-300 animate-pulse-cyan"
+                    className="w-full py-3 bg-cyan/10 border border-cyan/40 text-cyan rounded text-sm font-medium hover:bg-cyan/20 transition-all duration-300 animate-pulse-cyan font-[family-name:var(--font-space-grotesk)]"
                   >
-                    Submit Application →
+                    ENTER THE PORTAL →
                   </button>
+
+                  <p className="text-[9px] text-foreground/20 text-center font-[family-name:var(--font-geist-mono)]">
+                    By joining, you agree to the guild&apos;s code of conduct.
+                  </p>
                 </form>
               )}
             </div>
@@ -256,15 +328,13 @@ export default function Portal() {
       <footer className="relative border-t border-foreground/5 py-12">
         <div className="w-full px-5 sm:px-8 lg:px-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Logo */}
             <div className="text-center md:text-left">
-              <span className="text-xl font-bold text-cyan font-[family-name:var(--font-space-grotesk)]">
+              <span className="text-xl font-bold text-cyan font-[family-name:var(--font-space-grotesk)] glow-cyan">
                 CSAU
               </span>
-              <p className="text-xs text-foreground/30 mt-1">The Cyberpunk Realm</p>
+              <p className="text-xs text-foreground/30 mt-1">The Digital Realm</p>
             </div>
 
-            {/* Social */}
             <div className="flex items-center gap-4">
               {socials.map((s) => (
                 <a
@@ -278,8 +348,7 @@ export default function Portal() {
               ))}
             </div>
 
-            {/* Copyright */}
-            <p className="text-xs text-foreground/30">
+            <p className="text-[10px] text-foreground/25 font-[family-name:var(--font-geist-mono)] tracking-wider">
               © {new Date().getFullYear()} CSAU — Computer Society of Anna University
             </p>
           </div>

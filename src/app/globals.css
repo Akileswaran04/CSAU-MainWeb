@@ -16,6 +16,26 @@
   font-display: swap;
 }
 
+/* MADE Kenfolg — Bold condensed display font for headings & titles */
+@font-face {
+  font-family: 'Kenfolg';
+  src: url('/fonts/kenfolg/MADE Kenfolg v2 PERSONAL USE.otf') format('opentype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Creme Espana — Elegant serif for decorative accents & subtitles */
+@font-face {
+  font-family: 'Creme';
+  src: url('/fonts/creme/Creme Espana.woff2') format('woff2'),
+       url('/fonts/creme/Creme Espana.woff') format('woff'),
+       url('/fonts/creme/Creme Espana.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #0a0a12;
   --foreground: #e0e0e8;
@@ -40,9 +60,11 @@
   --color-bg-glass: var(--bg-glass);
   --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
-  --font-display: 'Centrion', var(--font-display);
+  --font-display: 'Kenfolg', 'Centrion', var(--font-display);
   --font-geist-sans: var(--font-body);
-  --font-space-grotesk: 'Centrion', var(--font-display);
+  --font-space-grotesk: 'Kenfolg', 'Centrion', var(--font-display);
+  --font-kenfolg: 'Kenfolg', sans-serif;
+  --font-creme: 'Creme', serif;
 }
 
 /* ===== Base =====
@@ -305,29 +327,272 @@ body {
   }
 }
 
-/* ===== Cinematic gate-open zoom =====
-   The page starts slightly zoomed-in behind the preloader and eases out
-   to scale(1) when the preloader begins its exit. */
-@media (prefers-reduced-motion: no-preference) {
-  #page-root {
-    transform: scale(1.045);
-    transform-origin: 50% 35%;
-    transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+
+/* ===== Holographic shimmer ===== */
+@keyframes holo-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.holo-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(0,240,255,0.06) 25%, rgba(255,0,170,0.04) 50%, rgba(0,240,255,0.06) 75%, transparent 100%);
+  background-size: 200% 100%;
+  animation: holo-shimmer 4s linear infinite;
+}
+
+/* ===== Portal swirl ===== */
+@keyframes portal-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes portal-spin-reverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes portal-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+/* ===== CPU core pulse ===== */
+@keyframes cpu-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.3), 0 0 60px rgba(0,240,255,0.1); }
+  50% { box-shadow: 0 0 40px rgba(0,240,255,0.5), 0 0 80px rgba(0,240,255,0.2), 0 0 120px rgba(0,240,255,0.05); }
+}
+.cpu-core-pulse { animation: cpu-pulse 3s ease-in-out infinite; }
+
+/* ===== Monitor scanline ===== */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.monitor-scanline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.015) 2px, rgba(0,240,255,0.015) 4px);
+  pointer-events: none;
+  z-index: 1;
+}
+.monitor-scanline::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(0,240,255,0.04), transparent);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ===== Floating animation variants ===== */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(0.5deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 4s ease-in-out infinite; }
+
+/* ===== Gate frame glow ===== */
+.gate-frame {
+  border: 2px solid rgba(0,240,255,0.15);
+  box-shadow: 0 0 30px rgba(0,240,255,0.08), inset 0 0 30px rgba(0,240,255,0.03);
+}
+
+/* ===== Data stream lines ===== */
+@keyframes data-stream {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ===== Crystal shimmer ===== */
+@keyframes crystal-shimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* ===== Neon flicker text (stronger variant) ===== */
+@keyframes neon-flicker-strong {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 7px var(--cyan),
+      0 0 10px var(--cyan),
+      0 0 21px var(--cyan),
+      0 0 42px var(--cyan),
+      0 0 80px var(--cyan);
+    opacity: 1;
   }
-  .csau-entered #page-root {
+  20%, 24%, 55% {
+    text-shadow: 0 0 4px var(--cyan);
+    opacity: 0.7;
+  }
+}
+.neon-flicker-strong {
+  animation: neon-flicker-strong 3s infinite alternate;
+}
+
+/* ===== Horizontal Gallery Animations ===== */
+@keyframes gallery-card-in {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) rotateY(-8deg) translateX(60px) scale(0.92);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) rotateY(0deg) translateX(0) scale(1);
+    filter: blur(0px);
+  }
+}
+.gallery-card-animate {
+  animation: gallery-card-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Text Reveal Animations ===== */
+@keyframes text-reveal-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) rotateX(-60deg);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+@keyframes text-reveal-clip {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0% 0 0);
+  }
+}
+.text-reveal-clip {
+  animation: text-reveal-clip 1s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* ===== Section Transition ===== */
+@keyframes section-morph {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+.section-morph-enter {
+  animation: section-morph 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Ambient Glow Pulse ===== */
+@keyframes ambient-glow {
+  0%, 100% {
+    opacity: 0.3;
     transform: scale(1);
   }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+.animate-ambient-glow {
+  animation: ambient-glow 4s ease-in-out infinite;
 }
 
-/* ===== Cyberpunk character silhouette ===== */
-@keyframes char-idle {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  50% { transform: translateY(-3px) scaleY(1.01); }
+/* ===== Circuit Trace Animation ===== */
+@keyframes circuit-trace {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
-.char-idle { animation: char-idle 3s ease-in-out infinite; }
 
-/* ===== Rain particles ===== */
-@keyframes rain-fall {
-  0% { transform: translateY(-100vh); }
-  100% { transform: translateY(100vh); }
+/* ===== Magnetic Hover (for cards) ===== */
+.magnetic-hover {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.magnetic-hover:hover {
+  transform: translateZ(20px) scale(1.02);
+}
+
+/* ===== Image Reveal Clip ===== */
+@keyframes image-reveal {
+  0% {
+    clip-path: polygon(50% 0%, 50% 0%, 50% 100%, 50% 100%);
+  }
+  100% {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+}
+.image-reveal {
+  animation: image-reveal 1.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* ===== Counter Animation ===== */
+@keyframes counter-glow {
+  0%, 100% { text-shadow: 0 0 10px currentColor; }
+  50% { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+}
+.counter-glow {
+  animation: counter-glow 2s ease-in-out infinite;
+}
+
+/* ===== Scroll Progress Bar ===== */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--magenta);
+  z-index: 9999;
+  transform-origin: left;
+  transition: transform 0.1s linear;
+}
+
+/* ===== Hero floating particles ===== */
+@keyframes float-particle {
+  0% { transform: translateY(0) translateX(0); opacity: 0.15; }
+  50% { transform: translateY(-15px) translateX(5px); opacity: 0.35; }
+  100% { transform: translateY(-30px) translateX(-3px); opacity: 0.1; }
+}
+
+/* ===== Scroll indicator dot bounce ===== */
+@keyframes scroll-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  50% { transform: translateY(6px); opacity: 0.7; }
+}
+
+/* ===== Preloader circuit animations ===== */
+@keyframes circuit-draw {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0% 0 0); }
+}
+@keyframes circuit-draw-v {
+  0% { clip-path: inset(0 0 100% 0); }
+  100% { clip-path: inset(0 0 0% 0); }
+}
+@keyframes node-pulse {
+  0% { opacity: 0.3; transform: scale(1); }
+  100% { opacity: 0.8; transform: scale(1.5); }
 }
