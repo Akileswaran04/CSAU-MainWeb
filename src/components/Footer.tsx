@@ -1,9 +1,14 @@
 import Link from "next/link";
-import { socialLinks } from "@/data/site";
 
-/* ============================================================================
-   FOOTER — the quiet end of the journey. Editorial, calm, minimal boxes.
-   ========================================================================== */
+/* ============================================================
+   FOOTER — Minimal, themed with cursor-character.html palette.
+   ============================================================ */
+
+const socialLinks = [
+  { name: "Instagram", icon: "instagram", href: "#" },
+  { name: "LinkedIn", icon: "linkedin", href: "#" },
+  { name: "GitHub", icon: "github", href: "#" },
+];
 
 const iconPaths: Record<string, string> = {
   instagram:
@@ -12,59 +17,27 @@ const iconPaths: Record<string, string> = {
     "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z",
   github:
     "M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z",
-  youtube:
-    "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
-  email:
-    "M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67ZM22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z",
 };
 
 export default function Footer() {
   return (
-    <footer className="relative border-t border-cyan/10 py-14 bg-[#090714]/70">
+    <footer className="relative border-t py-14" style={{ borderColor: "rgba(0,240,255,0.1)", background: "rgba(5,5,7,0.7)" }}>
       <div className="w-full px-5 sm:px-8 lg:px-12 max-w-6xl mx-auto">
-        <div className="grid gap-10 md:grid-cols-[1fr_auto_auto] md:gap-20">
-          {/* Mark + statement */}
+        <div className="grid gap-10 md:grid-cols-[1fr_auto] md:gap-20">
           <div>
-            <p className="text-3xl font-bold tracking-wider text-cyan font-[family-name:var(--font-display)] glow-cyan">
+            <p className="text-3xl font-bold tracking-wider glow-cyan" style={{ fontFamily: "'Zen Dots', sans-serif", color: "var(--cyan)" }}>
               CSAU
             </p>
-            <p className="mt-2 text-sm text-foreground/50 leading-relaxed max-w-xs">
-              Computer Society of Anna University
+            <p className="mt-2 text-sm leading-relaxed max-w-xs" style={{ color: "rgba(205,211,239,0.5)" }}>
+              Computer Science Association of the University, CEG
             </p>
-            <p className="mt-4 text-xs tracking-[0.25em] uppercase text-foreground/30 font-[family-name:var(--font-geist-mono)]">
-              FROM CEG TO THE DIGITAL WORLD
+            <p className="mt-4 text-xs tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.3)" }}>
+              CHENNAI, IN · EST. CEG
             </p>
           </div>
 
-          {/* Navigation */}
-          <nav aria-label="Footer">
-            <p className="text-[10px] tracking-[0.3em] uppercase text-foreground/30 font-[family-name:var(--font-geist-mono)] mb-4">
-              Navigation
-            </p>
-            <ul className="space-y-2 text-sm">
-              {[
-                { label: "About", href: "/about" },
-                { label: "Domains", href: "/#domains" },
-                { label: "Events", href: "/events" },
-                { label: "100 Days of Code", href: "/journey" },
-                { label: "Team", href: "/team" },
-                { label: "Join", href: "/join" },
-              ].map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className="neon-underline text-foreground/50 hover:text-cyan transition-colors"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* Connect */}
           <div>
-            <p className="text-[10px] tracking-[0.3em] uppercase text-foreground/30 font-[family-name:var(--font-geist-mono)] mb-4">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-4" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.3)" }}>
               Connect
             </p>
             <ul className="flex md:flex-col gap-4">
@@ -73,17 +46,12 @@ export default function Footer() {
                   <a
                     href={s.href}
                     aria-label={s.name}
-                    className="inline-flex items-center gap-2 text-foreground/40 hover:text-cyan transition-colors"
+                    className="inline-flex items-center gap-2 transition-colors"
+                    style={{ color: "rgba(205,211,239,0.4)" }}
                   >
-                    {s.icon !== "email" ? (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path d={iconPaths[s.icon]} />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                        <path d={iconPaths.email} />
-                      </svg>
-                    )}
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path d={iconPaths[s.icon]} />
+                    </svg>
                     <span className="hidden md:inline text-xs tracking-widest">{s.name}</span>
                   </a>
                 </li>
@@ -92,13 +60,12 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Baseline */}
-        <div className="mt-12 pt-6 border-t border-foreground/5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[10px] tracking-[0.25em] uppercase text-foreground/25 font-[family-name:var(--font-geist-mono)]">
-            © {new Date().getFullYear()} CSAU — Computer Society of Anna University
+        <div className="mt-12 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: "rgba(205,211,239,0.05)" }}>
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.25)" }}>
+            © {new Date().getFullYear()} CSAU — CEG
           </p>
-          <p className="text-[10px] tracking-[0.25em] uppercase text-foreground/25 font-[family-name:var(--font-geist-mono)]">
-            REALM STATUS / ONLINE · EST. CEG
+          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.25)" }}>
+            SYS ONLINE · REALM ACTIVE
           </p>
         </div>
       </div>

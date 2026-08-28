@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import SubpageShell from "@/components/SubpageShell";
-import People from "@/components/People";
+import TeamShowcasePage from "./TeamShowcasePage";
 
 export const metadata: Metadata = {
-  title: "The People | CSAU — Digital Realm",
+  title: "CSAU // Team — The People Behind the System",
   description:
-    "Technology is built by people — meet the minds behind CSAU, the Computer Society of Anna University.",
+    "Meet the pilots. The people behind CSAU's digital realm.",
 };
 
 export default function TeamPage() {
-  return (
-    <SubpageShell label="CONNECTING PEOPLE · SECTOR 06">
-      <People />
-    </SubpageShell>
-  );
+  return <TeamShowcasePage />;
 }
