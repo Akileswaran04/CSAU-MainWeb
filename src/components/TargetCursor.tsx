@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import "./TargetCursor.css";
@@ -8,6 +8,7 @@ import "./TargetCursor.css";
 
    Custom cursor: circle ring + 4 directional arrows + crosshair.
    Continuously rotates. Color is controlled externally via props.
+   Only renders after client mount to avoid hydration mismatch.
    ============================================================ */
 
 interface TargetCursorProps {
@@ -23,7 +24,7 @@ const TargetCursor = ({
 }: TargetCursorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const spinTl = useRef<gsap.core.Timeline | null>(null);
-  const colorRef = useRef(color);
+  const [mounted, setMounted] = useState(false);
 
   const isMobile = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -35,10 +36,13 @@ const TargetCursor = ({
     return (hasTouchScreen && isSmallScreen) || isMobileUA;
   }, []);
 
+  // Only render after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // React to color changes
   useEffect(() => {
-    colorRef.current = color;
-    // Update SVG stroke/fill attributes live
     if (!wrapperRef.current) return;
     const svgEls = wrapperRef.current.querySelectorAll("svg");
     svgEls.forEach((svg) => {
@@ -54,7 +58,7 @@ const TargetCursor = ({
   }, [color]);
 
   useEffect(() => {
-    if (isMobile || !wrapperRef.current) return;
+    if (!mounted || isMobile || !wrapperRef.current) return;
 
     const originalCursor = document.body.style.cursor;
     if (hideDefaultCursor) {
@@ -100,33 +104,27 @@ const TargetCursor = ({
       spinTl.current?.kill();
       document.body.style.cursor = originalCursor;
     };
-  }, [spinDuration, hideDefaultCursor, isMobile]);
+  }, [mounted, spinDuration, hideDefaultCursor, isMobile]);
 
-  if (isMobile || typeof document === "undefined") return null;
+  // Don't render anything on server or before mount
+  if (!mounted || isMobile || typeof document === "undefined") return null;
 
   return createPortal(
     <div ref={wrapperRef} className="target-reticle">
-      {/* Outer circle ring */}
       <svg className="reticle-ring" viewBox="0 0 48 48" fill="none">
         <circle cx="24" cy="24" r="20" stroke={color} strokeWidth="1.5" strokeDasharray="3 5" opacity="0.6" />
         <circle cx="24" cy="24" r="14" stroke={color} strokeWidth="1" opacity="0.3" />
       </svg>
-
-      {/* 4 triangular arrows */}
       <svg className="reticle-arrows" viewBox="0 0 48 48" fill="none">
         <polygon points="24,2 20,10 28,10" fill={color} opacity="0.8" />
         <polygon points="24,46 20,38 28,38" fill={color} opacity="0.8" />
         <polygon points="2,24 10,20 10,28" fill={color} opacity="0.8" />
         <polygon points="46,24 38,20 38,28" fill={color} opacity="0.8" />
       </svg>
-
-      {/* Crosshair */}
       <svg className="reticle-cross" viewBox="0 0 48 48" fill="none">
         <line x1="24" y1="19" x2="24" y2="29" stroke={color} strokeWidth="1.5" />
         <line x1="19" y1="24" x2="29" y2="24" stroke={color} strokeWidth="1.5" />
       </svg>
-
-      {/* Center dot */}
       <div className="reticle-dot" style={{ backgroundColor: color }} />
     </div>,
     document.body

@@ -143,29 +143,43 @@ export default function TeamPage() {
         aria-label="Toggle hover inversion"
         style={{
           position: "fixed",
-          top: 20,
+          top: 24,
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 200,
           fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.12em",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: inverted ? "#1a1b22" : "var(--on-surface, #1a1b22)",
-          background: inverted ? "rgba(255,255,255,0.92)" : "var(--surface-container-lowest, #fff)",
-          border: `1px solid ${inverted ? "rgba(0,0,0,0.18)" : "var(--outline-variant, #c7c6cb)"}`,
-          padding: "10px 22px",
+          color: inverted ? "#fff" : "var(--on-surface, #1a1b22)",
+          background: inverted ? "var(--primary, #121315)" : "var(--surface-container-lowest, #fff)",
+          border: `1.5px solid ${inverted ? "var(--primary, #121315)" : "var(--outline, #77767b)"}`,
+          padding: "12px 28px",
           borderRadius: 999,
           cursor: "pointer",
           boxShadow: inverted
-            ? "0 2px 8px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)"
-            : "0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)",
+            ? "0 4px 16px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)"
+            : "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
           transition: "all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
           backdropFilter: "blur(12px)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
         }}
       >
-        ↕ {inverted ? "INVERT HOVER" : "INVERT HOVER"}
+        <span
+          style={{
+            display: "inline-block",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: inverted ? "#4ade80" : "var(--outline-variant, #c7c6cb)",
+            transition: "background 0.3s ease",
+            boxShadow: inverted ? "0 0 6px rgba(74,222,128,0.5)" : "none",
+          }}
+        />
+        {inverted ? "SCROLL MODE" : "HOVER MODE"}
       </button>
 
       <div

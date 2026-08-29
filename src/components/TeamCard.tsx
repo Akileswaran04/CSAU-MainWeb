@@ -204,11 +204,11 @@ export default function TeamCard({
           display: block;
         }
         /* Hover mode: photo fades in via .open class */
-        .te-mode-hover .te-photo {
+        .te-mode-hover.te-card .te-photo {
           opacity: 0;
           transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s;
         }
-        .te-mode-hover .te-card.open .te-photo {
+        .te-mode-hover.te-card.open .te-photo {
           opacity: 1;
         }
 
@@ -239,27 +239,27 @@ export default function TeamCard({
           box-shadow: inset 2px 0 8px rgba(0, 0, 0, 0.15);
         }
         /* Hover mode: flaps animate via CSS transition */
-        .te-mode-hover .te-flap {
+        .te-mode-hover.te-card .te-flap {
           transition: transform 0.65s cubic-bezier(0.3, 0.7, 0.2, 1);
         }
-        .te-mode-hover .te-card.open .te-flap-l {
+        .te-mode-hover.te-card.open .te-flap-l {
           transform: rotateY(-145deg);
         }
-        .te-mode-hover .te-card.open .te-flap-r {
+        .te-mode-hover.te-card.open .te-flap-r {
           transform: rotateY(145deg);
         }
         /* Inverted mode: flaps driven by inline style (scroll), no CSS transition */
-        .te-mode-scroll .te-flap {
+        .te-mode-scroll.te-card .te-flap {
           transition: none;
         }
 
         /* Hover mode: bg brightens on open */
-        .te-mode-hover .te-bg {
+        .te-mode-hover.te-card .te-bg {
           opacity: 0.35;
           filter: grayscale(0.5) brightness(0.6);
           transition: opacity 0.5s ease, filter 0.5s ease;
         }
-        .te-mode-hover .te-card.open .te-bg {
+        .te-mode-hover.te-card.open .te-bg {
           opacity: 0.5;
           filter: grayscale(0.3) brightness(0.8);
         }
