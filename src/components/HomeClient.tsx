@@ -3,38 +3,32 @@
 import { useState, useCallback, useEffect } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
-import DescriptionPage from "./DescriptionPage";
+import HeroSection from "./HeroSection";
+import AboutSection from "./AboutSection";
 
 /* ============================================================
    HOME CLIENT — White Sculptural Tactility Flow
 
    1. BootPreloader (cursor draws diamond, types CSAU)
    2. LandingPage (clay rings, Sector034 CSAU, glitch, enter)
-   3. DescriptionPage (typewriter about CSAU)
+   3. Zoom transition → scrollable page:
+      - Hero section (full viewport)
+      - Scroll down reveals About Us section
 
-   On initial load: boot → landing → description
+   On initial load: boot → landing → scrollable page
    On re-navigation: skip boot, go straight to landing
    ============================================================ */
 
-type Phase = "boot" | "landing" | "description";
+type Phase = "boot" | "landing" | "content";
 
 export default function HomeClient() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
 
-  // Skip preloader on client-side navigation (after mount, no hydration mismatch)
+  // Skip preloader on client-side navigation
   useEffect(() => {
     if (sessionStorage.getItem("csau-boot-done")) {
       setPhase("landing");
-    }
-  }, []);
-
-  // Check if navigated with ?view=description — skip to description
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("view") === "description") {
-      setPhase("description");
-      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
@@ -46,13 +40,9 @@ export default function HomeClient() {
   const handleEnter = useCallback(() => {
     setZooming(true);
     setTimeout(() => {
-      setPhase("description");
+      setPhase("content");
       setZooming(false);
     }, 1300);
-  }, []);
-
-  const handleBack = useCallback(() => {
-    setPhase("landing");
   }, []);
 
   return (
@@ -76,8 +66,11 @@ export default function HomeClient() {
         </div>
       )}
 
-      {phase === "description" && (
-        <DescriptionPage onBack={handleBack} />
+      {phase === "content" && (
+        <div style={{ background: "var(--background)" }}>
+          <HeroSection />
+          <AboutSection />
+        </div>
       )}
     </>
   );
