@@ -6,15 +6,14 @@ import LandingPage from "./LandingPage";
 import DescriptionPage from "./DescriptionPage";
 
 /* ============================================================
-   HOME CLIENT — Flow from cursor-character.html:
-   
-   1. BootPreloader (SVG cursor draws diamond, types CSAU)
-   2. LandingPage (rotating rings, brand text, enter button)
+   HOME CLIENT — Dark System View Flow
+
+   1. BootPreloader (cursor draws diamond, types CSAU)
+   2. LandingPage (neon rings, Sector034 CSAU, glitch, enter)
    3. DescriptionPage (typewriter about CSAU)
-   
-   Transitions:
-   - Boot → Landing: fade out preloader
-   - Landing → Description: zoom-into-circle effect
+
+   On initial load: boot → landing → description
+   On re-navigation: skip boot, go straight to landing
    ============================================================ */
 
 type Phase = "boot" | "landing" | "description";
@@ -23,22 +22,28 @@ export default function HomeClient() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
 
-  // Check if navigated with ?view=description — skip boot and landing
+  // Skip preloader on client-side navigation (after mount, no hydration mismatch)
+  useEffect(() => {
+    if (sessionStorage.getItem("csau-boot-done")) {
+      setPhase("landing");
+    }
+  }, []);
+
+  // Check if navigated with ?view=description — skip to description
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("view") === "description") {
       setPhase("description");
-      // Clean the URL so refresh doesn't replay it
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
   const handleBootComplete = useCallback(() => {
+    sessionStorage.setItem("csau-boot-done", "1");
     setPhase("landing");
   }, []);
 
   const handleEnter = useCallback(() => {
-    // Zoom-into-circle transition (from cursor-character.html)
     setZooming(true);
     setTimeout(() => {
       setPhase("description");
@@ -52,12 +57,10 @@ export default function HomeClient() {
 
   return (
     <>
-      {/* Boot preloader */}
       {phase === "boot" && (
         <CursorBootPreloader onComplete={handleBootComplete} />
       )}
 
-      {/* Landing page */}
       {phase === "landing" && (
         <div
           className="fixed inset-0"
@@ -66,14 +69,13 @@ export default function HomeClient() {
             transition: "transform 1.3s cubic-bezier(.7,0,.15,1), opacity 1.1s ease",
             transform: zooming ? "scale(9)" : "scale(1)",
             opacity: zooming ? 0 : 1,
-            backgroundColor: zooming ? "var(--surface)" : undefined,
+            backgroundColor: zooming ? "#050507" : undefined,
           }}
         >
           <LandingPage onEnter={handleEnter} />
         </div>
       )}
 
-      {/* Description page */}
       {phase === "description" && (
         <DescriptionPage onBack={handleBack} />
       )}

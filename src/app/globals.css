@@ -135,6 +135,15 @@
   --font-creme: 'Plus Jakarta Sans', sans-serif;
 }
 
+/* ===== Custom Font: Sector 034 ===== */
+@font-face {
+  font-family: 'Sector034';
+  src: url('/fonts/sector-034/sector_034.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ===== Base ===== */
 html {
   scroll-behavior: auto;
@@ -199,50 +208,206 @@ body {
   text-shadow: 0 0 10px rgba(255, 43, 143, 0.2), 0 0 30px rgba(255, 43, 143, 0.08);
 }
 
-/* ===== Glitch text ===== */
-@keyframes glitchShake {
-  0% { transform: translate(0,0); }
-  20% { transform: translate(-2px,1px); }
-  40% { transform: translate(2px,-1px); }
-  60% { transform: translate(-1px,0); }
-  80% { transform: translate(1px,1px); }
-  100% { transform: translate(0,0); }
+/* ===== Digital System Glitch =====
+   Horizontal slice displacement + RGB color split + scanline artifacts.
+   Looks like a corrupted CRT / digital signal artifact.
+   ================================================== */
+
+/* ── Slice 1: red channel, random horizontal bands ── */
+@keyframes glitchSlice1 {
+  0%   { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  5%   { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+
+  7%   { clip-path: inset(6% 0 82% 0); transform: translateX(-30px); }
+  9%   { clip-path: inset(6% 0 82% 0); transform: translateX(40px); }
+  11%  { clip-path: inset(22% 0 56% 0); transform: translateX(-50px); }
+  13%  { clip-path: inset(22% 0 56% 0); transform: translateX(35px); }
+  15%  { clip-path: inset(44% 0 34% 0); transform: translateX(60px); }
+  17%  { clip-path: inset(44% 0 34% 0); transform: translateX(-25px); }
+  19%  { clip-path: inset(68% 0 12% 0); transform: translateX(-45px); }
+  21%  { clip-path: inset(68% 0 12% 0); transform: translateX(55px); }
+  23%  { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+
+  38%  { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  40%  { clip-path: inset(10% 0 78% 0); transform: translateX(45px); }
+  42%  { clip-path: inset(10% 0 78% 0); transform: translateX(-60px); }
+  44%  { clip-path: inset(36% 0 42% 0); transform: translateX(-40px); }
+  46%  { clip-path: inset(36% 0 42% 0); transform: translateX(55px); }
+  48%  { clip-path: inset(58% 0 20% 0); transform: translateX(70px); }
+  50%  { clip-path: inset(58% 0 20% 0); transform: translateX(-35px); }
+  52%  { clip-path: inset(78% 0 2% 0);  transform: translateX(-50px); }
+  54%  { clip-path: inset(78% 0 2% 0);  transform: translateX(40px); }
+  56%  { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+
+  70%  { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  72%  { clip-path: inset(15% 0 72% 0); transform: translateX(55px); }
+  74%  { clip-path: inset(15% 0 72% 0); transform: translateX(-40px); }
+  76%  { clip-path: inset(50% 0 28% 0); transform: translateX(-65px); }
+  78%  { clip-path: inset(50% 0 28% 0); transform: translateX(30px); }
+  80%  { clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  100% { clip-path: inset(0 0 100% 0); transform: translateX(0); }
 }
-@keyframes glitchTop {
-  0% { clip-path: inset(0 0 82% 0); transform: translate(0,0); }
-  30% { clip-path: inset(10% 0 60% 0); transform: translate(-4px,-2px); }
-  60% { clip-path: inset(40% 0 30% 0); transform: translate(4px,1px); }
-  100% { clip-path: inset(0 0 92% 0); transform: translate(0,0); }
+
+/* ── Slice 2: blue channel, offset timing ── */
+@keyframes glitchSlice2 {
+  0%   { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  6%   { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+
+  8%   { clip-path: inset(58% 0 18% 0); transform: translateX(50px); }
+  10%  { clip-path: inset(58% 0 18% 0); transform: translateX(-60px); }
+  12%  { clip-path: inset(34% 0 44% 0); transform: translateX(-45px); }
+  14%  { clip-path: inset(34% 0 44% 0); transform: translateX(55px); }
+  16%  { clip-path: inset(12% 0 76% 0); transform: translateX(40px); }
+  18%  { clip-path: inset(12% 0 76% 0); transform: translateX(-50px); }
+  20%  { clip-path: inset(76% 0 4% 0);  transform: translateX(-35px); }
+  22%  { clip-path: inset(76% 0 4% 0);  transform: translateX(60px); }
+  24%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+
+  42%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  44%  { clip-path: inset(42% 0 36% 0); transform: translateX(-55px); }
+  46%  { clip-path: inset(42% 0 36% 0); transform: translateX(45px); }
+  48%  { clip-path: inset(66% 0 14% 0); transform: translateX(65px); }
+  50%  { clip-path: inset(66% 0 14% 0); transform: translateX(-40px); }
+  52%  { clip-path: inset(8% 0 80% 0);  transform: translateX(-55px); }
+  54%  { clip-path: inset(8% 0 80% 0);  transform: translateX(50px); }
+  56%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+
+  68%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  70%  { clip-path: inset(26% 0 52% 0); transform: translateX(40px); }
+  72%  { clip-path: inset(26% 0 52% 0); transform: translateX(-55px); }
+  74%  { clip-path: inset(60% 0 22% 0); transform: translateX(-30px); }
+  76%  { clip-path: inset(60% 0 22% 0); transform: translateX(65px); }
+  78%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  100% { clip-path: inset(100% 0 0 0); transform: translateX(0); }
 }
-@keyframes glitchBottom {
-  0% { clip-path: inset(85% 0 0 0); transform: translate(0,0); }
-  30% { clip-path: inset(55% 0 15% 0); transform: translate(4px,2px); }
-  60% { clip-path: inset(20% 0 45% 0); transform: translate(-4px,-1px); }
-  100% { clip-path: inset(90% 0 0 0); transform: translate(0,0); }
+
+/* ── Slice 3: extra mid-layer, greenish tint ── */
+@keyframes glitchSlice3 {
+  0%   { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  9%   { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+
+  11%  { clip-path: inset(18% 0 64% 0); transform: translateX(35px); }
+  13%  { clip-path: inset(18% 0 64% 0); transform: translateX(-50px); }
+  15%  { clip-path: inset(50% 0 28% 0); transform: translateX(-40px); }
+  17%  { clip-path: inset(50% 0 28% 0); transform: translateX(55px); }
+  19%  { clip-path: inset(80% 0 2% 0);  transform: translateX(30px); }
+  21%  { clip-path: inset(80% 0 2% 0);  transform: translateX(-45px); }
+  23%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+
+  44%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  46%  { clip-path: inset(30% 0 48% 0); transform: translateX(-45px); }
+  48%  { clip-path: inset(30% 0 48% 0); transform: translateX(60px); }
+  50%  { clip-path: inset(70% 0 10% 0); transform: translateX(50px); }
+  52%  { clip-path: inset(70% 0 10% 0); transform: translateX(-35px); }
+  54%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  100% { clip-path: inset(100% 0 0 0); transform: translateX(0); }
 }
-.glitching {
-  animation: glitchShake .38s steps(2,end) 1;
+
+/* ── RGB channel split (text-shadow) ── */
+@keyframes glitchRGB {
+  0%   { text-shadow: none; }
+  5%   { text-shadow: none; }
+  7%   { text-shadow: -12px 0 rgba(186,26,26,0.7), 12px 0 rgba(0,80,220,0.6); }
+  11%  { text-shadow: 15px 0 rgba(186,26,26,0.6), -15px 0 rgba(0,80,220,0.7); }
+  15%  { text-shadow: -8px 0 rgba(186,26,26,0.8), 8px 0 rgba(0,80,220,0.5); }
+  19%  { text-shadow: 10px 0 rgba(186,26,26,0.5), -10px 0 rgba(0,80,220,0.6); }
+  23%  { text-shadow: none; }
+  38%  { text-shadow: none; }
+  40%  { text-shadow: -18px 0 rgba(186,26,26,0.7), 18px 0 rgba(0,80,220,0.6); }
+  44%  { text-shadow: 14px 0 rgba(186,26,26,0.8), -14px 0 rgba(0,80,220,0.7); }
+  48%  { text-shadow: -10px 0 rgba(186,26,26,0.6), 10px 0 rgba(0,80,220,0.5); }
+  52%  { text-shadow: 16px 0 rgba(186,26,26,0.5), -16px 0 rgba(0,80,220,0.6); }
+  56%  { text-shadow: none; }
+  70%  { text-shadow: none; }
+  72%  { text-shadow: -14px 0 rgba(186,26,26,0.7), 14px 0 rgba(0,80,220,0.6); }
+  76%  { text-shadow: 12px 0 rgba(186,26,26,0.6), -12px 0 rgba(0,80,220,0.7); }
+  80%  { text-shadow: none; }
+  100% { text-shadow: none; }
 }
-.glitching::before,
-.glitching::after {
+
+/* ── Horizontal bar artifacts (noise lines) ── */
+@keyframes glitchBars {
+  0%   { opacity: 0; }
+  5%   { opacity: 0; }
+  7%   { opacity: 1; }
+  11%  { opacity: 1; }
+  13%  { opacity: 0; }
+  15%  { opacity: 1; }
+  19%  { opacity: 1; }
+  23%  { opacity: 0; }
+  38%  { opacity: 0; }
+  40%  { opacity: 1; }
+  46%  { opacity: 1; }
+  48%  { opacity: 0; }
+  50%  { opacity: 1; }
+  54%  { opacity: 1; }
+  56%  { opacity: 0; }
+  70%  { opacity: 0; }
+  72%  { opacity: 1; }
+  76%  { opacity: 1; }
+  78%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* --- Per-character glitch --- */
+.glitch-char {
+  position: relative;
+  display: inline-block;
+}
+
+/* When parent has .glitching, each char gets its own RGB + slice layers */
+.glitching .glitch-char {
+  animation: glitchRGB .3s steps(2) 1;
+}
+.glitching .glitch-char::before {
   content: attr(data-text);
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   overflow: hidden;
-  color: var(--on-surface);
-}
-.glitching::before {
-  color: var(--primary-container);
+  color: rgba(186, 26, 26, 0.8);
   mix-blend-mode: multiply;
-  animation: glitchTop .38s steps(2,end) 1;
+  animation: glitchSlice1 .3s steps(2) 1;
+  pointer-events: none;
 }
-.glitching::after {
-  color: var(--surface-container-high);
+.glitching .glitch-char::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+  color: rgba(0, 80, 220, 0.7);
   mix-blend-mode: multiply;
-  animation: glitchBottom .38s steps(2,end) 1;
+  animation: glitchSlice2 .3s steps(2) 1;
+  pointer-events: none;
 }
+
+/* Stagger each character's glitch slightly for organic feel */
+.glitching .glitch-char:nth-child(1) { animation-delay: 0s; }
+.glitching .glitch-char:nth-child(1)::before { animation-delay: 0.02s; }
+.glitching .glitch-char:nth-child(1)::after { animation-delay: 0.04s; }
+
+.glitching .glitch-char:nth-child(2) { animation-delay: 0.03s; }
+.glitching .glitch-char:nth-child(2)::before { animation-delay: 0.05s; }
+.glitching .glitch-char:nth-child(2)::after { animation-delay: 0.01s; }
+
+.glitching .glitch-char:nth-child(3) { animation-delay: 0.01s; }
+.glitching .glitch-char:nth-child(3)::before { animation-delay: 0.04s; }
+.glitching .glitch-char:nth-child(3)::after { animation-delay: 0.06s; }
+
+.glitching .glitch-char:nth-child(4) { animation-delay: 0.05s; }
+.glitching .glitch-char:nth-child(4)::before { animation-delay: 0.01s; }
+.glitching .glitch-char:nth-child(4)::after { animation-delay: 0.03s; }
+
+.glitching .glitch-char:nth-child(5) { animation-delay: 0.02s; }
+.glitching .glitch-char:nth-child(5)::before { animation-delay: 0.06s; }
+.glitching .glitch-char:nth-child(5)::after { animation-delay: 0.02s; }
+
+.glitching .glitch-char:nth-child(6) { animation-delay: 0.04s; }
+.glitching .glitch-char:nth-child(6)::before { animation-delay: 0.03s; }
+.glitching .glitch-char:nth-child(6)::after { animation-delay: 0.05s; }
 
 /* ===== Ring spin ===== */
 @keyframes spin {

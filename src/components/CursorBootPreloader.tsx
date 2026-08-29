@@ -3,19 +3,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
 /* ============================================================
-   CURSOR BOOT PRELOADER — Sculptural Tactility version
+   CURSOR BOOT PRELOADER — Dark System View
 
-   Animation sequence:
    1. Cursor appears with "INIT" label
-   2. Draws a diamond shape with SVG lines
+   2. Draws a diamond shape with SVG lines (neon cyan)
    3. Types "CSAU" letter by letter with click effects
    4. Progress counter fills to 100%
    5. Stage fades out → content reveals
 
-   Uses direct DOM manipulation during animation (no React state
-   updates in the hot loop) for frame-perfect cursor movement.
-
-   Light theme: subtle dark charcoal on off-white surface.
+   Dark background, scanlines, neon accents.
    ============================================================ */
 
 interface CursorBootPreloaderProps {
@@ -76,7 +72,7 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
   const addClickFX = useCallback(() => {
     if (!stageRef.current) return;
     const ring = document.createElement("div");
-    ring.style.cssText = `position:absolute;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--primary);left:${cxRef.current}px;top:${cyRef.current}px;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 10px rgba(26,27,34,0.15);animation:bootClickPulse .55s ease-out forwards;`;
+    ring.style.cssText = `position:absolute;width:8px;height:8px;border-radius:50%;border:1.5px solid #00f0ff;left:${cxRef.current}px;top:${cyRef.current}px;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 10px #00f0ff;animation:bootClickPulse .55s ease-out forwards;`;
     stageRef.current.appendChild(ring);
     setTimeout(() => ring.remove(), 600);
   }, []);
@@ -88,9 +84,9 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
         const path = document.createElementNS(SVGNS, "path");
         path.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
         path.setAttribute("fill", "none");
-        path.setAttribute("stroke", "var(--primary)");
+        path.setAttribute("stroke", "#00f0ff");
         path.setAttribute("stroke-width", "1.6");
-        path.style.opacity = "0.6";
+        path.style.filter = "drop-shadow(0 0 5px rgba(0,240,255,.8))";
         path.style.strokeDasharray = "1";
         path.style.strokeDashoffset = "1";
         path.style.vectorEffect = "non-scaling-stroke";
@@ -143,8 +139,8 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
       if (svgRef.current) {
         const poly = document.createElementNS(SVGNS, "polygon");
         poly.setAttribute("points", pts.map((p) => p.join(",")).join(" "));
-        poly.setAttribute("fill", "rgba(26,27,34,0.03)");
-        poly.setAttribute("stroke", "var(--primary)");
+        poly.setAttribute("fill", "rgba(0,240,255,.06)");
+        poly.setAttribute("stroke", "#00f0ff");
         poly.setAttribute("stroke-width", "1.2");
         poly.style.opacity = "0";
         svgRef.current.appendChild(poly);
@@ -208,7 +204,6 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
     };
 
     run();
-
     return () => { cancelledRef.current = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -229,140 +224,76 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
   return (
     <>
       <style>{`
+        @font-face {
+          font-family: 'Sector034';
+          src: url('/fonts/sector-034/sector_034.ttf') format('truetype');
+          font-weight: 400;
+          font-style: normal;
+          font-display: swap;
+        }
         @keyframes bootClickPulse { 0%{width:8px;height:8px;opacity:1} 100%{width:64px;height:64px;opacity:0} }
         .boot-char { opacity:0; transform:translateY(14px); transition: opacity .25s, transform .25s, color .25s; }
-        .boot-char-filled { color:var(--primary) !important; -webkit-text-stroke:1.5px var(--primary-container) !important; text-shadow:0 0 26px rgba(26,27,34,0.15) !important; }
+        .boot-char-filled { color:#f2f4ff !important; -webkit-text-stroke:1.5px #00f0ff !important; text-shadow:0 0 26px rgba(0,240,255,.85),0 0 60px rgba(0,240,255,.4) !important; }
       `}</style>
       <div
         ref={stageRef}
         className="fixed inset-0 overflow-hidden"
         style={{
           zIndex: 9999,
-          background: "var(--surface)",
+          background: "radial-gradient(ellipse at 50% 40%,#17102b 0%,transparent 60%),repeating-linear-gradient(135deg,#0a0b16 0 2px,#050507 2px 90px),repeating-linear-gradient(45deg,#0a0b16 0 2px,#050507 2px 90px),#050507",
           cursor: "none",
         }}
         role="dialog"
         aria-label="Loading CSAU"
         aria-modal="true"
       >
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--outline-variant) 1px, transparent 1px)",
-            backgroundSize: "120px 120px",
-            opacity: 0.1,
-          }}
-        />
+        {/* Scanlines */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "repeating-linear-gradient(to bottom,rgba(0,240,255,.03) 0px,rgba(0,240,255,.03) 1px,transparent 1px,transparent 3px)", mixBlendMode: "screen" }} />
+        {/* Vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 220px 40px #020103" }} />
+
+        {/* Corners */}
+        {[{ top: "6%", left: "6%" }, { top: "6%", right: "6%" }, { bottom: "6%", left: "6%" }, { bottom: "6%", right: "6%" }].map((pos, i) => (
+          <div key={i} className="absolute pointer-events-none" style={{ width: 70, height: 70, opacity: 0.5, ...pos }}>
+            <span className="absolute" style={{ width: 5, height: 5, background: "#00f0ff", boxShadow: "0 0 6px #00f0ff", top: i < 2 ? 0 : undefined, bottom: i >= 2 ? 0 : undefined, left: i % 2 === 0 ? 0 : undefined, right: i % 2 === 1 ? 0 : undefined }} />
+            <span className="absolute" style={{ width: 5, height: 5, background: "#00f0ff", boxShadow: "0 0 6px #00f0ff", top: i < 2 ? 0 : undefined, bottom: i >= 2 ? 0 : undefined, left: i % 2 === 0 ? 16 : undefined, right: i % 2 === 1 ? 16 : undefined }} />
+          </div>
+        ))}
 
         {/* SVG canvas */}
         <svg ref={svgRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 2 }} />
 
         {/* CSAU word */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
-          <div
-            ref={wordRef}
-            className="flex"
-            style={{
-              fontFamily: "'Syne', sans-serif",
-              fontWeight: 800,
-              fontSize: "clamp(50px, 12vw, 180px)",
-              letterSpacing: "-0.02em",
-              color: "transparent",
-              WebkitTextStroke: "1.5px var(--primary)",
-            }}
-          >
+          <div ref={wordRef} className="flex" style={{ fontFamily: "'Sector034', sans-serif", fontWeight: 400, fontSize: "clamp(50px,12vw,180px)", letterSpacing: ".08em", color: "transparent", WebkitTextStroke: "1.5px rgba(0,240,255,.9)", textShadow: "0 0 40px rgba(0,240,255,.35)" }}>
             {"CSAU".split("").map((ch, i) => (
-              <span key={i} className="boot-char inline-block" style={{ WebkitTextStroke: "1.5px var(--primary)" }}>{ch}</span>
+              <span key={i} className="boot-char inline-block" style={{ WebkitTextStroke: "1.5px rgba(0,240,255,.9)" }}>{ch}</span>
             ))}
           </div>
         </div>
 
         {/* Caret line */}
-        <div
-          ref={caretLineRef}
-          className="absolute left-1/2 text-center pointer-events-none"
-          style={{
-            bottom: "32%",
-            transform: "translateX(-50%)",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 12,
-            fontWeight: 500,
-            letterSpacing: "0.1em",
-            color: "var(--outline)",
-            opacity: 0,
-            transition: "opacity .5s",
-            zIndex: 3,
-          }}
-        >
+        <div ref={caretLineRef} className="absolute left-1/2 text-center pointer-events-none" style={{ bottom: "32%", transform: "translateX(-50%)", fontFamily: "'Plus Jakarta Sans', monospace", fontSize: 12, letterSpacing: ".25em", color: "#5c6190", opacity: 0, transition: "opacity .5s", zIndex: 3 }}>
           COMPUTER SCIENCE ASSOCIATION // CEG
         </div>
 
         {/* Progress */}
-        <div
-          className="absolute left-1/2 pointer-events-none"
-          style={{
-            bottom: "6%",
-            transform: "translateX(-50%)",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 11,
-            fontWeight: 500,
-            color: "var(--outline)",
-            letterSpacing: "0.1em",
-            zIndex: 3,
-          }}
-        >
-          SYSTEM DRAW <span ref={pctRef} style={{ color: "var(--primary)", fontWeight: 600 }}>000</span>%
+        <div className="absolute left-1/2 pointer-events-none" style={{ bottom: "6%", transform: "translateX(-50%)", fontFamily: "'Plus Jakarta Sans', monospace", fontSize: 11, color: "#5c6190", letterSpacing: ".2em", zIndex: 3 }}>
+          SYSTEM DRAW <span ref={pctRef} style={{ color: "#00f0ff" }}>000</span>%
         </div>
 
         {/* Skip */}
-        <button
-          onClick={handleSkip}
-          className="absolute pointer-events-auto transition-colors"
-          style={{
-            bottom: "6%",
-            right: "6%",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            color: "var(--outline)",
-            border: "1px solid var(--outline-variant)",
-            padding: "6px 14px",
-            borderRadius: 999,
-            background: "var(--surface-container-lowest)",
-            cursor: "pointer",
-            zIndex: 3,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary)"; e.currentTarget.style.borderColor = "var(--primary)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--outline)"; e.currentTarget.style.borderColor = "var(--outline-variant)"; }}
-        >
+        <button onClick={handleSkip} className="absolute pointer-events-auto transition-colors" style={{ bottom: "6%", right: "6%", fontFamily: "'Plus Jakarta Sans', monospace", fontSize: 10, letterSpacing: ".08em", color: "#5c6190", border: "1px solid #2a2d45", padding: "6px 12px", background: "rgba(10,11,22,.6)", cursor: "pointer", zIndex: 3 }} onMouseEnter={(e) => { e.currentTarget.style.color = "#00f0ff"; e.currentTarget.style.borderColor = "#00f0ff"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#5c6190"; e.currentTarget.style.borderColor = "#2a2d45"; }}>
           SKIP INTRO »
         </button>
 
         {/* Cursor */}
         <div ref={cursorRef} className="absolute top-0 left-0 pointer-events-none" style={{ zIndex: 10, width: 0, height: 0 }}>
           <svg width="26" height="26" viewBox="0 0 26 26" style={{ position: "absolute", top: -2, left: -2, overflow: "visible" }}>
-            <circle cx="13" cy="13" r="11" fill="none" stroke="var(--primary)" strokeWidth="1.4" opacity=".4" />
-            <path d="M4 3 L4 20 L9 15.5 L12.5 22 L15.5 20.5 L12 14 L19 14 Z" fill="var(--on-surface)" stroke="var(--primary)" strokeWidth="1" />
+            <circle cx="13" cy="13" r="11" fill="none" stroke="#00f0ff" strokeWidth="1.4" opacity=".55" />
+            <path d="M4 3 L4 20 L9 15.5 L12.5 22 L15.5 20.5 L12 14 L19 14 Z" fill="#f2f4ff" stroke="#00f0ff" strokeWidth="1" style={{ filter: "drop-shadow(0 0 6px #00f0ff)" }} />
           </svg>
-          <div
-            ref={labelRef}
-            className="absolute whitespace-nowrap"
-            style={{
-              left: 18,
-              top: 16,
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 10,
-              fontWeight: 600,
-              color: "var(--primary)",
-              letterSpacing: "0.1em",
-              opacity: 0.8,
-            }}
-          >
-            READY
-          </div>
+          <div ref={labelRef} className="absolute whitespace-nowrap" style={{ left: 18, top: 16, fontFamily: "'Plus Jakarta Sans', monospace", fontSize: 10, color: "#00f0ff", letterSpacing: ".1em", opacity: 0.85, textShadow: "0 0 6px #00f0ff" }}>READY</div>
         </div>
       </div>
     </>

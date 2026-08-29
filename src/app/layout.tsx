@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import NavButton from "@/components/NavButton";
 import "./globals.css";
 
 const syne = Syne({
@@ -37,7 +38,10 @@ export default function RootLayout({
       lang="en"
       className={`${syne.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <NavButton />
+        {children}
+      </body>
     </html>
   );
 }
