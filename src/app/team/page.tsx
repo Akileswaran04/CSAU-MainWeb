@@ -107,7 +107,7 @@ export default function TeamPage() {
           trigger: el,
           start: "top 95%",
           end: "top 35%",
-          scrub: 0.6,
+          scrub: 1.5,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },
