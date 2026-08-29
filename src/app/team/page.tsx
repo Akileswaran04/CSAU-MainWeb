@@ -105,9 +105,9 @@ export default function TeamPage() {
       cardRefsMap.current.forEach((el, key) => {
         const st = ScrollTrigger.create({
           trigger: el,
-          start: "top 80%",
-          end: "top 20%",
-          scrub: 0.8,
+          start: "top 95%",
+          end: "top 55%",
+          scrub: 0.4,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },
