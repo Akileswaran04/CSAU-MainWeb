@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" width="600" height="900">
+  <defs>
+    <filter id="emboss" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+      <feOffset in="blur" dx="1" dy="1" result="offsetLight"/>
+      <feOffset in="blur" dx="-1" dy="-1" result="offsetDark"/>
+      <feFlood flood-color="#222" flood-opacity="0.6" result="darkColor"/>
+      <feFlood flood-color="#333" flood-opacity="0.3" result="lightColor"/>
+      <feComposite in="darkColor" in2="offsetDark" operator="in" result="shadow"/>
+      <feComposite in="lightColor" in2="offsetLight" operator="in" result="highlight"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="highlight"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="600" height="900" fill="url(#vignette)"/>
+  <!-- Ornamental pattern group -->
+  <g filter="url(#emboss)" fill="none" stroke="#1e1e1e" stroke-width="1.5" opacity="0.9">
+    <!-- Central medallion -->
+    <circle cx="300" cy="450" r="60" stroke-width="2"/>
+    <circle cx="300" cy="450" r="45" stroke-width="1.5"/>
+    <circle cx="300" cy="450" r="20" stroke-width="1"/>
+    <!-- Top scrollwork -->
+    <path d="M300,390 C300,350 260,320 240,290 C220,260 230,230 260,220 C290,210 300,240 300,260"/>
+    <path d="M300,390 C300,350 340,320 360,290 C380,260 370,230 340,220 C310,210 300,240 300,260"/>
+    <!-- Bottom scrollwork -->
+    <path d="M300,510 C300,550 260,580 240,610 C220,640 230,670 260,680 C290,690 300,660 300,640"/>
+    <path d="M300,510 C300,550 340,580 360,610 C380,640 370,670 340,680 C310,690 300,660 300,640"/>
+    <!-- Left scrollwork -->
+    <path d="M240,450 C200,450 170,420 150,390 C130,360 140,330 170,320 C200,310 220,340 230,360"/>
+    <path d="M240,450 C200,450 170,480 150,510 C130,540 140,570 170,580 C200,590 220,560 230,540"/>
+    <!-- Right scrollwork -->
+    <path d="M360,450 C400,450 430,420 450,390 C470,360 460,330 430,320 C400,310 380,340 370,360"/>
+    <path d="M360,450 C400,450 430,480 450,510 C470,540 460,570 430,580 C400,590 380,560 370,540"/>
+    <!-- Upper swirls -->
+    <path d="M220,200 C180,160 160,120 200,100 C240,80 270,110 260,150 C250,190 220,200 220,200"/>
+    <path d="M380,200 C420,160 440,120 400,100 C360,80 330,110 340,150 C350,190 380,200 380,200"/>
+    <!-- Lower swirls -->
+    <path d="M220,700 C180,740 160,780 200,800 C240,820 270,790 260,750 C250,710 220,700 220,700"/>
+    <path d="M380,700 C420,740 440,780 400,800 C360,820 330,790 340,750 C350,710 380,700 380,700"/>
+    <!-- Connecting curves -->
+    <path d="M260,220 C220,250 190,290 180,330" stroke-width="1"/>
+    <path d="M340,220 C380,250 410,290 420,330" stroke-width="1"/>
+    <path d="M260,680 C220,650 190,610 180,570" stroke-width="1"/>
+    <path d="M340,680 C380,650 410,610 420,570" stroke-width="1"/>
+    <!-- Leaf accents -->
+    <path d="M200,160 C180,140 170,110 190,100" stroke-width="0.8"/>
+    <path d="M400,160 C420,140 430,110 410,100" stroke-width="0.8"/>
+    <path d="M200,740 C180,760 170,790 190,800" stroke-width="0.8"/>
+    <path d="M400,740 C420,760 430,790 410,800" stroke-width="0.8"/>
+    <!-- Corner flourishes -->
+    <path d="M80,80 C120,60 160,80 140,120 C120,160 80,140 80,80" stroke-width="0.8"/>
+    <path d="M520,80 C480,60 440,80 460,120 C480,160 520,140 520,80" stroke-width="0.8"/>
+    <path d="M80,820 C120,840 160,820 140,780 C120,740 80,760 80,820" stroke-width="0.8"/>
+    <path d="M520,820 C480,840 440,820 460,780 C480,740 520,760 520,820" stroke-width="0.8"/>
+    <!-- Decorative dots -->
+    <circle cx="300" cy="180" r="3" fill="#1a1a1a"/>
+    <circle cx="300" cy="720" r="3" fill="#1a1a1a"/>
+    <circle cx="160" cy="450" r="3" fill="#1a1a1a"/>
+    <circle cx="440" cy="450" r="3" fill="#1a1a1a"/>
+    <circle cx="200" cy="280" r="2" fill="#1a1a1a"/>
+    <circle cx="400" cy="280" r="2" fill="#1a1a1a"/>
+    <circle cx="200" cy="620" r="2" fill="#1a1a1a"/>
+    <circle cx="400" cy="620" r="2" fill="#1a1a1a"/>
+  </g>
+  <!-- Subtle grain overlay -->
+  <rect width="600" height="900" fill="url(#vignette)" opacity="0.15"/>
+</svg>

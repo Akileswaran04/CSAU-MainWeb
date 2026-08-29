@@ -13,7 +13,7 @@ import { useRef, useCallback } from "react";
    reveal the member photograph underneath.
    ============================================================ */
 
-const CARD_IMG = "/card-pattern.jpg";
+const CARD_IMG = "/card-pattern.svg";
 
 interface TeamCardProps {
   name: string;
