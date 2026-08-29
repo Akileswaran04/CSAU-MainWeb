@@ -108,9 +108,9 @@ export default function TeamPage() {
 
         const st = ScrollTrigger.create({
           trigger: el,
-          start: "top 350%",
-          end: "bottom -200%",
-          scrub: 1,
+          start: "top 500%",
+          end: "bottom -300%",
+          scrub: 0.8,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },

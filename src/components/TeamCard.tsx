@@ -42,6 +42,7 @@ export default function TeamCard({
 }: TeamCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
+  const clickedOpenRef = useRef(false);
   const s = SIZES[size];
 
   // Scroll-driven open amount (only used when inverted=true)
@@ -49,24 +50,38 @@ export default function TeamCard({
   const scrollFlapAngle = p * 145;
   const scrollPhotoOpacity = Math.max(0, (p - 0.3) / 0.7);
 
-  // Hover handlers — for normal mode (open/close on hover)
+  // Hover handlers — for normal mode
   const handleMouseEnter = useCallback(() => {
-    if (inverted) return; // inverted mode uses scroll, not hover for opening
+    if (inverted) return;
     const el = cardRef.current;
     if (el) el.classList.add("open");
   }, [inverted]);
 
   const handleMouseLeave = useCallback(() => {
-    // Close flaps in hover mode
     if (!inverted) {
-      const el = cardRef.current;
-      if (el) el.classList.remove("open");
+      // Only close if not click-locked open
+      if (!clickedOpenRef.current) {
+        const el = cardRef.current;
+        if (el) el.classList.remove("open");
+      }
     }
-    // Reset tilt
     const card = cardRef.current;
     const light = lightRef.current;
     if (card) card.style.transform = "";
     if (light) light.style.opacity = "0";
+  }, [inverted]);
+
+  // Click toggles persistent open state in hover mode
+  const handleClick = useCallback(() => {
+    if (inverted) return;
+    const el = cardRef.current;
+    if (!el) return;
+    clickedOpenRef.current = !clickedOpenRef.current;
+    if (clickedOpenRef.current) {
+      el.classList.add("open");
+    } else {
+      el.classList.remove("open");
+    }
   }, [inverted]);
 
   // 3D tilt — works in both modes when card is open
@@ -288,6 +303,7 @@ export default function TeamCard({
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onMouseMove={handleMouseMove}
+          onClick={handleClick}
         >
           <div
             className="te-stage"
