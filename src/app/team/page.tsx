@@ -1,32 +1,36 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import TeamCard from "@/components/TeamCard";
 import TargetCursor from "@/components/TargetCursor";
+
+gsap.registerPlugin(ScrollTrigger);
 
 /* ============================================================
    TEAM PAGE — Premium Editorial Hierarchy
 
-   President (1) centered at top.
-   Heads (6) in a centered row.
-   Deputies (14) in a centered grid.
-   Toggle button to invert cursor color.
-   Cards open flaps on scroll.
+   2 Presidents featured at top.
+   Heads in centered row.
+   Deputies in centered grid.
+   GSAP ScrollTrigger drives progressive card opening.
+   Hover-inversion toggle.
+   Massive section labels.
    ============================================================ */
 
-const PRESIDENT = {
-  name: "Aarav Sharma",
-  role: "President",
-  photo: "https://i.pravatar.cc/400?img=13",
-};
+const PRESIDENTS = [
+  { name: "Aarav Sharma", role: "President", photo: "https://i.pravatar.cc/400?img=13" },
+  { name: "Meera Iyer", role: "Co-President", photo: "https://i.pravatar.cc/400?img=32" },
+];
 
 const HEADS = [
-  { name: "Meera Iyer", role: "Technical Head", photo: "https://i.pravatar.cc/400?img=32" },
-  { name: "Karthik Raj", role: "Design Head", photo: "https://i.pravatar.cc/400?img=15" },
-  { name: "Sanjana Nair", role: "Operations Head", photo: "https://i.pravatar.cc/400?img=48" },
-  { name: "Rohan Patel", role: "Outreach Head", photo: "https://i.pravatar.cc/400?img=53" },
-  { name: "Meera Rajan", role: "Content Head", photo: "https://i.pravatar.cc/400?img=44" },
-  { name: "Arjun Menon", role: "Logistics Head", photo: "https://i.pravatar.cc/400?img=59" },
+  { name: "Karthik Raj", role: "Technical Head", photo: "https://i.pravatar.cc/400?img=15" },
+  { name: "Sanjana Nair", role: "Design Head", photo: "https://i.pravatar.cc/400?img=48" },
+  { name: "Rohan Patel", role: "Operations Head", photo: "https://i.pravatar.cc/400?img=53" },
+  { name: "Meera Rajan", role: "Outreach Head", photo: "https://i.pravatar.cc/400?img=44" },
+  { name: "Arjun Menon", role: "Content Head", photo: "https://i.pravatar.cc/400?img=59" },
+  { name: "Nisha Gupta", role: "Logistics Head", photo: "https://i.pravatar.cc/400?img=28" },
 ];
 
 const DEPUTIES = [
@@ -34,7 +38,6 @@ const DEPUTIES = [
   { name: "Vikram Singh", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=33" },
   { name: "Ananya Reddy", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=25" },
   { name: "Rahul Krishnan", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=51" },
-  { name: "Nisha Gupta", role: "Content Deputy", photo: "https://i.pravatar.cc/400?img=28" },
   { name: "Aditya Rao", role: "Technical Deputy", photo: "https://i.pravatar.cc/400?img=60" },
   { name: "Kavya Pillai", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=36" },
   { name: "Siddharth Nair", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=57" },
@@ -44,73 +47,32 @@ const DEPUTIES = [
   { name: "Nikhil Das", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=68" },
   { name: "Sneha Menon", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=47" },
   { name: "Karthik Iyer", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=55" },
+  { name: "Riya Joshi", role: "Content Deputy", photo: "https://i.pravatar.cc/400?img=39" },
 ];
 
-/* ── Scroll reveal hook ── */
-function useScrollReveal(count: number) {
-  const [visible, setVisible] = useState<boolean[]>(new Array(count).fill(false));
-  const refs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = Number(entry.target.getAttribute("data-idx"));
-            const row = Math.floor(idx / 3);
-            const col = idx % 3;
-            const delay = row * 80 + col * 120;
-
-            setTimeout(() => {
-              setVisible((prev) => {
-                const next = [...prev];
-                next[idx] = true;
-                return next;
-              });
-            }, delay);
-
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
-    );
-    refs.current.forEach((el) => { if (el) observer.observe(el); });
-    return () => observer.disconnect();
-  }, [count]);
-
-  return { visible, refs };
-}
-
-/* ── Section Label — big, editorial ── */
+/* ── Massive Section Label ── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        textAlign: "center",
-        marginBottom: 48,
-        marginTop: 16,
-      }}
-    >
-      <p
+    <div style={{ textAlign: "center", marginBottom: 56, marginTop: 24 }}>
+      <h2
         style={{
           fontFamily: "'Kenfolg', 'Syne', sans-serif",
-          fontSize: "clamp(28px, 4vw, 44px)",
+          fontSize: "clamp(4rem, 9vw, 9rem)",
           fontWeight: 400,
-          letterSpacing: "-0.01em",
+          letterSpacing: "-0.03em",
           color: "var(--on-surface, #1a1b22)",
           margin: 0,
-          lineHeight: 1.1,
+          lineHeight: 0.9,
         }}
       >
         {children}
-      </p>
+      </h2>
       <div
         style={{
-          width: 40,
+          width: 48,
           height: 1,
           background: "var(--outline-variant, #c7c6cb)",
-          margin: "14px auto 0",
+          margin: "20px auto 0",
         }}
       />
     </div>
@@ -119,16 +81,53 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function TeamPage() {
   const [inverted, setInverted] = useState(false);
+  const [scrollProgs, setScrollProgs] = useState<Record<string, number>>({});
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const toggleCursor = useCallback(() => setInverted((v) => !v), []);
 
-  const headCount = HEADS.length;
-  const depCount = DEPUTIES.length;
-
-  const presVis = useScrollReveal(1);
-  const headVis = useScrollReveal(headCount);
-  const depVis = useScrollReveal(depCount);
-
   const cursorColor = inverted ? "#ffffff" : "#1a1b22";
+
+  // GSAP ScrollTrigger — progressive card opening tied to scroll
+  useEffect(() => {
+    const triggers: ScrollTrigger[] = [];
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      cardRefsMap.current.forEach((el, key) => {
+        const st = ScrollTrigger.create({
+          trigger: el,
+          start: "top 90%",
+          end: "top 20%",
+          scrub: 0.5,
+          onUpdate: (self) => {
+            setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
+          },
+        });
+        triggers.push(st);
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      triggers.forEach((st) => st.kill());
+    };
+  }, []);
+
+  const setCardRef = useCallback((key: string) => (el: HTMLDivElement | null) => {
+    if (el) cardRefsMap.current.set(key, el);
+    else cardRefsMap.current.delete(key);
+  }, []);
+
+  // Invert mode: compute filter for each card based on hovered state
+  const getInvertStyle = (cardIdx: number): React.CSSProperties => {
+    if (!inverted || hoveredIdx === null) return {};
+    if (cardIdx === hoveredIdx) {
+      return { filter: "brightness(0.7) saturate(0.8)", transition: "filter 0.4s ease" };
+    }
+    return { filter: "brightness(1.05)", transition: "filter 0.4s ease" };
+  };
 
   return (
     <>
@@ -141,7 +140,7 @@ export default function TeamPage() {
       {/* ── Toggle button — top center ── */}
       <button
         onClick={toggleCursor}
-        aria-label="Toggle cursor color"
+        aria-label="Toggle hover inversion"
         style={{
           position: "fixed",
           top: 20,
@@ -149,25 +148,28 @@ export default function TeamPage() {
           transform: "translateX(-50%)",
           zIndex: 200,
           fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 600,
-          letterSpacing: "0.1em",
+          letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: inverted ? "#1a1b22" : "var(--on-surface, #1a1b22)",
-          background: inverted ? "rgba(255,255,255,0.9)" : "var(--surface-container-lowest, #fff)",
-          border: `1px solid ${inverted ? "rgba(0,0,0,0.15)" : "var(--outline-variant, #c7c6cb)"}`,
-          padding: "10px 24px",
+          background: inverted ? "rgba(255,255,255,0.92)" : "var(--surface-container-lowest, #fff)",
+          border: `1px solid ${inverted ? "rgba(0,0,0,0.18)" : "var(--outline-variant, #c7c6cb)"}`,
+          padding: "10px 22px",
           borderRadius: 999,
           cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08)",
-          transition: "all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
+          boxShadow: inverted
+            ? "0 2px 8px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.12)"
+            : "0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)",
+          transition: "all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
           backdropFilter: "blur(12px)",
         }}
       >
-        {inverted ? "◉ Light Cursor" : "○ Dark Cursor"}
+        ↕ {inverted ? "INVERT HOVER" : "INVERT HOVER"}
       </button>
 
       <div
+        ref={containerRef}
         className="min-h-screen"
         style={{
           background: "var(--background)",
@@ -179,34 +181,42 @@ export default function TeamPage() {
           className="mx-auto px-6 sm:px-10 lg:px-16"
           style={{ maxWidth: 1200 }}
         >
-          {/* ── President ── */}
-          <SectionLabel>President</SectionLabel>
+          {/* ── Presidents ── */}
+          <SectionLabel>Presidents</SectionLabel>
           <div
             style={{
               display: "flex",
               justifyContent: "center",
+              gap: 40,
+              flexWrap: "wrap",
               marginBottom: 100,
             }}
           >
-            <div
-              ref={(el) => { presVis.refs.current[0] = el; }}
-              data-idx={0}
-              style={{
-                opacity: presVis.visible[0] ? 1 : 0,
-                transform: presVis.visible[0] ? "translateY(0)" : "translateY(32px)",
-                transition: "opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)",
-                width: 280,
-              }}
-            >
-              <TeamCard
-                name={PRESIDENT.name}
-                role={PRESIDENT.role}
-                photo={PRESIDENT.photo}
-                index={1}
-                size="large"
-
-              />
-            </div>
+            {PRESIDENTS.map((member, i) => {
+              const key = `pres-${i}`;
+              return (
+              <div
+                key={key}
+                ref={setCardRef(key)}
+                style={{
+                  width: 260,
+                  ...getInvertStyle(i),
+                }}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              >
+                <TeamCard
+                  name={member.name}
+                  role={member.role}
+                  photo={member.photo}
+                  index={i + 1}
+                  size="large"
+                  scrollProgress={scrollProgs[key] ?? 0}
+                  inverted={inverted}
+                />
+              </div>
+              );
+            })}
           </div>
 
           {/* ── Heads ── */}
@@ -220,28 +230,31 @@ export default function TeamPage() {
               marginBottom: 100,
             }}
           >
-            {HEADS.map((member, i) => (
+            {HEADS.map((member, i) => {
+              const key = `head-${i}`;
+              return (
               <div
-                key={member.name}
-                ref={(el) => { headVis.refs.current[i] = el; }}
-                data-idx={i}
+                key={key}
+                ref={setCardRef(key)}
                 style={{
-                  opacity: headVis.visible[i] ? 1 : 0,
-                  transform: headVis.visible[i] ? "translateY(0)" : "translateY(28px)",
-                  transition: "opacity 0.85s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1)",
                   width: 240,
+                  ...getInvertStyle(i + PRESIDENTS.length),
                 }}
+                onMouseEnter={() => setHoveredIdx(i + PRESIDENTS.length)}
+                onMouseLeave={() => setHoveredIdx(null)}
               >
                 <TeamCard
                   name={member.name}
                   role={member.role}
                   photo={member.photo}
-                  index={i + 2}
+                  index={i + PRESIDENTS.length + 1}
                   size="medium"
-
+                  scrollProgress={scrollProgs[key] ?? 0}
+                  inverted={inverted}
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── Deputies ── */}
@@ -254,29 +267,33 @@ export default function TeamPage() {
               justifyItems: "center",
             }}
           >
-            {DEPUTIES.map((member, i) => (
-              <div
-                key={member.name}
-                ref={(el) => { depVis.refs.current[i] = el; }}
-                data-idx={i}
-                style={{
-                  opacity: depVis.visible[i] ? 1 : 0,
-                  transform: depVis.visible[i] ? "translateY(0)" : "translateY(24px)",
-                  transition: "opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)",
-                  width: "100%",
-                  maxWidth: 220,
-                }}
-              >
-                <TeamCard
-                  name={member.name}
-                  role={member.role}
-                  photo={member.photo}
-                  index={i + headCount + 2}
-                  size="small"
-
-                />
-              </div>
-            ))}
+            {DEPUTIES.map((member, i) => {
+              const globalIdx = i + PRESIDENTS.length + HEADS.length;
+              const key = `dep-${i}`;
+              return (
+                <div
+                  key={key}
+                  ref={setCardRef(key)}
+                  style={{
+                    width: "100%",
+                    maxWidth: 220,
+                    ...getInvertStyle(globalIdx),
+                  }}
+                  onMouseEnter={() => setHoveredIdx(globalIdx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                >
+                  <TeamCard
+                    name={member.name}
+                    role={member.role}
+                    photo={member.photo}
+                    index={i + PRESIDENTS.length + HEADS.length + 1}
+                    size="small"
+                    scrollProgress={scrollProgs[key] ?? 0}
+                    inverted={inverted}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
