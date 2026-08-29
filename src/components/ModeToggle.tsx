@@ -25,41 +25,55 @@ export default function ModeToggle({ inverted, onToggle }: ModeToggleProps) {
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 200,
-        width: 220,
-        height: 56,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
       }}
     >
       <div
         onClick={onToggle}
-        style={{ cursor: "pointer", width: "100%", height: "100%" }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onToggle(); }}
+        style={{
+          cursor: "pointer",
+          width: 200,
+          height: 52,
+          borderRadius: 12,
+          overflow: "hidden",
+          background: "rgba(251,248,255,0.85)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid var(--outline-variant, #c7c6cb)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+          transition: "box-shadow 0.3s ease, border-color 0.3s ease",
+        }}
         title={inverted ? "Switch to Hover Mode" : "Switch to Scroll Mode"}
       >
         <RectangleButtons
           variant="generate-button"
-          mode="dark"
-          hue={inverted ? 0 : 0}
-          saturation={inverted ? 0.0 : 0.0}
+          mode="light"
+          hue={0}
+          saturation={0.85}
           brightness={1.0}
         />
       </div>
-      {/* Mode label overlay */}
+      {/* Mode label */}
       <div
         style={{
-          position: "absolute",
-          bottom: -22,
-          left: "50%",
-          transform: "translateX(-50%)",
           fontFamily: "'Plus Jakarta Sans', sans-serif",
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: "0.18em",
           textTransform: "uppercase" as const,
-          color: inverted ? "#4ade80" : "#999",
+          color: inverted ? "var(--on-surface, #1a1b22)" : "var(--outline, #77767b)",
           whiteSpace: "nowrap",
           transition: "color 0.3s ease",
+          textAlign: "center",
         }}
       >
-        {inverted ? "● SCROLL MODE" : "○ HOVER MODE"}
+        {inverted ? "SCROLL" : "HOVER"}
       </div>
     </div>
   );
