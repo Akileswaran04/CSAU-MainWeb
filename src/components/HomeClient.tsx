@@ -66,7 +66,7 @@ export default function HomeClient() {
             transition: "transform 1.3s cubic-bezier(.7,0,.15,1), opacity 1.1s ease",
             transform: zooming ? "scale(9)" : "scale(1)",
             opacity: zooming ? 0 : 1,
-            backgroundColor: zooming ? "#000" : undefined,
+            backgroundColor: zooming ? "var(--surface)" : undefined,
           }}
         >
           <LandingPage onEnter={handleEnter} />

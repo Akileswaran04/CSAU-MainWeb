@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /* ============================================================
-   FOOTER — Minimal, themed with cursor-character.html palette.
+   FOOTER — Minimal, Sculptural Tactility theme.
    ============================================================ */
 
 const socialLinks = [
@@ -21,38 +21,75 @@ const iconPaths: Record<string, string> = {
 
 export default function Footer() {
   return (
-    <footer className="relative border-t py-14" style={{ borderColor: "rgba(0,240,255,0.1)", background: "rgba(5,5,7,0.7)" }}>
+    <footer
+      className="relative py-16"
+      style={{
+        borderTop: "1px solid var(--outline-variant)",
+        background: "var(--surface)",
+      }}
+    >
       <div className="w-full px-5 sm:px-8 lg:px-12 max-w-6xl mx-auto">
         <div className="grid gap-10 md:grid-cols-[1fr_auto] md:gap-20">
           <div>
-            <p className="text-3xl font-bold tracking-wider glow-cyan" style={{ fontFamily: "'Zen Dots', sans-serif", color: "var(--cyan)" }}>
+            <p
+              className="text-3xl font-bold tracking-wider"
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 800,
+                color: "var(--primary)",
+              }}
+            >
               CSAU
             </p>
-            <p className="mt-2 text-sm leading-relaxed max-w-xs" style={{ color: "rgba(205,211,239,0.5)" }}>
+            <p
+              className="mt-3 text-sm leading-relaxed max-w-xs"
+              style={{ color: "var(--on-surface-variant)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            >
               Computer Science Association of the University, CEG
             </p>
-            <p className="mt-4 text-xs tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.3)" }}>
+            <p
+              className="mt-4 text-xs tracking-widest uppercase"
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 500,
+                color: "var(--outline)",
+                letterSpacing: "0.1em",
+              }}
+            >
               CHENNAI, IN · EST. CEG
             </p>
           </div>
 
           <div>
-            <p className="text-[10px] tracking-[0.3em] uppercase mb-4" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.3)" }}>
+            <p
+              className="text-xs tracking-widest uppercase mb-5"
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 600,
+                color: "var(--outline)",
+                letterSpacing: "0.1em",
+              }}
+            >
               Connect
             </p>
-            <ul className="flex md:flex-col gap-4">
+            <ul className="flex md:flex-col gap-5">
               {socialLinks.map((s) => (
                 <li key={s.name}>
                   <a
                     href={s.href}
                     aria-label={s.name}
-                    className="inline-flex items-center gap-2 transition-colors"
-                    style={{ color: "rgba(205,211,239,0.4)" }}
+                    className="inline-flex items-center gap-2.5 transition-colors"
+                    style={{ color: "var(--on-surface-variant)" }}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                       <path d={iconPaths[s.icon]} />
                     </svg>
-                    <span className="hidden md:inline text-xs tracking-widest">{s.name}</span>
+                    <span
+                      className="hidden md:inline text-xs tracking-widest"
+                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 500 }}
+                    >
+                      {s.name}
+                    </span>
                   </a>
                 </li>
               ))}
@@ -60,11 +97,30 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: "rgba(205,211,239,0.05)" }}>
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.25)" }}>
+        <div
+          className="mt-14 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+          style={{ borderTop: "1px solid var(--outline-variant)" }}
+        >
+          <p
+            className="text-xs tracking-widest uppercase"
+            style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 500,
+              color: "var(--outline)",
+              letterSpacing: "0.1em",
+            }}
+          >
             © {new Date().getFullYear()} CSAU — CEG
           </p>
-          <p className="text-[10px] tracking-[0.25em] uppercase" style={{ fontFamily: "'JetBrains Mono', monospace", color: "rgba(205,211,239,0.25)" }}>
+          <p
+            className="text-xs tracking-widest uppercase"
+            style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 500,
+              color: "var(--outline)",
+              letterSpacing: "0.1em",
+            }}
+          >
             SYS ONLINE · REALM ACTIVE
           </p>
         </div>

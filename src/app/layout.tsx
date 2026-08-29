@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Zen_Dots, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const zenDots = Zen_Dots({
-  variable: "--font-zen-dots",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const rajdhani = Rajdhani({
-  variable: "--font-rajdhani",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${zenDots.variable} ${rajdhani.variable} ${jetbrainsMono.variable}`}
+      className={`${syne.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body>{children}</body>
     </html>

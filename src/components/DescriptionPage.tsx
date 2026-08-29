@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /* ============================================================
-   DESCRIPTION PAGE — From cursor-character.html
-   
+   DESCRIPTION PAGE — Sculptural Tactility version
+
    Typewriter effect revealing:
    1. "// WHO WE ARE" eyebrow
    2. "THE COMPUTER SCIENCE ASSOCIATION" title
    3. Full paragraph about CSAU
    4. Back button
+
+   Light claymorphism aesthetic with soft shadows and editorial typography.
    ============================================================ */
 
 interface DescriptionPageProps {
@@ -27,19 +29,16 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
   const [showBack, setShowBack] = useState(false);
   const [active, setActive] = useState(false);
 
-  // Activate with slight delay
   useEffect(() => {
     const t = setTimeout(() => setActive(true), 100);
     return () => clearTimeout(t);
   }, []);
 
-  // Typewriter sequence
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
 
     const run = async () => {
-      // Type eyebrow
       const eyebrowText = "// WHO WE ARE";
       for (let i = 0; i <= eyebrowText.length; i++) {
         if (cancelled) return;
@@ -48,7 +47,6 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
       }
       await new Promise((r) => setTimeout(r, 150));
 
-      // Type title
       const titleText = "THE COMPUTER SCIENCE ASSOCIATION";
       for (let i = 0; i <= titleText.length; i++) {
         if (cancelled) return;
@@ -57,7 +55,6 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
       }
       await new Promise((r) => setTimeout(r, 200));
 
-      // Type body
       for (let i = 0; i <= PARAGRAPH.length; i++) {
         if (cancelled) return;
         setBody(PARAGRAPH.slice(0, i));
@@ -76,7 +73,7 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
       className="fixed inset-0 overflow-auto"
       style={{
         zIndex: 15,
-        background: "#050507",
+        background: "var(--background)",
         opacity: active ? 1 : 0,
         pointerEvents: active ? "auto" : "none",
         transition: "opacity 1s ease",
@@ -87,9 +84,8 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 50% 30%, #140e26 0%, transparent 55%),
-            repeating-linear-gradient(135deg, #0a0b16 0 2px, #050507 2px 90px),
-            repeating-linear-gradient(45deg, #0a0b16 0 2px, #050507 2px 90px)
+            radial-gradient(ellipse at 50% 30%, var(--surface-container-low) 0%, transparent 55%),
+            linear-gradient(180deg, var(--background) 0%, var(--surface) 100%)
           `,
         }}
       />
@@ -97,16 +93,25 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
       {/* Content */}
       <div
         className="relative mx-auto"
-        style={{ zIndex: 20, maxWidth: 820, textAlign: "left", paddingTop: "14vh", paddingBottom: "10vh", paddingLeft: "6%", paddingRight: "6%" }}
+        style={{
+          zIndex: 20,
+          maxWidth: 820,
+          textAlign: "left",
+          paddingTop: "14vh",
+          paddingBottom: "10vh",
+          paddingLeft: "6%",
+          paddingRight: "6%",
+        }}
       >
         {/* Eyebrow */}
         <div
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            letterSpacing: ".35em",
-            color: "#ff2b8f",
-            marginBottom: 22,
+            fontFamily: "'Plus Jakarta Sans', monospace",
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: "0.15em",
+            color: "var(--primary-container)",
+            marginBottom: 24,
             minHeight: "1em",
           }}
         >
@@ -117,12 +122,13 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
         {/* Title */}
         <div
           style={{
-            fontFamily: "'Zen Dots', sans-serif",
+            fontFamily: "'Syne', sans-serif",
             fontSize: "clamp(28px, 5vw, 52px)",
-            color: "#f2f4ff",
-            letterSpacing: ".04em",
-            marginBottom: 34,
-            textShadow: "0 0 24px rgba(0,240,255,.3)",
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            color: "var(--on-surface)",
+            lineHeight: 1.1,
+            marginBottom: 36,
             minHeight: "1.3em",
           }}
         >
@@ -135,11 +141,12 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
         {/* Body */}
         <div
           style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontSize: "clamp(15px, 1.6vw, 19px)",
-            lineHeight: 1.85,
-            color: "#cdd3ef",
-            letterSpacing: ".01em",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: "clamp(15px, 1.6vw, 18px)",
+            fontWeight: 400,
+            lineHeight: 1.7,
+            color: "var(--on-surface-variant)",
+            letterSpacing: "0.01em",
             minHeight: "8em",
           }}
         >
@@ -149,46 +156,67 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
           )}
         </div>
 
-        {/* Nav buttons */}
+        {/* Nav buttons — claymorphism */}
         <div
-          className="mt-11 flex flex-wrap gap-3"
+          className="mt-12 flex flex-wrap gap-4"
           style={{ opacity: showBack ? 1 : 0, transition: "opacity .6s ease" }}
         >
           <button
             onClick={onBack}
             className="group"
             style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".2em",
-              color: "#5c6190",
-              border: "1px solid #2a2d45",
-              padding: "10px 20px",
-              background: "rgba(14,15,26,.5)",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              color: "var(--on-surface-variant)",
+              background: "var(--surface-container-lowest)",
+              border: "1px solid var(--outline-variant)",
+              padding: "12px 24px",
+              borderRadius: 999,
               cursor: "pointer",
-              transition: "color .25s, border-color .25s",
+              transition: "all 0.3s ease",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04)";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)";
             }}
           >
-            <span className="transition-colors group-hover:text-[#00f0ff]">« BACK TO SYSTEM</span>
+            <span className="transition-colors group-hover:text-[var(--primary)]">« BACK TO SYSTEM</span>
           </button>
           <Link
             href="/team"
             className="group"
             style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".2em",
-              color: "#5c6190",
-              border: "1px solid #2a2d45",
-              padding: "10px 20px",
-              background: "rgba(14,15,26,.5)",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              color: "var(--on-primary)",
+              background: "var(--primary)",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: 999,
               cursor: "pointer",
-              transition: "color .25s, border-color .25s",
+              transition: "all 0.3s ease",
               display: "inline-block",
               textDecoration: "none",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.06), 0 16px 48px rgba(0,0,0,0.08)";
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <span className="transition-colors group-hover:text-[#00f0ff]">VIEW TEAM →</span>
+            <span className="transition-colors">VIEW TEAM →</span>
           </Link>
         </div>
       </div>

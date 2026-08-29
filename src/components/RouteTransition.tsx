@@ -5,7 +5,7 @@ import { useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ============================================================
-   ROUTE TRANSITION — Simplified for cursor-character theme.
+   ROUTE TRANSITION — Sculptural Tactility version.
    Brief overlay on navigation between routes.
    ============================================================ */
 
@@ -20,9 +20,9 @@ function Overlay({ pathname }: { pathname: string }) {
     >
       <motion.div
         className="absolute inset-0"
-        style={{ background: "var(--void)" }}
-        initial={{ opacity: 0.9 }}
-        animate={{ opacity: 0.95 }}
+        style={{ background: "var(--surface)" }}
+        initial={{ opacity: 0.95 }}
+        animate={{ opacity: 0.98 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
       />
@@ -30,19 +30,24 @@ function Overlay({ pathname }: { pathname: string }) {
       {[...Array(4)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full border"
-          style={{ borderColor: "rgba(0,240,255,0.4)", left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
-          initial={{ width: 20 + i * 15, height: 20 + i * 15, opacity: 0.7 - i * 0.12, scale: 0.3 }}
-          animate={{ width: 100 + i * 60, height: 100 + i * 60, opacity: [0, 0.6 - i * 0.1, 0], scale: [0.3, 1, 1.2] }}
+          className="absolute rounded-full"
+          style={{
+            border: "1px solid var(--outline-variant)",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+          initial={{ width: 20 + i * 15, height: 20 + i * 15, opacity: 0.3 - i * 0.06, scale: 0.3 }}
+          animate={{ width: 100 + i * 60, height: 100 + i * 60, opacity: [0, 0.25 - i * 0.05, 0], scale: [0.3, 1, 1.2] }}
           transition={{ duration: 0.6, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
         />
       ))}
 
       <motion.div
         className="absolute w-3 h-3 rounded-full"
-        style={{ background: "var(--cyan)", boxShadow: "0 0 30px var(--cyan), 0 0 60px var(--cyan)" }}
+        style={{ background: "var(--primary)" }}
         initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 2.5, 0], opacity: [0, 1, 0] }}
+        animate={{ scale: [0, 2.5, 0], opacity: [0, 0.8, 0] }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       />
     </motion.div>

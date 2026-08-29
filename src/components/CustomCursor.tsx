@@ -3,11 +3,12 @@
 import { useEffect, useRef } from "react";
 
 /* ============================================================================
-   CUSTOM CURSOR — desktop-only (fine pointers + no reduced-motion).
+   CUSTOM CURSOR — Sculptural Tactility version.
+   Desktop-only (fine pointers + no reduced-motion).
    States driven by [data-cursor] attribute:
      • default              → small dot
-     • hovering link/button → large transparent ring
-     • data-cursor="TEXT"   → ring with label (ENTER / VIEW / EXPLORE …)
+     • hovering link/button → larger ring
+     • data-cursor="TEXT"   → ring with label
    Falls back to the native cursor everywhere else and never blocks clicks.
    ========================================================================== */
 
@@ -60,7 +61,6 @@ export default function CustomCursor() {
       ring.style.opacity = "0";
     };
 
-    /* document-level cursor hiding via CSS class on <html> */
     document.documentElement.classList.add("csau-custom-cursor");
 
     function frame() {
@@ -88,17 +88,27 @@ export default function CustomCursor() {
       <div
         ref={dotRef}
         aria-hidden
-        className="fixed top-0 left-0 z-[100] pointer-events-none w-1.5 h-1.5 rounded-full bg-cyan opacity-0 transition-opacity duration-200 hidden [@media(pointer:fine)]:block"
+        className="fixed top-0 left-0 z-[100] pointer-events-none w-1.5 h-1.5 rounded-full opacity-0 transition-opacity duration-200 hidden [@media(pointer:fine)]:block"
+        style={{ background: "var(--primary)" }}
       />
       <div
         ref={ringRef}
         aria-hidden
         data-state=""
-        className="fixed top-0 left-0 z-[99] pointer-events-none opacity-0 transition-opacity duration-200 hidden [@media(pointer:fine)]:flex items-center justify-center rounded-full border border-cyan/60 w-10 h-10 data-[state=ring]:w-14 data-[state=ring]:h-14 data-[state=ring]:bg-cyan/5 data-[state=label]:w-20 data-[state=label]:h-20 data-[state=label]:border-magenta/70 transition-[width,height] duration-300"
+        className="fixed top-0 left-0 z-[99] pointer-events-none opacity-0 transition-opacity duration-200 hidden [@media(pointer:fine)]:flex items-center justify-center rounded-full w-10 h-10 data-[state=ring]:w-14 data-[state=ring]:h-14 data-[state=label]:w-20 data-[state=label]:h-20 transition-[width,height] duration-300"
+        style={{
+          border: "1.5px solid var(--outline)",
+          background: "rgba(251,248,255,0.5)",
+          backdropFilter: "blur(8px)",
+        }}
       >
         <span
           ref={labelRef}
-          className="text-[9px] tracking-[0.2em] text-magenta font-[family-name:var(--font-geist-mono)]"
+          className="text-[9px] tracking-widest font-semibold"
+          style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            color: "var(--primary)",
+          }}
         />
       </div>
     </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useState } from "react";
+import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -9,11 +9,12 @@ if (typeof window !== "undefined") {
 }
 
 /* ============================================================
-   TEAM SHOWCASE — Scroll-driven pair showcase inspired by
-   csau-team-showcase-v2.html, themed with cursor-character.html.
-   
-   Shows team members in pairs inside a mobile device frame.
-   GSAP ScrollTrigger drives the scroll-based animation.
+   TEAM SHOWCASE — Premium Editorial Team Wall (Sculptural Tactility)
+
+   Scroll-driven pair showcase: two members enter together at
+   each scroll stage. Previous members remain as a desaturated
+   background collage. Full-viewport pinned section with GSAP
+   ScrollTrigger. Claymorphism aesthetic.
    ============================================================ */
 
 interface Member {
@@ -50,52 +51,259 @@ const teamData: Record<string, Member[]> = {
   ],
 };
 
-function PairFigure({ member, diffTag }: { member: Member; diffTag: string }) {
-  const initials = member.name.split(" ").map((n) => n[0]).join("");
+/* ── Pair member figure (editorial cutout, claymorphism) ── */
+function MemberFigure({
+  member,
+  side,
+  isActive,
+}: {
+  member: Member;
+  side: "left" | "right";
+  isActive: boolean;
+}) {
+  const initials = member.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+
   return (
-    <div className="relative flex flex-col items-center" style={{ width: "38%", maxWidth: 150 }}>
-      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+    <div
+      className="relative flex flex-col"
+      style={{
+        width: "clamp(140px, 22vw, 300px)",
+        alignItems: side === "left" ? "flex-end" : "flex-start",
+      }}
+    >
+      {/* Portrait — clay card frame */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width: "100%",
+          aspectRatio: "3/4",
+          borderRadius: "1.5rem",
+          background: "var(--surface-container-low)",
+          boxShadow: isActive
+            ? "0 4px 16px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)"
+            : "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03)",
+          border: isActive ? "1px solid var(--outline-variant)" : "1px solid rgba(199,198,203,0.5)",
+          transition: "box-shadow 0.5s ease, border-color 0.5s ease",
+        }}
+      >
         {member.image ? (
           <img
             src={member.image}
             alt={member.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
             style={{
-              maskImage: "radial-gradient(circle at 50% 38%,black 48%,transparent 82%)",
-              WebkitMaskImage: "radial-gradient(circle at 50% 38%,black 48%,transparent 82%)",
-              filter: "drop-shadow(0 14px 22px rgba(0,0,0,.55))",
+              maskImage:
+                "linear-gradient(to bottom, black 55%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, black 55%, transparent 100%)",
+              borderRadius: "1.5rem",
             }}
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(0,240,255,.15),rgba(255,0,170,.1))" }}>
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,240,255,.1)", border: "1px solid rgba(0,240,255,.3)" }}>
-              <span className="text-xl font-bold" style={{ fontFamily: "'Syne',sans-serif", color: "var(--cyan)" }}>{initials}</span>
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--surface-container), var(--surface-container-high))",
+            }}
+          >
+            <div
+              className="rounded-full flex items-center justify-center"
+              style={{
+                width: 80,
+                height: 80,
+                background: "var(--surface-container-lowest)",
+                boxShadow: "var(--clay-shadow-sm)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "var(--primary)",
+                }}
+              >
+                {initials}
+              </span>
             </div>
           </div>
         )}
-        <div className="absolute top-[2%] left-[2%] w-[19px] h-[19px] rounded-[5px] flex items-center justify-center text-[10px] font-bold" style={{ fontFamily: "'Geist Mono',monospace", background: "rgba(0,240,255,.18)", color: "var(--cyan)", border: "1px solid rgba(0,240,255,.4)", backdropFilter: "blur(6px)", zIndex: 5 }}>
-          {diffTag}
-        </div>
       </div>
-      <div className="mt-1 text-center">
-        <div className="uppercase leading-tight" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 13.5, color: "#F5F6F8" }}>{member.name}</div>
-        <div style={{ fontFamily: "'Geist Mono',monospace", fontSize: 8.5, marginTop: 2 }}>
-          <span style={{ color: "#6B7280" }}>role:</span>{" "}
-          <span style={{ color: "var(--cyan)" }}>{member.role.toLowerCase().replace(/\s+/g, "-")}</span>
+
+      {/* Name & role */}
+      <div
+        className="mt-4"
+        style={{
+          textAlign: side === "left" ? "right" : "left",
+          paddingRight: side === "left" ? 4 : 0,
+          paddingLeft: side === "right" ? 4 : 0,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: "clamp(12px, 1.2vw, 16px)",
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            color: isActive ? "var(--on-surface)" : "var(--on-surface-variant)",
+            textTransform: "uppercase",
+            lineHeight: 1.3,
+            transition: "color 0.4s ease",
+          }}
+        >
+          {member.name}
+        </div>
+        <div
+          style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: "clamp(9px, 0.75vw, 11px)",
+            fontWeight: 500,
+            letterSpacing: "0.05em",
+            color: isActive ? "var(--on-surface-variant)" : "var(--outline)",
+            marginTop: 4,
+            textTransform: "uppercase",
+            transition: "color 0.4s ease",
+          }}
+        >
+          {member.role}
         </div>
       </div>
     </div>
   );
 }
 
+/* ── Background decorative elements ── */
+function BackgroundElements() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+      {/* Soft radial gradient */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 40%, var(--surface-container-low) 0%, var(--background) 60%)",
+        }}
+      />
+
+      {/* Faint grid */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--outline-variant) 1px, transparent 1px), linear-gradient(90deg, var(--outline-variant) 1px, transparent 1px)",
+          backgroundSize: "120px 120px",
+          opacity: 0.15,
+          maskImage: "radial-gradient(ellipse at 50% 50%, black 0%, transparent 65%)",
+          WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 0%, transparent 65%)",
+        }}
+      />
+
+      {/* Constellation lines */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1200 800"
+        preserveAspectRatio="xMidYMid slice"
+        style={{ opacity: 0.4 }}
+      >
+        <g stroke="var(--outline-variant)" strokeWidth="0.8" opacity="0.5">
+          <line x1="100" y1="100" x2="300" y2="200" />
+          <line x1="300" y1="200" x2="250" y2="400" />
+          <line x1="300" y1="200" x2="600" y2="150" />
+          <line x1="600" y1="150" x2="900" y2="300" />
+          <line x1="250" y1="400" x2="500" y2="500" />
+          <line x1="500" y1="500" x2="800" y2="450" />
+          <line x1="800" y1="450" x2="1050" y2="550" />
+          <line x1="100" y1="600" x2="350" y2="550" />
+          <line x1="350" y1="550" x2="600" y2="650" />
+        </g>
+        <g fill="var(--outline-variant)" opacity="0.4">
+          <circle cx="100" cy="100" r="2.5" />
+          <circle cx="300" cy="200" r="2.5" />
+          <circle cx="250" cy="400" r="2.5" />
+          <circle cx="600" cy="150" r="2.5" />
+          <circle cx="900" cy="300" r="2.5" />
+          <circle cx="500" cy="500" r="2.5" />
+          <circle cx="800" cy="450" r="2.5" />
+          <circle cx="1050" cy="550" r="2.5" />
+        </g>
+      </svg>
+
+      {/* Faint code fragments */}
+      <div
+        className="absolute"
+        style={{
+          top: "15%",
+          right: "8%",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10,
+          color: "var(--outline-variant)",
+          opacity: 0.3,
+          lineHeight: 2.2,
+          whiteSpace: "pre",
+          transform: "rotate(-3deg)",
+        }}
+      >
+        {"const team = [\n  { role: 'president' },\n  { role: 'head' },\n  { role: 'deputy' },\n];"}
+      </div>
+
+      <div
+        className="absolute"
+        style={{
+          bottom: "20%",
+          left: "6%",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10,
+          color: "var(--outline-variant)",
+          opacity: 0.25,
+          lineHeight: 2.2,
+          whiteSpace: "pre",
+          transform: "rotate(2deg)",
+        }}
+      >
+        {"export default function Team() {\n  return <Showcase />;\n}"}
+      </div>
+
+      {/* Thin horizontal rules */}
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          top: "30%",
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--outline-variant), transparent)",
+          opacity: 0.2,
+        }}
+      />
+      <div
+        className="absolute left-0 right-0"
+        style={{
+          top: "70%",
+          height: 1,
+          background: "linear-gradient(90deg, transparent, var(--outline-variant), transparent)",
+          opacity: 0.15,
+        }}
+      />
+    </div>
+  );
+}
+
+/* ── Main Team Showcase ── */
 export default function TeamShowcase() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pairRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const pairElsRef = useRef<(HTMLDivElement | null)[]>([]);
   const [activePair, setActivePair] = useState(0);
 
   const pairs = useMemo(() => {
-    const all = [...teamData.presidents, ...teamData.heads, ...teamData.deputies];
+    const all = [
+      ...teamData.presidents,
+      ...teamData.heads,
+      ...teamData.deputies,
+    ];
     const result: [Member, Member?][] = [];
     for (let i = 0; i < all.length; i += 2) {
       result.push([all[i], all[i + 1]]);
@@ -103,197 +311,291 @@ export default function TeamShowcase() {
     return result;
   }, []);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  const totalPairs = pairs.length;
 
-    const pairEls = pairRefs.current.filter(Boolean);
+  const getLayoutStyle = useCallback(
+    (pairIndex: number): React.CSSProperties => {
+      const isOdd = pairIndex % 2 === 1;
+      return {
+        paddingTop: isOdd ? "2%" : "0%",
+      };
+    },
+    []
+  );
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const pin = pinRef.current;
+    if (!section || !pin) return;
+
+    const pairEls = pairElsRef.current.filter(Boolean);
     if (pairEls.length < 2) return;
 
-    // Set initial states
-    gsap.set(pairEls[0], { scale: 1, opacity: 1, filter: "grayscale(0%) blur(0px)" });
-    for (let i = 1; i < pairEls.length; i++) {
-      gsap.set(pairEls[i], { scale: 0.72, opacity: 0, filter: "grayscale(100%) blur(0px)" });
-    }
+    ScrollTrigger.getAll().forEach((t) => t.kill());
 
-    const totalPairs = pairEls.length;
-    const pairDuration = 1 / (totalPairs - 1 || 1);
+    pairEls.forEach((el, i) => {
+      if (i === 0) {
+        gsap.set(el, {
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          filter: "grayscale(0%) blur(0px)",
+        });
+      } else {
+        gsap.set(el, {
+          y: "40%",
+          scale: 0.55,
+          opacity: 0,
+          filter: "grayscale(100%) blur(8px)",
+        });
+      }
+    });
 
     const tl = gsap.timeline({
       scrollTrigger: {
-        trigger: container,
+        trigger: section,
         start: "top top",
         end: "bottom bottom",
-        scrub: 1,
+        scrub: 0.8,
+        pin: false,
         onUpdate(self) {
-          const idx = Math.min(Math.floor(self.progress / pairDuration), totalPairs - 2);
+          const pairDuration = 1 / (totalPairs - 1 || 1);
+          const idx = Math.min(
+            Math.floor(self.progress / pairDuration),
+            totalPairs - 1
+          );
           setActivePair(idx);
         },
       },
     });
 
-    // For each pair transition
+    const transitionDuration = 1 / (totalPairs - 1 || 1);
+
     for (let i = 0; i < totalPairs - 1; i++) {
-      const hold = i * pairDuration;
-      // Current pair recedes
-      tl.to(pairEls[i], {
-        scale: 0.5,
-        opacity: 0.4,
-        filter: "grayscale(100%) blur(1.5px)",
-        ease: "power2.inOut",
-      }, hold);
-      // Next pair rises
-      tl.to(pairEls[i + 1], {
-        scale: 1,
-        opacity: 1,
-        filter: "grayscale(0%) blur(0px)",
-        ease: "power2.inOut",
-      }, hold);
+      const startTime = i * transitionDuration;
+
+      tl.to(
+        pairEls[i],
+        {
+          y: "-35%",
+          scale: 0.45,
+          opacity: 0.15,
+          filter: "grayscale(100%) blur(4px)",
+          ease: "power2.inOut",
+          duration: transitionDuration,
+        },
+        startTime
+      );
+
+      tl.to(
+        pairEls[i + 1],
+        {
+          y: "0%",
+          scale: 1,
+          opacity: 1,
+          filter: "grayscale(0%) blur(0px)",
+          ease: "power2.inOut",
+          duration: transitionDuration,
+        },
+        startTime
+      );
     }
 
     return () => {
       ScrollTrigger.getAll().forEach((t) => t.kill());
       tl.kill();
     };
-  }, [pairs]);
+  }, [pairs, totalPairs]);
 
   return (
-    <section className="relative" aria-label="Command Center — Team Showcase">
-      <style>{`
-        .ts-backdrop-grid {
-          position: fixed; inset: 0; z-index: 0;
-          background-image:
-            linear-gradient(rgba(232,236,241,.035) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(232,236,241,.035) 1px, transparent 1px);
-          background-size: 36px 36px;
-          mask-image: radial-gradient(circle at 50% 40%, black 0%, transparent 72%);
-        }
-        .ts-stage { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 16px; }
-        .ts-device {
-          position: relative; width: 100%; max-width: 412px; border-radius: 34px; padding: 10px;
-          background: linear-gradient(160deg,#181D26,#0B0E13);
-          box-shadow: 0 0 0 1px rgba(232,236,241,.06), 0 40px 80px -20px rgba(0,0,0,.7), 0 0 60px -10px rgba(63,185,80,.06);
-        }
-        .ts-device::before {
-          content:""; position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
-          width: 84px; height: 8px; border-radius: 99px; background: #05070A; z-index: 60;
-        }
-        .ts-pin { height: ${pairs.length * 120}vh; position: relative; }
-        .ts-viewport {
-          position: sticky; top: 14px; width: 100%; aspect-ratio: 9/19.5; max-height: 88vh;
-          overflow: hidden; border-radius: 26px;
-          background: radial-gradient(120% 90% at 50% 0%,#121721 0%,#0A0D12 55%,#070910 100%);
-        }
-        .ts-gutter {
-          position: absolute; left: 0; top: 0; bottom: 0; width: 26px;
-          border-right: 1px solid rgba(232,236,241,.06);
-          font-family: 'Geist Mono',monospace; font-size: 9px; color: rgba(107,114,128,.5);
-          display: flex; flex-direction: column; align-items: center; padding-top: 64px; gap: 22px; z-index: 5;
-          user-select: none;
-        }
-        .ts-topbar {
-          position: absolute; top: 0; left: 0; right: 0; z-index: 50; padding: 20px 20px 14px 32px;
-          display: flex; justify-content: space-between; align-items: flex-start;
-          background: linear-gradient(180deg, rgba(10,13,18,.92) 12%, transparent 100%);
-        }
-        .ts-wordmark { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -.02em; color: #E8ECF1; line-height: 1; }
-        .ts-breadcrumb { font-family: 'Geist Mono',monospace; font-size: 9.5px; letter-spacing: .04em; color: #6B7280; }
-        .ts-breadcrumb b { color: #E8ECF1; font-weight: 600; }
-        .ts-diffstat { font-family: 'Geist Mono',monospace; font-size: 10px; font-weight: 500; display: flex; gap: 6px; margin-top: 6px; }
-        .ts-diffstat .plus { color: #3FB950; } .ts-diffstat .minus { color: #F85149; }
-        .ts-pair {
-          position: absolute; left: 0; right: 0; z-index: 10;
-          display: flex; justify-content: center; align-items: flex-end; gap: 6%;
-          padding-left: 26px; padding-bottom: 14%;
-          will-change: transform, opacity, filter;
-        }
-        .ts-bottombar {
-          position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; padding: 16px 20px 20px 32px;
-          display: flex; flex-direction: column; align-items: center; gap: 10px;
-          background: linear-gradient(0deg, rgba(10,13,18,.92) 12%, transparent 100%);
-        }
-        .ts-dots { display: flex; gap: 6px; }
-        .ts-dot { width: 5px; height: 5px; border-radius: 99px; background: rgba(232,236,241,.18); transition: all .25s; }
-        .ts-dot.on { background: #3FB950; width: 16px; border-radius: 99px; }
-        .ts-caret { display: inline-block; width: 6px; height: 12px; background: #3FB950; animation: tsBlink 1.1s steps(1) infinite; }
-        @keyframes tsBlink { 50%{opacity:0} }
-        .ts-scroll-hint { font-family: 'Geist Mono',monospace; font-size: 9.5px; color: #6B7280; display: flex; align-items: center; gap: 6px; }
-        @media (prefers-reduced-motion: reduce) { .ts-caret { animation: none; } }
-      `}</style>
+    <section
+      ref={sectionRef}
+      className="relative"
+      aria-label="Team Showcase — Editorial Wall"
+      style={{
+        height: `${totalPairs * 100}vh`,
+      }}
+    >
+      {/* Pinned viewport */}
+      <div
+        ref={pinRef}
+        className="sticky top-0 w-full overflow-hidden"
+        style={{
+          height: "100vh",
+          background: "var(--background)",
+        }}
+      >
+        <BackgroundElements />
 
-      <div className="ts-backdrop-grid" />
+        {/* Top HUD bar */}
+        <div
+          className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between"
+          style={{
+            padding: "20px clamp(16px, 4vw, 40px)",
+            background:
+              "linear-gradient(180deg, var(--background) 0%, transparent 100%)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                color: "var(--primary)",
+              }}
+            >
+              CSAU
+            </div>
+            <div
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: "0.05em",
+                color: "var(--outline)",
+              }}
+            >
+              team / roster.tsx
+            </div>
+          </div>
+          <div
+            style={{
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontSize: 11,
+              fontWeight: 500,
+              color: "var(--outline)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ color: "var(--primary-container)" }}>+</span>
+            <span>{totalPairs * 2}</span>
+            <span style={{ opacity: 0.5 }}>members</span>
+          </div>
+        </div>
 
-      <div className="ts-stage">
-        <div className="ts-device">
-          <div className="ts-pin" ref={containerRef}>
-            <div className="ts-viewport">
-              {/* Constellation background */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.5, zIndex: 1 }}>
-                <g stroke="var(--cyan)" strokeWidth="0.6" opacity="0.35">
-                  <line x1="40" y1="120" x2="140" y2="180" /><line x1="140" y1="180" x2="110" y2="280" />
-                  <line x1="140" y1="180" x2="260" y2="140" /><line x1="260" y1="140" x2="340" y2="220" />
-                  <line x1="110" y1="280" x2="200" y2="340" /><line x1="200" y1="340" x2="320" y2="360" />
-                  <line x1="60" y1="520" x2="160" y2="480" /><line x1="160" y1="480" x2="260" y2="560" />
-                  <line x1="260" y1="560" x2="340" y2="500" />
-                </g>
-                <g fill="#E8ECF1" opacity="0.4">
-                  <circle cx="40" cy="120" r="1.6" /><circle cx="140" cy="180" r="1.6" />
-                  <circle cx="110" cy="280" r="1.6" /><circle cx="260" cy="140" r="1.6" />
-                  <circle cx="340" cy="220" r="1.6" /><circle cx="200" cy="340" r="1.6" />
-                  <circle cx="320" cy="360" r="1.6" /><circle cx="60" cy="520" r="1.6" />
-                  <circle cx="160" cy="480" r="1.6" /><circle cx="260" cy="560" r="1.6" />
-                </g>
-              </svg>
+        {/* Pair layers */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ zIndex: 10 }}
+        >
+          {pairs.map((pair, i) => (
+            <div
+              key={i}
+              ref={(el) => {
+                pairElsRef.current[i] = el;
+              }}
+              className="absolute flex items-end justify-center"
+              style={{
+                gap: "clamp(16px, 5vw, 80px)",
+                bottom: "clamp(10%, 14vh, 18%)",
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "min(90vw, 1100px)",
+                willChange: "transform, opacity, filter",
+                ...getLayoutStyle(i),
+              }}
+            >
+              <MemberFigure
+                member={pair[0]}
+                side="left"
+                isActive={i === activePair}
+              />
+              {pair[1] && (
+                <MemberFigure
+                  member={pair[1]}
+                  side="right"
+                  isActive={i === activePair}
+                />
+              )}
+            </div>
+          ))}
+        </div>
 
-              {/* Gutter */}
-              <div className="ts-gutter">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <span key={i}>{String(i + 1).padStart(2, "0")}</span>
-                ))}
-              </div>
-
-              {/* Top bar */}
-              <div className="ts-topbar">
-                <div>
-                  <div className="ts-wordmark">CSAU</div>
-                  <div className="ts-breadcrumb">web-app-dev / <b>team.tsx</b></div>
-                </div>
-                <div className="ts-diffstat"><span className="plus">+{pairs.length}</span><span className="minus">−0</span></div>
-              </div>
-
-              {/* Pairs */}
-              {pairs.map((pair, i) => (
+        {/* Bottom progress bar */}
+        <div
+          className="absolute bottom-0 left-0 right-0 z-40"
+          style={{
+            padding: "0 clamp(16px, 4vw, 40px) 24px",
+            background:
+              "linear-gradient(0deg, var(--background) 0%, transparent 100%)",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ maxWidth: 1100, margin: "0 auto" }}>
+            {/* Pair dots */}
+            <div className="flex items-center" style={{ gap: 8 }}>
+              {pairs.map((_, i) => (
                 <div
                   key={i}
-                  ref={(el) => { pairRefs.current[i] = el; }}
-                  className="ts-pair"
-                  style={{ bottom: "14%" }}
-                >
-                  <PairFigure member={pair[0]} diffTag="+" />
-                  {pair[1] && <PairFigure member={pair[1]} diffTag="+" />}
-                </div>
+                  style={{
+                    width: i === activePair ? 28 : 8,
+                    height: 8,
+                    borderRadius: 99,
+                    background:
+                      i === activePair
+                        ? "var(--primary)"
+                        : "var(--outline-variant)",
+                    transition: "all 0.35s ease",
+                    boxShadow:
+                      i === activePair
+                        ? "0 2px 8px rgba(0,0,0,0.12)"
+                        : "none",
+                  }}
+                />
               ))}
+            </div>
 
-              {/* Bottom bar */}
-              <div className="ts-bottombar">
-                <div className="ts-dots">
-                  {pairs.map((_, i) => (
-                    <div key={i} className={`ts-dot${i === activePair ? " on" : ""}`} />
-                  ))}
-                </div>
-                <div className="ts-scroll-hint">
-                  <span>git log --follow</span>
-                  <span className="ts-caret" />
-                </div>
-              </div>
+            {/* Scroll hint */}
+            <div
+              style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: "0.05em",
+                color: "var(--outline)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>scroll to explore</span>
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 2,
+                  height: 14,
+                  background: "var(--primary)",
+                  borderRadius: 2,
+                  animation: "blink 1s steps(1) infinite",
+                }}
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      <p className="relative z-10 max-w-[412px] mx-auto mt-4 mb-16 px-1 text-center" style={{ fontFamily: "'Geist Mono',monospace", fontSize: 11, color: "#4B5563", letterSpacing: ".02em" }}>
-        scroll to advance the roster · two at a time
-      </p>
+        {/* Section title — large background typography */}
+        <div
+          className="absolute pointer-events-none select-none"
+          style={{
+            top: "8%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontFamily: "'Syne', sans-serif",
+            fontSize: "clamp(48px, 10vw, 140px)",
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            color: "var(--surface-container-high)",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            zIndex: 1,
+          }}
+        >
+          THE TEAM
+        </div>
+      </div>
     </section>
   );
 }
