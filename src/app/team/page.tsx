@@ -103,28 +103,15 @@ export default function TeamPage() {
     // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
       cardRefsMap.current.forEach((el, key) => {
-        const rect = el.getBoundingClientRect();
-        const alreadyInView = rect.top < window.innerHeight && rect.bottom > 0;
-
         const st = ScrollTrigger.create({
           trigger: el,
-          start: "top 500%",
-          end: "bottom -300%",
+          start: "top 80%",
+          end: "top 20%",
           scrub: 0.8,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },
         });
-
-        // If card is already in view on load, set progress based on position
-        if (alreadyInView) {
-          const viewportCenter = window.innerHeight / 2;
-          const cardCenter = rect.top + rect.height / 2;
-          const distFromCenter = Math.abs(cardCenter - viewportCenter);
-          const maxDist = window.innerHeight;
-          const initialProgress = 1;
-          setScrollProgs((prev) => ({ ...prev, [key]: initialProgress }));
-        }
 
         triggers.push(st);
       });
