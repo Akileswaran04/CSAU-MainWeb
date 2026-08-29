@@ -42,6 +42,8 @@ export default function HomeClient() {
     setTimeout(() => {
       setPhase("content");
       setZooming(false);
+      // Notify NavButton that hero is visible
+      window.dispatchEvent(new Event("csau:hero-visible"));
     }, 1300);
   }, []);
 

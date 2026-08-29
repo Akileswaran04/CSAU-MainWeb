@@ -25,6 +25,14 @@ export default function NavButton() {
   const [pillHovered, setPillHovered] = useState(false);
   const [nHovered, setNHovered] = useState(false);
   const pathname = usePathname();
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  // Listen for hero content phase from HomeClient
+  useEffect(() => {
+    const handler = () => setHeroVisible(true);
+    window.addEventListener("csau:hero-visible", handler);
+    return () => window.removeEventListener("csau:hero-visible", handler);
+  }, []);
 
   // Close overlay on Escape
   useEffect(() => {
@@ -46,8 +54,8 @@ export default function NavButton() {
     return () => { document.body.style.overflow = ""; };
   }, [overlayOpen]);
 
-  // Hide on home page
-  if (pathname === "/") return null;
+  // Hide on home page unless hero content is active
+  if (pathname === "/" && !heroVisible) return null;
 
   return (
     <>
