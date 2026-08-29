@@ -141,7 +141,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         {/* ===== Hero center content ===== */}
         <div className="relative text-center flex flex-col items-center w-full" style={{ zIndex: 20, gap: 16, padding: "0 12%" }}>
           {/* Brand word — BOLD Sector034 with glitch */}
-          <div ref={brandRef} className="relative" style={{ fontFamily: "'Sector034', sans-serif", fontWeight: 400, fontSize: "clamp(52px, 8vw, 110px)", letterSpacing: ".08em", color: "var(--on-surface)", opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: "opacity .4s ease, transform .4s ease", lineHeight: 1 }}>
+          <div ref={brandRef} className="relative" style={{ fontFamily: "'Sector034', sans-serif", fontWeight: 400, fontSize: "clamp(60px, 10vw, 130px)", letterSpacing: ".18em", color: "var(--on-surface)", opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: "opacity .4s ease, transform .4s ease", lineHeight: 1 }}>
             {"CSAU..".split("").map((ch, i) => (
               <span key={i} className="glitch-char inline-block relative" data-text={ch} style={{ opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: `opacity .3s ease ${i * 0.08}s, transform .3s ease ${i * 0.08}s`, color: ch === "." ? "var(--on-surface-variant)" : "var(--on-surface)" }}>
                 {ch}
