@@ -1,15 +1,14 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 
 /* ============================================================
    TEAM CARD — Premium Editorial / Luxury Studio
 
    Embossed rectangular card with ornate pattern background.
-   Cursor-following radial light reveals embossing on hover.
-   Subtle 3D perspective tilt + lift on hover.
+   3D perspective tilt + lift on hover.
+   autoOpen prop: opens flaps when card enters viewport.
    Size variants: large (president), medium (heads), small (deputies).
-   Background image visible behind flaps for depth.
    ============================================================ */
 
 const CARD_IMG = "/card-pattern.jpg";
@@ -20,6 +19,7 @@ interface TeamCardProps {
   photo?: string;
   index: number;
   size?: "large" | "medium" | "small";
+  autoOpen?: boolean;
 }
 
 const SIZES = {
@@ -28,10 +28,17 @@ const SIZES = {
   small: { height: 320, nameSize: 18, roleSize: 10, borderRadius: 5 },
 };
 
-export default function TeamCard({ name, role, photo, index, size = "medium" }: TeamCardProps) {
+export default function TeamCard({ name, role, photo, index, size = "medium", autoOpen = false }: TeamCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
   const s = SIZES[size];
+
+  // Apply autoOpen class
+  useEffect(() => {
+    if (autoOpen && cardRef.current) {
+      cardRef.current.classList.add("open");
+    }
+  }, [autoOpen]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
@@ -99,7 +106,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
             0 4px 12px rgba(0, 0, 0, 0.12);
         }
 
-        /* Radial light overlay */
         .te-light {
           position: absolute;
           inset: 0;
@@ -110,7 +116,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
           mix-blend-mode: soft-light;
         }
 
-        /* Index number */
         .te-index {
           position: absolute;
           top: -26px;
@@ -123,7 +128,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
           z-index: 1;
         }
 
-        /* Background pattern — always visible for depth */
         .te-bg {
           position: absolute;
           inset: 0;
@@ -140,7 +144,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
           filter: grayscale(0.3) brightness(0.8);
         }
 
-        /* Photo — revealed behind flaps */
         .te-photo {
           position: absolute;
           inset: 0;
@@ -161,7 +164,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
           opacity: 1;
         }
 
-        /* Flaps — ornate embossed pattern */
         .te-flap {
           position: absolute;
           top: 0;
@@ -197,7 +199,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
           transform: rotateY(145deg);
         }
 
-        /* Card border — subtle emboss feel */
         .te-stage::after {
           content: '';
           position: absolute;
@@ -215,7 +216,6 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
       `}</style>
 
       <div style={{ position: 'relative' }}>
-        {/* Index number */}
         <div className="te-index">{idx}</div>
 
         <div
@@ -232,16 +232,11 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
             className="te-stage"
             style={{ height: s.height, borderRadius: s.borderRadius }}
           >
-            {/* Background pattern — always visible for depth */}
             <div
               className="te-bg"
               style={{ backgroundImage: `url(${CARD_IMG})` }}
             />
-
-            {/* Cursor radial light */}
             <div ref={lightRef} className="te-light" />
-
-            {/* Photo */}
             <div className="te-photo">
               {photo ? (
                 <img src={photo} alt={name} loading="lazy" />
@@ -264,13 +259,10 @@ export default function TeamCard({ name, role, photo, index, size = "medium" }: 
                 </div>
               )}
             </div>
-
-            {/* Left flap */}
             <div
               className="te-flap te-flap-l"
               style={{ backgroundImage: `url(${CARD_IMG})` }}
             />
-            {/* Right flap */}
             <div
               className="te-flap te-flap-r"
               style={{ backgroundImage: `url(${CARD_IMG})` }}
