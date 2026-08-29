@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import TeamCard from "@/components/TeamCard";
+import TargetCursor from "@/components/TargetCursor";
 
 /* ============================================================
    TEAM PAGE — Premium Editorial / Luxury Studio
@@ -59,14 +60,24 @@ export default function TeamPage() {
   }, []);
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: "var(--background)",
-        paddingTop: "14vh",
-        paddingBottom: "14vh",
-      }}
-    >
+    <>
+      <TargetCursor
+        targetSelector=".cursor-target"
+        spinDuration={2.5}
+        hideDefaultCursor={true}
+        parallaxOn={true}
+        hoverDuration={0.25}
+        cursorColor="#ffffff"
+        cursorColorOnTarget="#ffffff"
+      />
+      <div
+        className="min-h-screen"
+        style={{
+          background: "var(--background)",
+          paddingTop: "14vh",
+          paddingBottom: "14vh",
+        }}
+      >
       <div
         className="mx-auto px-6 sm:px-10 lg:px-16"
         style={{ maxWidth: 1100 }}
@@ -152,6 +163,7 @@ export default function TeamPage() {
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

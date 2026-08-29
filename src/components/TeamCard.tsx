@@ -189,7 +189,7 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
 
         <div
           ref={cardRef}
-          className={`te-card`}
+          className={`te-card cursor-target`}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={() => {
