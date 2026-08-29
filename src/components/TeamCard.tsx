@@ -183,18 +183,6 @@ export default function TeamCard({
           mix-blend-mode: soft-light;
         }
 
-        .te-index {
-          position: absolute;
-          top: -26px;
-          left: 0;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          color: var(--outline, #77767b);
-          z-index: 1;
-        }
-
         .te-bg {
           position: absolute;
           inset: 0;
@@ -295,8 +283,6 @@ export default function TeamCard({
       `}</style>
 
       <div style={{ position: "relative" }}>
-        <div className="te-index">{idx}</div>
-
         <div
           ref={cardRef}
           className={`te-card ${inverted ? "te-mode-scroll" : "te-mode-hover"}`}
