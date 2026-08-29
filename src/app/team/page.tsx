@@ -46,10 +46,9 @@ const DEPUTIES = [
   { name: "Karthik Iyer", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=55" },
 ];
 
-/* ── Scroll reveal hook: returns visibility + autoOpen state ── */
+/* ── Scroll reveal hook ── */
 function useScrollReveal(count: number) {
   const [visible, setVisible] = useState<boolean[]>(new Array(count).fill(false));
-  const [autoOpened, setAutoOpened] = useState<boolean[]>(new Array(count).fill(false));
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -62,7 +61,6 @@ function useScrollReveal(count: number) {
             const col = idx % 3;
             const delay = row * 80 + col * 120;
 
-            // Reveal card
             setTimeout(() => {
               setVisible((prev) => {
                 const next = [...prev];
@@ -70,15 +68,6 @@ function useScrollReveal(count: number) {
                 return next;
               });
             }, delay);
-
-            // Auto-open flaps after card is revealed
-            setTimeout(() => {
-              setAutoOpened((prev) => {
-                const next = [...prev];
-                next[idx] = true;
-                return next;
-              });
-            }, delay + 600);
 
             observer.unobserve(entry.target);
           }
@@ -90,7 +79,7 @@ function useScrollReveal(count: number) {
     return () => observer.disconnect();
   }, [count]);
 
-  return { visible, autoOpened, refs };
+  return { visible, refs };
 }
 
 /* ── Section Label — big, editorial ── */
@@ -215,7 +204,7 @@ export default function TeamPage() {
                 photo={PRESIDENT.photo}
                 index={1}
                 size="large"
-                autoOpen={presVis.autoOpened[0]}
+
               />
             </div>
           </div>
@@ -249,7 +238,7 @@ export default function TeamPage() {
                   photo={member.photo}
                   index={i + 2}
                   size="medium"
-                  autoOpen={headVis.autoOpened[i]}
+
                 />
               </div>
             ))}
@@ -284,7 +273,7 @@ export default function TeamPage() {
                   photo={member.photo}
                   index={i + headCount + 2}
                   size="small"
-                  autoOpen={depVis.autoOpened[i]}
+
                 />
               </div>
             ))}

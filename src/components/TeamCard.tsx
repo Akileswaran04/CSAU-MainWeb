@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback } from "react";
 
 /* ============================================================
    TEAM CARD — Premium Editorial / Luxury Studio
@@ -19,7 +19,6 @@ interface TeamCardProps {
   photo?: string;
   index: number;
   size?: "large" | "medium" | "small";
-  autoOpen?: boolean;
 }
 
 const SIZES = {
@@ -28,17 +27,10 @@ const SIZES = {
   small: { height: 320, nameSize: 18, roleSize: 10, borderRadius: 5 },
 };
 
-export default function TeamCard({ name, role, photo, index, size = "medium", autoOpen = false }: TeamCardProps) {
+export default function TeamCard({ name, role, photo, index, size = "medium" }: TeamCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
   const s = SIZES[size];
-
-  // Apply autoOpen class
-  useEffect(() => {
-    if (autoOpen && cardRef.current) {
-      cardRef.current.classList.add("open");
-    }
-  }, [autoOpen]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
