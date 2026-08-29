@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import TeamCard from "@/components/TeamCard";
 import TargetCursor from "@/components/TargetCursor";
+import ModeToggle from "@/components/ModeToggle";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -145,50 +146,10 @@ export default function TeamPage() {
         color={cursorColor}
       />
 
-      {/* ── Toggle button — top center ── */}
-      <button
-        onClick={toggleCursor}
-        aria-label="Toggle hover inversion"
-        style={{
-          position: "fixed",
-          top: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 200,
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: inverted ? "#fff" : "var(--on-surface, #1a1b22)",
-          background: inverted ? "var(--primary, #121315)" : "var(--surface-container-lowest, #fff)",
-          border: `1.5px solid ${inverted ? "var(--primary, #121315)" : "var(--outline, #77767b)"}`,
-          padding: "12px 28px",
-          borderRadius: 999,
-          cursor: "pointer",
-          boxShadow: inverted
-            ? "0 4px 16px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15)"
-            : "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
-          transition: "all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
-          backdropFilter: "blur(12px)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: inverted ? "#4ade80" : "var(--outline-variant, #c7c6cb)",
-            transition: "background 0.3s ease",
-            boxShadow: inverted ? "0 0 6px rgba(74,222,128,0.5)" : "none",
-          }}
-        />
-        {inverted ? "SCROLL MODE" : "HOVER MODE"}
-      </button>
+      {/* ── Mode toggle — ThreeUI generate button ── */}
+      {inverted !== null && (
+        <ModeToggle inverted={inverted} onToggle={toggleCursor} />
+      )}
 
       <div
         ref={containerRef}
