@@ -80,14 +80,21 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export default function TeamPage() {
-  const [inverted, setInverted] = useState(false);
+  // Default: hover mode on desktop, scroll mode on mobile
+  const [inverted, setInverted] = useState<boolean | null>(null);
   const [scrollProgs, setScrollProgs] = useState<Record<string, number>>({});
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const toggleCursor = useCallback(() => setInverted((v) => !v), []);
 
-  const cursorColor = inverted ? "#ffffff" : "#1a1b22";
+  // Detect device on mount and set default mode
+  useEffect(() => {
+    const isMobile = window.innerWidth <= 768 || /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    setInverted(isMobile); // scroll mode on mobile, hover on desktop
+  }, []);
+
+  const cursorColor = inverted === true ? "#ffffff" : "#1a1b22";
 
   // GSAP ScrollTrigger — progressive card opening tied to scroll
   useEffect(() => {
@@ -100,7 +107,7 @@ export default function TeamPage() {
           trigger: el,
           start: "top 100%",
           end: "top -30%",
-          scrub: 1.8,
+          scrub: 2,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },
@@ -226,7 +233,7 @@ export default function TeamPage() {
                   index={i + 1}
                   size="large"
                   scrollProgress={scrollProgs[key] ?? 0}
-                  inverted={inverted}
+                  inverted={!!inverted}
                 />
               </div>
               );
@@ -264,7 +271,7 @@ export default function TeamPage() {
                   index={i + PRESIDENTS.length + 1}
                   size="medium"
                   scrollProgress={scrollProgs[key] ?? 0}
-                  inverted={inverted}
+                  inverted={!!inverted}
                 />
               </div>
               );
@@ -303,7 +310,7 @@ export default function TeamPage() {
                     index={i + PRESIDENTS.length + HEADS.length + 1}
                     size="small"
                     scrollProgress={scrollProgs[key] ?? 0}
-                    inverted={inverted}
+                    inverted={!!inverted}
                   />
                 </div>
               );
