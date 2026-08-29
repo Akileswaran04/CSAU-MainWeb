@@ -5,24 +5,48 @@ import TeamCard from "@/components/TeamCard";
 import TargetCursor from "@/components/TargetCursor";
 
 /* ============================================================
-   TEAM PAGE — Premium Editorial / Luxury Studio
+   TEAM PAGE — Premium Editorial Hierarchy
 
-   No header. No footer. No hero. No extra sections.
-   Just the3-column grid with large white negative space,
-   dark embossed cards, and cinematic scroll animations.
+   President (1) centered at top.
+   Heads (6) in a centered row.
+   Deputies (14) in a centered grid.
+   No header. No footer. No hero.
    ============================================================ */
 
-const TEAM = [
-  { name: "Aarav Sharma", role: "Backend Engineer", photo: "https://i.pravatar.cc/400?img=13" },
-  { name: "Meera Iyer", role: "Product Design", photo: "https://i.pravatar.cc/400?img=32" },
-  { name: "Karthik Raj", role: "Frontend Engineer", photo: "https://i.pravatar.cc/400?img=15" },
-  { name: "Sanjana Nair", role: "ML Research", photo: "https://i.pravatar.cc/400?img=48" },
-  { name: "Rohan Patel", role: "DevOps Lead", photo: "https://i.pravatar.cc/400?img=53" },
-  { name: "Meera Rajan", role: "Outreach Lead", photo: "https://i.pravatar.cc/400?img=44" },
+const PRESIDENT = {
+  name: "Aarav Sharma",
+  role: "President",
+  photo: "https://i.pravatar.cc/400?img=13",
+};
+
+const HEADS = [
+  { name: "Meera Iyer", role: "Vice President", photo: "https://i.pravatar.cc/400?img=32" },
+  { name: "Karthik Raj", role: "Technical Head", photo: "https://i.pravatar.cc/400?img=15" },
+  { name: "Sanjana Nair", role: "Design Head", photo: "https://i.pravatar.cc/400?img=48" },
+  { name: "Rohan Patel", role: "Operations Head", photo: "https://i.pravatar.cc/400?img=53" },
+  { name: "Meera Rajan", role: "Outreach Head", photo: "https://i.pravatar.cc/400?img=44" },
+  { name: "Arjun Menon", role: "Content Head", photo: "https://i.pravatar.cc/400?img=59" },
 ];
 
-export default function TeamPage() {
-  const [visible, setVisible] = useState<boolean[]>(new Array(TEAM.length).fill(false));
+const DEPUTIES = [
+  { name: "Priya Verma", role: "Technical Deputy", photo: "https://i.pravatar.cc/400?img=23" },
+  { name: "Vikram Singh", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=33" },
+  { name: "Ananya Reddy", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=25" },
+  { name: "Rahul Krishnan", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=51" },
+  { name: "Nisha Gupta", role: "Content Deputy", photo: "https://i.pravatar.cc/400?img=28" },
+  { name: "Aditya Rao", role: "Technical Deputy", photo: "https://i.pravatar.cc/400?img=60" },
+  { name: "Kavya Pillai", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=36" },
+  { name: "Siddharth Nair", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=57" },
+  { name: "Tanvi Sharma", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=41" },
+  { name: "Ravi Kumar", role: "Content Deputy", photo: "https://i.pravatar.cc/400?img=64" },
+  { name: "Divya Iyer", role: "Technical Deputy", photo: "https://i.pravatar.cc/400?img=45" },
+  { name: "Nikhil Das", role: "Design Deputy", photo: "https://i.pravatar.cc/400?img=68" },
+  { name: "Sneha Menon", role: "Outreach Deputy", photo: "https://i.pravatar.cc/400?img=47" },
+  { name: "Karthik Iyer", role: "Operations Deputy", photo: "https://i.pravatar.cc/400?img=55" },
+];
+
+function useScrollReveal(count: number) {
+  const [visible, setVisible] = useState<boolean[]>(new Array(count).fill(false));
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -31,33 +55,53 @@ export default function TeamPage() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const idx = Number(entry.target.getAttribute("data-idx"));
-            // Stagger within the row: cards in the same row get sequential delays
-            const row = Math.floor(idx / 3);
-            const col = idx % 3;
-            const baseDelay = row * 80; // row stagger
-            const colDelay = col * 120; // column stagger within row
-
             setTimeout(() => {
               setVisible((prev) => {
                 const next = [...prev];
                 next[idx] = true;
                 return next;
               });
-            }, baseDelay + colDelay);
-
+            }, idx * 100);
             observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.1, rootMargin: "0px 0px -30px 0px" }
     );
-
-    refs.current.forEach((el) => {
-      if (el) observer.observe(el);
-    });
-
+    refs.current.forEach((el) => { if (el) observer.observe(el); });
     return () => observer.disconnect();
-  }, []);
+  }, [count]);
+
+  return { visible, refs };
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.2em",
+        textTransform: "uppercase",
+        color: "var(--outline, #77767b)",
+        textAlign: "center",
+        marginBottom: 32,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+export default function TeamPage() {
+  const presCount = 1;
+  const headCount = HEADS.length;
+  const depCount = DEPUTIES.length;
+
+  const presVis = useScrollReveal(presCount);
+  const headVis = useScrollReveal(headCount);
+  const depVis = useScrollReveal(depCount);
 
   return (
     <>
@@ -67,102 +111,118 @@ export default function TeamPage() {
         hideDefaultCursor={true}
         parallaxOn={true}
         hoverDuration={0.25}
-        cursorColor="#ffffff"
-        cursorColorOnTarget="#ffffff"
+        cursorColor="#1a1b22"
+        cursorColorOnTarget="#1a1b22"
       />
       <div
         className="min-h-screen"
         style={{
           background: "var(--background)",
-          paddingTop: "14vh",
-          paddingBottom: "14vh",
+          paddingTop: "12vh",
+          paddingBottom: "12vh",
         }}
       >
-      <div
-        className="mx-auto px-6 sm:px-10 lg:px-16"
-        style={{ maxWidth: 1100 }}
-      >
         <div
-          className="grid gap-y-20 gap-x-10"
-          style={{
-            gridTemplateColumns: "repeat(3, 1fr)",
-          }}
+          className="mx-auto px-6 sm:px-10 lg:px-16"
+          style={{ maxWidth: 1200 }}
         >
-          {TEAM.map((member, i) => {
-            const isVisible = visible[i];
-            return (
+          {/* ── President ── */}
+          <SectionLabel>President</SectionLabel>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: 80,
+            }}
+          >
+            <div
+              ref={(el) => { presVis.refs.current[0] = el; }}
+              data-idx={0}
+              style={{
+                opacity: presVis.visible[0] ? 1 : 0,
+                transform: presVis.visible[0] ? "translateY(0)" : "translateY(32px)",
+                transition: "opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                width: 280,
+              }}
+            >
+              <TeamCard
+                name={PRESIDENT.name}
+                role={PRESIDENT.role}
+                photo={PRESIDENT.photo}
+                index={1}
+                size="large"
+              />
+            </div>
+          </div>
+
+          {/* ── Heads ── */}
+          <SectionLabel>Heads</SectionLabel>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: 40,
+              marginBottom: 80,
+            }}
+          >
+            {HEADS.map((member, i) => (
               <div
                 key={member.name}
-                ref={(el) => { refs.current[i] = el; }}
+                ref={(el) => { headVis.refs.current[i] = el; }}
                 data-idx={i}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? "translateY(0)" : "translateY(32px)",
-                  transition: "opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  opacity: headVis.visible[i] ? 1 : 0,
+                  transform: headVis.visible[i] ? "translateY(0)" : "translateY(28px)",
+                  transition: "opacity 0.85s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  width: 240,
                 }}
               >
-                {/* Card appears first */}
-                <div
-                  style={{
-                    opacity: isVisible ? 1 : 0,
-                    transform: isVisible ? "translateY(0)" : "translateY(20px)",
-                    transition: "opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s",
-                    width: "100%",
-                  }}
-                >
-                  <TeamCard
-                    name={member.name}
-                    role={member.role}
-                    photo={member.photo}
-                    index={i + 1}
-                  />
-                </div>
-
-                {/* Name and role appear slightly later */}
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginTop: 20,
-                    opacity: isVisible ? 1 : 0,
-                    transform: isVisible ? "translateY(0)" : "translateY(12px)",
-                    transition: "opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s",
-                    width: "100%",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'CremeEspana', cursive",
-                      color: "var(--on-surface, #1a1b22)",
-                      fontSize: 22,
-                      fontWeight: 400,
-                      margin: 0,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {member.name}
-                  </p>
-                  <p
-                    style={{
-                      color: "var(--outline, #77767b)",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      margin: "6px 0 0",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    }}
-                  >
-                    {member.role}
-                  </p>
-                </div>
+                <TeamCard
+                  name={member.name}
+                  role={member.role}
+                  photo={member.photo}
+                  index={i + 2}
+                  size="medium"
+                />
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* ── Deputies ── */}
+          <SectionLabel>Deputies</SectionLabel>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+              gap: "48px 32px",
+              justifyItems: "center",
+            }}
+          >
+            {DEPUTIES.map((member, i) => (
+              <div
+                key={member.name}
+                ref={(el) => { depVis.refs.current[i] = el; }}
+                data-idx={i}
+                style={{
+                  opacity: depVis.visible[i] ? 1 : 0,
+                  transform: depVis.visible[i] ? "translateY(0)" : "translateY(24px)",
+                  transition: "opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  width: "100%",
+                  maxWidth: 220,
+                }}
+              >
+                <TeamCard
+                  name={member.name}
+                  role={member.role}
+                  photo={member.photo}
+                  index={i + headCount + 2}
+                  size="small"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

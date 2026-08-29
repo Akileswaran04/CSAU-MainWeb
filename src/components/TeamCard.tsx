@@ -5,10 +5,11 @@ import { useRef, useCallback } from "react";
 /* ============================================================
    TEAM CARD — Premium Editorial / Luxury Studio
 
-   Embossed rectangular card with ornate pattern flaps.
+   Embossed rectangular card with ornate pattern background.
    Cursor-following radial light reveals embossing on hover.
-   Subtle 3D perspective tilt + 8-12px lift on hover.
-   Index number positioned at top-left of card.
+   Subtle 3D perspective tilt + lift on hover.
+   Size variants: large (president), medium (heads), small (deputies).
+   Background image visible behind flaps for depth.
    ============================================================ */
 
 const CARD_IMG = "/card-pattern.jpg";
@@ -18,11 +19,19 @@ interface TeamCardProps {
   role: string;
   photo?: string;
   index: number;
+  size?: "large" | "medium" | "small";
 }
 
-export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
+const SIZES = {
+  large: { height: 460, nameSize: 26, roleSize: 12, borderRadius: 8 },
+  medium: { height: 380, nameSize: 20, roleSize: 11, borderRadius: 6 },
+  small: { height: 320, nameSize: 18, roleSize: 10, borderRadius: 5 },
+};
+
+export default function TeamCard({ name, role, photo, index, size = "medium" }: TeamCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
+  const s = SIZES[size];
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const card = cardRef.current;
@@ -35,14 +44,12 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
     const cx = rect.width / 2;
     const cy = rect.height / 2;
 
-    // 3D tilt: max ~4deg
     const rotateY = ((x - cx) / cx) * 4;
     const rotateX = ((cy - y) / cy) * 3;
 
     card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
 
-    // Radial light position
-    light.style.background = `radial-gradient(circle 180px at ${x}px ${y}px, rgba(255,255,255,0.12) 0%, transparent 70%)`;
+    light.style.background = `radial-gradient(circle 200px at ${x}px ${y}px, rgba(255,255,255,0.15) 0%, transparent 70%)`;
     light.style.opacity = "1";
   }, []);
 
@@ -61,7 +68,6 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
         .te-card {
           position: relative;
           width: 100%;
-          height: 420px;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
           transform-style: preserve-3d;
@@ -71,24 +77,33 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
         }
         .te-card:hover {
           box-shadow:
-            0 20px 50px rgba(0, 0, 0, 0.15),
-            0 8px 20px rgba(0, 0, 0, 0.08);
+            0 24px 60px rgba(0, 0, 0, 0.18),
+            0 10px 24px rgba(0, 0, 0, 0.1),
+            0 2px 6px rgba(0, 0, 0, 0.06);
         }
 
         .te-stage {
           position: relative;
           width: 100%;
-          height: 100%;
-          border-radius: 6px;
           overflow: hidden;
+          border-radius: inherit;
           background: #0a0908;
+          box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.12),
+            0 1px 4px rgba(0, 0, 0, 0.08);
+          transition: box-shadow 0.5s ease;
+        }
+        .te-card:hover .te-stage {
+          box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.2),
+            0 4px 12px rgba(0, 0, 0, 0.12);
         }
 
         /* Radial light overlay */
         .te-light {
           position: absolute;
           inset: 0;
-          z-index: 10;
+          z-index: 12;
           pointer-events: none;
           opacity: 0;
           transition: opacity 0.4s ease;
@@ -98,7 +113,7 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
         /* Index number */
         .te-index {
           position: absolute;
-          top: -28px;
+          top: -26px;
           left: 0;
           font-family: 'Plus Jakarta Sans', sans-serif;
           font-size: 11px;
@@ -108,11 +123,28 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
           z-index: 1;
         }
 
+        /* Background pattern — always visible for depth */
+        .te-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          background-repeat: no-repeat;
+          background-size: cover;
+          background-position: center;
+          opacity: 0.35;
+          filter: grayscale(0.5) brightness(0.7);
+          transition: opacity 0.5s ease, filter 0.5s ease;
+        }
+        .te-card:hover .te-bg {
+          opacity: 0.5;
+          filter: grayscale(0.3) brightness(0.8);
+        }
+
         /* Photo — revealed behind flaps */
         .te-photo {
           position: absolute;
           inset: 0;
-          z-index: 1;
+          z-index: 2;
           opacity: 0;
           transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s,
                       filter 0.6s ease 0.12s;
@@ -137,24 +169,24 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
           height: 100%;
           background-repeat: no-repeat;
           background-size: 200% 100%;
-          z-index: 3;
+          z-index: 4;
           backface-visibility: hidden;
           transition: transform 0.65s cubic-bezier(0.3, 0.7, 0.2, 1);
           transform-style: preserve-3d;
         }
         .te-flap-l {
           left: 0;
-          border-radius: 6px 0 0 6px;
+          border-radius: inherit 0 0 inherit;
           background-position: left top;
           transform-origin: left center;
-          box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.3);
+          box-shadow: inset -2px 0 8px rgba(0, 0, 0, 0.35);
         }
         .te-flap-r {
           right: 0;
-          border-radius: 0 6px 6px 0;
+          border-radius: 0 inherit inherit 0;
           background-position: right top;
           transform-origin: right center;
-          box-shadow: inset 2px 0 6px rgba(0, 0, 0, 0.1);
+          box-shadow: inset 2px 0 8px rgba(0, 0, 0, 0.15);
         }
         .te-card:hover .te-flap-l,
         .te-card.open .te-flap-l {
@@ -171,12 +203,11 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
           position: absolute;
           inset: 0;
           border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 6px;
-          z-index: 5;
+          border-radius: inherit;
+          z-index: 6;
           pointer-events: none;
         }
 
-        /* Info */
         @media (prefers-reduced-motion: reduce) {
           .te-flap, .te-photo { transition: none; }
           .te-card { transition: none; }
@@ -189,7 +220,7 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
 
         <div
           ref={cardRef}
-          className={`te-card cursor-target`}
+          className="te-card cursor-target"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={() => {
@@ -197,7 +228,16 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
             if (el) el.classList.toggle("open");
           }}
         >
-          <div className="te-stage">
+          <div
+            className="te-stage"
+            style={{ height: s.height, borderRadius: s.borderRadius }}
+          >
+            {/* Background pattern — always visible for depth */}
+            <div
+              className="te-bg"
+              style={{ backgroundImage: `url(${CARD_IMG})` }}
+            />
+
             {/* Cursor radial light */}
             <div ref={lightRef} className="te-light" />
 
@@ -236,6 +276,35 @@ export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
               style={{ backgroundImage: `url(${CARD_IMG})` }}
             />
           </div>
+        </div>
+
+        {/* Name + Role */}
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <p
+            style={{
+              fontFamily: "'CremeEspana', cursive",
+              color: "var(--on-surface, #1a1b22)",
+              fontSize: s.nameSize,
+              fontWeight: 400,
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            {name}
+          </p>
+          <p
+            style={{
+              color: "var(--outline, #77767b)",
+              fontSize: s.roleSize,
+              fontWeight: 600,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              margin: "5px 0 0",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}
+          >
+            {role}
+          </p>
         </div>
       </div>
     </>
