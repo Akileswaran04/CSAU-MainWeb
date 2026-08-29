@@ -5,11 +5,12 @@ import { useRef, useCallback } from "react";
 /* ============================================================
    TEAM CARD — Premium Editorial / Luxury Studio
 
-   Scroll-driven 3D card opening: ornamental back rotates away
-   to reveal the member photograph. Progress controlled externally
-   via scrollProgress (0 = closed, 1 = fully open).
-   Hover lift/tilt when opened.
-   Invert mode: hovered card subdued, others emphasized.
+   Two modes:
+   - Normal: hover opens flaps, mouse leave closes
+   - Inverted: scrollProgress drives flap opening, hover inverts brightness
+
+   The ornamental back physically rotates away via rotateY to
+   reveal the member photograph underneath.
    ============================================================ */
 
 const CARD_IMG = "/card-pattern.jpg";
@@ -43,17 +44,32 @@ export default function TeamCard({
   const lightRef = useRef<HTMLDivElement>(null);
   const s = SIZES[size];
 
+  // Scroll-driven open amount (only used when inverted=true)
   const p = Math.max(0, Math.min(1, scrollProgress));
+  const scrollFlapAngle = p * 145;
+  const scrollPhotoOpacity = Math.max(0, (p - 0.3) / 0.7);
 
-  // Flap rotation: 0° closed → -145°/145° open, driven by scroll
-  const flapAngle = p * 145;
-  // Photo opacity: fades in from 0.3 to 1
-  const photoOpacity = Math.max(0, (p - 0.3) / 0.7);
-  // 3D tilt during scroll opening
-  const scrollTiltX = (1 - p) * 3;
-  // Background brightness during opening
-  const bgBrightness = 0.5 + p * 0.3;
+  // Hover handlers — for normal mode (open/close on hover)
+  const handleMouseEnter = useCallback(() => {
+    if (inverted) return; // inverted mode uses scroll, not hover for opening
+    const el = cardRef.current;
+    if (el) el.classList.add("open");
+  }, [inverted]);
 
+  const handleMouseLeave = useCallback(() => {
+    // Close flaps in hover mode
+    if (!inverted) {
+      const el = cardRef.current;
+      if (el) el.classList.remove("open");
+    }
+    // Reset tilt
+    const card = cardRef.current;
+    const light = lightRef.current;
+    if (card) card.style.transform = "";
+    if (light) light.style.opacity = "0";
+  }, [inverted]);
+
+  // 3D tilt — works in both modes when card is open
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const card = cardRef.current;
@@ -77,7 +93,7 @@ export default function TeamCard({
     []
   );
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseMoveReset = useCallback(() => {
     const card = cardRef.current;
     const light = lightRef.current;
     if (card) card.style.transform = "";
@@ -85,6 +101,24 @@ export default function TeamCard({
   }, []);
 
   const idx = String(index).padStart(2, "0");
+
+  // Compute flap angle and photo opacity based on mode
+  let flapAngle: number;
+  let photoOpacity: number;
+  let bgBrightness: number;
+
+  if (inverted) {
+    // Scroll-driven
+    flapAngle = scrollFlapAngle;
+    photoOpacity = scrollPhotoOpacity;
+    bgBrightness = 0.5 + p * 0.3;
+  } else {
+    // Hover-driven — handled via CSS .open class, so we use 0 for closed
+    // and let CSS transitions do the work
+    flapAngle = 0; // CSS handles this
+    photoOpacity = 0; // CSS handles this
+    bgBrightness = 0.6;
+  }
 
   return (
     <>
@@ -144,7 +178,6 @@ export default function TeamCard({
           letter-spacing: 0.12em;
           color: var(--outline, #77767b);
           z-index: 1;
-          transition: opacity 0.3s ease;
         }
 
         .te-bg {
@@ -154,14 +187,14 @@ export default function TeamCard({
           background-repeat: no-repeat;
           background-size: cover;
           background-position: center;
-          transition: opacity 0.3s ease, filter 0.3s ease;
+          transition: opacity 0.5s ease, filter 0.5s ease;
         }
 
+        /* Photo — CSS-driven for hover mode */
         .te-photo {
           position: absolute;
           inset: 0;
           z-index: 2;
-          transition: opacity 0.4s ease, filter 0.4s ease;
           filter: grayscale(0.12) contrast(1.06) brightness(0.96);
         }
         .te-photo img {
@@ -170,7 +203,16 @@ export default function TeamCard({
           object-fit: cover;
           display: block;
         }
+        /* Hover mode: photo fades in via .open class */
+        .te-mode-hover .te-photo {
+          opacity: 0;
+          transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s;
+        }
+        .te-mode-hover .te-card.open .te-photo {
+          opacity: 1;
+        }
 
+        /* Flaps — CSS-driven for hover mode */
         .te-flap {
           position: absolute;
           top: 0;
@@ -180,7 +222,6 @@ export default function TeamCard({
           background-size: 200% 100%;
           z-index: 4;
           backface-visibility: hidden;
-          transition: transform 0.1s linear;
           transform-style: preserve-3d;
         }
         .te-flap-l {
@@ -196,6 +237,31 @@ export default function TeamCard({
           background-position: right top;
           transform-origin: right center;
           box-shadow: inset 2px 0 8px rgba(0, 0, 0, 0.15);
+        }
+        /* Hover mode: flaps animate via CSS transition */
+        .te-mode-hover .te-flap {
+          transition: transform 0.65s cubic-bezier(0.3, 0.7, 0.2, 1);
+        }
+        .te-mode-hover .te-card.open .te-flap-l {
+          transform: rotateY(-145deg);
+        }
+        .te-mode-hover .te-card.open .te-flap-r {
+          transform: rotateY(145deg);
+        }
+        /* Inverted mode: flaps driven by inline style (scroll), no CSS transition */
+        .te-mode-scroll .te-flap {
+          transition: none;
+        }
+
+        /* Hover mode: bg brightens on open */
+        .te-mode-hover .te-bg {
+          opacity: 0.35;
+          filter: grayscale(0.5) brightness(0.6);
+          transition: opacity 0.5s ease, filter 0.5s ease;
+        }
+        .te-mode-hover .te-card.open .te-bg {
+          opacity: 0.5;
+          filter: grayscale(0.3) brightness(0.8);
         }
 
         .te-stage::after {
@@ -218,9 +284,10 @@ export default function TeamCard({
 
         <div
           ref={cardRef}
-          className="te-card"
-          onMouseMove={p > 0.5 ? handleMouseMove : undefined}
-          onMouseLeave={p > 0.5 ? handleMouseLeave : undefined}
+          className={`te-card ${inverted ? "te-mode-scroll" : "te-mode-hover"}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={handleMouseMove}
         >
           <div
             className="te-stage"
@@ -229,20 +296,24 @@ export default function TeamCard({
             {/* Background pattern */}
             <div
               className="te-bg"
-              style={{
-                backgroundImage: `url(${CARD_IMG})`,
-                opacity: 0.3 + (1 - p) * 0.3,
-                filter: `grayscale(0.5) brightness(${bgBrightness})`,
-              }}
+              style={
+                inverted
+                  ? {
+                      backgroundImage: `url(${CARD_IMG})`,
+                      opacity: 0.3 + (1 - p) * 0.3,
+                      filter: `grayscale(0.5) brightness(${bgBrightness})`,
+                    }
+                  : { backgroundImage: `url(${CARD_IMG})` }
+              }
             />
 
-            {/* Cursor radial light */}
+            {/* Cursor radial light — only in inverted mode when open */}
             <div ref={lightRef} className="te-light" />
 
-            {/* Photo — revealed as scrollProgress increases */}
+            {/* Photo */}
             <div
               className="te-photo"
-              style={{ opacity: photoOpacity }}
+              style={inverted ? { opacity: photoOpacity } : undefined}
             >
               {photo ? (
                 <img src={photo} alt={name} loading="lazy" />
@@ -266,21 +337,23 @@ export default function TeamCard({
               )}
             </div>
 
-            {/* Left flap — rotates closed→open based on scrollProgress */}
+            {/* Left flap */}
             <div
               className="te-flap te-flap-l"
-              style={{
-                backgroundImage: `url(${CARD_IMG})`,
-                transform: `rotateY(${-flapAngle}deg)`,
-              }}
+              style={
+                inverted
+                  ? { backgroundImage: `url(${CARD_IMG})`, transform: `rotateY(${-scrollFlapAngle}deg)` }
+                  : { backgroundImage: `url(${CARD_IMG})` }
+              }
             />
             {/* Right flap */}
             <div
               className="te-flap te-flap-r"
-              style={{
-                backgroundImage: `url(${CARD_IMG})`,
-                transform: `rotateY(${flapAngle}deg)`,
-              }}
+              style={
+                inverted
+                  ? { backgroundImage: `url(${CARD_IMG})`, transform: `rotateY(${scrollFlapAngle}deg)` }
+                  : { backgroundImage: `url(${CARD_IMG})` }
+              }
             />
           </div>
         </div>
