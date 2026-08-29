@@ -13,12 +13,11 @@ import { useRef, useCallback } from "react";
    reveal the member photograph underneath.
    ============================================================ */
 
-const CARD_IMG = "/card-pattern.png";
-
 interface TeamCardProps {
   name: string;
   role: string;
   photo?: string;
+  coverImage?: string;
   index: number;
   size?: "large" | "medium" | "small";
   scrollProgress?: number;
@@ -35,6 +34,7 @@ export default function TeamCard({
   name,
   role,
   photo,
+  coverImage = "/card-pattern.png",
   index,
   size = "medium",
   scrollProgress = 0,
@@ -299,11 +299,11 @@ export default function TeamCard({
               style={
                 inverted
                   ? {
-                      backgroundImage: `url(${CARD_IMG})`,
+                      backgroundImage: `url(${coverImage})`,
                       opacity: 0.3 + (1 - p) * 0.3,
                       filter: `grayscale(0.5) brightness(${bgBrightness})`,
                     }
-                  : { backgroundImage: `url(${CARD_IMG})` }
+                  : { backgroundImage: `url(${coverImage})` }
               }
             />
 
@@ -342,8 +342,8 @@ export default function TeamCard({
               className="te-flap te-flap-l"
               style={
                 inverted
-                  ? { backgroundImage: `url(${CARD_IMG})`, transform: `rotateY(${-scrollFlapAngle}deg)` }
-                  : { backgroundImage: `url(${CARD_IMG})` }
+                  ? { backgroundImage: `url(${coverImage})`, transform: `rotateY(${-scrollFlapAngle}deg)` }
+                  : { backgroundImage: `url(${coverImage})` }
               }
             />
             {/* Right flap */}
@@ -351,8 +351,8 @@ export default function TeamCard({
               className="te-flap te-flap-r"
               style={
                 inverted
-                  ? { backgroundImage: `url(${CARD_IMG})`, transform: `rotateY(${scrollFlapAngle}deg)` }
-                  : { backgroundImage: `url(${CARD_IMG})` }
+                  ? { backgroundImage: `url(${coverImage})`, transform: `rotateY(${scrollFlapAngle}deg)` }
+                  : { backgroundImage: `url(${coverImage})` }
               }
             />
           </div>

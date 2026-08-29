@@ -244,6 +244,7 @@ export default function TeamPage() {
                   name={member.name}
                   role={member.role}
                   photo={member.photo}
+                  coverImage="/card-president.png"
                   index={i + 1}
                   size="large"
                   scrollProgress={scrollProgs[key] ?? 0}
@@ -282,6 +283,7 @@ export default function TeamPage() {
                   name={member.name}
                   role={member.role}
                   photo={member.photo}
+                  coverImage="/card-heads.png"
                   index={i + PRESIDENTS.length + 1}
                   size="medium"
                   scrollProgress={scrollProgs[key] ?? 0}
@@ -321,6 +323,7 @@ export default function TeamPage() {
                     name={member.name}
                     role={member.role}
                     photo={member.photo}
+                    coverImage="/card-deputy.png"
                     index={i + PRESIDENTS.length + HEADS.length + 1}
                     size="small"
                     scrollProgress={scrollProgs[key] ?? 0}
