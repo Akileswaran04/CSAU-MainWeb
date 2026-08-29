@@ -106,13 +106,10 @@ export default function TeamPage() {
   return (
     <>
       <TargetCursor
-        targetSelector=".cursor-target"
-        spinDuration={2.5}
+        spinDuration={3}
         hideDefaultCursor={true}
-        parallaxOn={true}
-        hoverDuration={0.25}
-        cursorColor="#1a1b22"
-        cursorColorOnTarget="#1a1b22"
+        color="#1a1b22"
+        hoverColor="#1a1b22"
       />
       <div
         className="min-h-screen"
