@@ -5,9 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /* ============================================================
-   NAV BUTTON — Fixed top-left navigation trigger.
-   Hidden on the home page (/).
-   Visible on About and Team pages with same nav links.
+   NAV BUTTON — Premium floating pill (top-left) + Circular N
+   (bottom-left). 
+
+   Pill: subtle hover expand, click opens fullscreen overlay.
+   N-circle: small circular control, hover expands slightly.
+
+   Hidden on home page (/).
    ============================================================ */
 
 const navLinks = [
@@ -17,111 +21,222 @@ const navLinks = [
 ];
 
 export default function NavButton() {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [pillHovered, setPillHovered] = useState(false);
+  const [nHovered, setNHovered] = useState(false);
   const pathname = usePathname();
 
+  // Close overlay on Escape
   useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (
-        menuRef.current && !menuRef.current.contains(e.target as Node) &&
-        btnRef.current && !btnRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!overlayOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setOverlayOpen(false);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [overlayOpen]);
 
-  // Hide on home page (after all hooks)
+  // Lock body scroll when overlay is open
+  useEffect(() => {
+    if (overlayOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [overlayOpen]);
+
+  // Hide on home page
   if (pathname === "/") return null;
 
   return (
-    <div className="fixed top-4 left-4 z-[100]" style={{ pointerEvents: "none" }}>
-      <button
-        ref={btnRef}
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Open navigation"
-        aria-expanded={open}
-        className="flex items-center gap-2 cursor-pointer"
-        style={{
-          pointerEvents: "auto",
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: "0.08em",
-          color: open ? "var(--on-primary)" : "var(--on-surface)",
-          background: open ? "var(--primary)" : "var(--surface-container-lowest)",
-          border: "1px solid var(--outline-variant)",
-          padding: "10px 18px",
-          borderRadius: 999,
-          boxShadow: open
-            ? "0 2px 8px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)"
-            : "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)",
-          transition: "all 0.25s ease",
-        }}
-      >
-        <span className="flex flex-col justify-center items-center" style={{ width: 14, height: 14 }}>
-          <span style={{ display: "block", width: open ? 12 : 14, height: 2, background: "currentColor", borderRadius: 2, transition: "all 0.25s ease", transform: open ? "rotate(45deg) translateY(0)" : "none" }} />
-          <span style={{ display: "block", width: open ? 0 : 10, height: 2, background: "currentColor", borderRadius: 2, marginTop: open ? 0 : 3, transition: "all 0.2s ease", opacity: open ? 0 : 1 }} />
-          <span style={{ display: "block", width: open ? 12 : 14, height: 2, background: "currentColor", borderRadius: 2, marginTop: open ? -2 : 3, transition: "all 0.25s ease", transform: open ? "rotate(-45deg) translateY(0)" : "none" }} />
-        </span>
-        <span style={{ marginLeft: 4 }}>NAV</span>
-      </button>
+    <>
+      <style>{`
+        .nav-pill {
+          position: fixed;
+          top: 28px;
+          left: 28px;
+          z-index: 200;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          color: var(--on-surface, #1a1b22);
+          background: var(--surface-container-lowest, #fff);
+          border: 1px solid var(--outline-variant, #c7c6cb);
+          padding: 10px 20px;
+          border-radius: 999px;
+          box-shadow:
+            0 1px 3px rgba(0,0,0,0.03),
+            0 4px 12px rgba(0,0,0,0.05);
+          transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+          user-select: none;
+          text-decoration: none;
+        }
+        .nav-pill:hover {
+          padding-right: 28px;
+          box-shadow:
+            0 2px 8px rgba(0,0,0,0.06),
+            0 8px 24px rgba(0,0,0,0.08);
+        }
 
+        .nav-n {
+          position: fixed;
+          bottom: 28px;
+          left: 28px;
+          z-index: 200;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--on-surface, #1a1b22);
+          background: var(--surface-container-lowest, #fff);
+          border: 1px solid var(--outline-variant, #c7c6cb);
+          border-radius: 50%;
+          box-shadow:
+            0 1px 3px rgba(0,0,0,0.03),
+            0 4px 12px rgba(0,0,0,0.05);
+          transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+          text-decoration: none;
+        }
+        .nav-n:hover {
+          width: 44px;
+          height: 44px;
+          box-shadow:
+            0 2px 8px rgba(0,0,0,0.06),
+            0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        /* Fullscreen overlay */
+        .nav-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 190;
+          background: var(--background, #fbf8ff);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 32px;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .nav-overlay.open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .nav-overlay-link {
+          font-family: 'Kenfolg', 'Syne', sans-serif;
+          font-size: clamp(32px, 6vw, 56px);
+          font-weight: 400;
+          color: var(--on-surface, #1a1b22);
+          text-decoration: none;
+          letter-spacing: -0.01em;
+          transition: opacity 0.25s ease;
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        .nav-overlay.open .nav-overlay-link {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .nav-overlay.open .nav-overlay-link:nth-child(1) {
+          transition-delay: 0.1s;
+        }
+        .nav-overlay.open .nav-overlay-link:nth-child(2) {
+          transition-delay: 0.18s;
+        }
+        .nav-overlay.open .nav-overlay-link:nth-child(3) {
+          transition-delay: 0.26s;
+        }
+        .nav-overlay-link:hover {
+          opacity: 0.5;
+        }
+
+        .nav-close {
+          position: absolute;
+          top: 28px;
+          right: 28px;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          background: none;
+          border: 1px solid var(--outline-variant, #c7c6cb);
+          border-radius: 50%;
+          color: var(--on-surface, #1a1b22);
+          font-size: 18px;
+          transition: all 0.25s ease;
+        }
+        .nav-close:hover {
+          background: var(--surface-container, #eeedf7);
+        }
+      `}</style>
+
+      {/* Floating pill — top left */}
       <div
-        ref={menuRef}
-        className="absolute"
-        style={{
-          top: "calc(100% + 8px)",
-          left: 0,
-          minWidth: 180,
-          background: "var(--surface-container-lowest)",
-          border: "1px solid var(--outline-variant)",
-          borderRadius: "1rem",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.04), 0 16px 48px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)",
-          padding: "8px",
-          opacity: open ? 1 : 0,
-          transform: open ? "translateY(0) scale(1)" : "translateY(-8px) scale(0.95)",
-          pointerEvents: open ? "auto" : "none",
-          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
+        className="nav-pill"
+        role="button"
+        tabIndex={0}
+        aria-label="Open navigation"
+        onMouseEnter={() => setPillHovered(true)}
+        onMouseLeave={() => setPillHovered(false)}
+        onClick={() => setOverlayOpen(true)}
       >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <line x1="0" y1="2" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="0" y1="7" x2={pillHovered ? "14" : "10"} y2="7" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="0" y1="12" x2={pillHovered ? "14" : "7"} y2="12" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        <span style={{ opacity: pillHovered ? 1 : 0, width: pillHovered ? "auto" : 0, transition: "all 0.3s ease", overflow: "hidden", whiteSpace: "nowrap" }}>
+          NAV
+        </span>
+      </div>
+
+      {/* Circular N — bottom left */}
+      <a
+        href="/"
+        className="nav-n"
+        aria-label="Go home"
+        onMouseEnter={() => setNHovered(true)}
+        onMouseLeave={() => setNHovered(false)}
+      >
+        N
+      </a>
+
+      {/* Fullscreen overlay */}
+      <div className={`nav-overlay${overlayOpen ? " open" : ""}`}>
+        <button
+          className="nav-close"
+          onClick={() => setOverlayOpen(false)}
+          aria-label="Close navigation"
+        >
+          ✕
+        </button>
+
         {navLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            onClick={() => setOpen(false)}
-            className="block"
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--on-surface)",
-              textDecoration: "none",
-              padding: "10px 16px",
-              borderRadius: "0.75rem",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-container)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            className="nav-overlay-link"
+            onClick={() => setOverlayOpen(false)}
           >
             {link.label}
           </Link>
         ))}
       </div>
-    </div>
+    </>
   );
 }

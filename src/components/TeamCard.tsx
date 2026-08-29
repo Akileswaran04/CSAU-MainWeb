@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useRef, useCallback } from "react";
 
 /* ============================================================
-   TEAM CARD — Box-Reveal Animation (White Clay Theme)
+   TEAM CARD — Premium Editorial / Luxury Studio
 
-   Flaps use /card-pattern.jpg (ornate embossed texture from
-   the reference HTML). Flaps swing open on hover/tap to
-   reveal the team photo.
+   Embossed rectangular card with ornate pattern flaps.
+   Cursor-following radial light reveals embossing on hover.
+   Subtle 3D perspective tilt + 8-12px lift on hover.
+   Index number positioned at top-left of card.
    ============================================================ */
 
 const CARD_IMG = "/card-pattern.jpg";
@@ -16,126 +17,192 @@ interface TeamCardProps {
   name: string;
   role: string;
   photo?: string;
+  index: number;
 }
 
-export default function TeamCard({ name, role, photo }: TeamCardProps) {
-  const [open, setOpen] = useState(false);
-  const toggle = useCallback(() => setOpen((o) => !o), []);
+export default function TeamCard({ name, role, photo, index }: TeamCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const lightRef = useRef<HTMLDivElement>(null);
 
-  const isOpen = open;
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    const light = lightRef.current;
+    if (!card || !light) return;
+
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+
+    // 3D tilt: max ~4deg
+    const rotateY = ((x - cx) / cx) * 4;
+    const rotateX = ((cy - y) / cy) * 3;
+
+    card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
+
+    // Radial light position
+    light.style.background = `radial-gradient(circle 180px at ${x}px ${y}px, rgba(255,255,255,0.12) 0%, transparent 70%)`;
+    light.style.opacity = "1";
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    const light = lightRef.current;
+    if (card) card.style.transform = "";
+    if (light) light.style.opacity = "0";
+  }, []);
+
+  const idx = String(index).padStart(2, "0");
 
   return (
     <>
       <style>{`
-        .tc-wrap {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .tc-card {
-          perspective: 1200px;
-          perspective-origin: 50% 50%;
+        .te-card {
+          position: relative;
+          width: 100%;
           height: 420px;
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
-          position: relative;
-          width: 100%;
+          transform-style: preserve-3d;
+          transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                      box-shadow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          will-change: transform;
         }
-        .tc-stage {
+        .te-card:hover {
+          box-shadow:
+            0 20px 50px rgba(0, 0, 0, 0.15),
+            0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .te-stage {
           position: relative;
           width: 100%;
-          height: 360px;
+          height: 100%;
+          border-radius: 6px;
           overflow: hidden;
-          border-radius: 8px;
+          background: #0a0908;
+        }
+
+        /* Radial light overlay */
+        .te-light {
+          position: absolute;
+          inset: 0;
+          z-index: 10;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          mix-blend-mode: soft-light;
+        }
+
+        /* Index number */
+        .te-index {
+          position: absolute;
+          top: -28px;
+          left: 0;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          color: var(--outline, #77767b);
+          z-index: 1;
         }
 
         /* Photo — revealed behind flaps */
-        .tc-photo {
+        .te-photo {
           position: absolute;
-          left: 50%;
-          bottom: 8px;
-          width: 78%;
-          height: 88%;
-          border-radius: 3px;
-          overflow: hidden;
-          transform: translate(-50%, 10%) scale(0.9);
+          inset: 0;
+          z-index: 1;
           opacity: 0;
-          transition:
-            transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.16s,
-            opacity 0.5s ease 0.16s;
-          z-index: 2;
-          background: #000;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.1);
+          transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s,
+                      filter 0.6s ease 0.12s;
+          filter: grayscale(0.15) contrast(1.08) brightness(0.95);
         }
-        .tc-photo img {
+        .te-photo img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
-          filter: grayscale(0.1) contrast(1.05);
         }
-        .tc-photo::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border: 1px solid var(--outline-variant, #c7c6cb);
-          pointer-events: none;
-        }
-        .tc-card:hover .tc-photo,
-        .tc-card.open .tc-photo {
-          transform: translate(-50%, -14%) scale(1);
+        .te-card:hover .te-photo,
+        .te-card.open .te-photo {
           opacity: 1;
         }
 
-        /* Flaps — ornate embossed pattern, split left/right */
-        .tc-flap {
+        /* Flaps — ornate embossed pattern */
+        .te-flap {
           position: absolute;
           top: 0;
           width: 50%;
           height: 100%;
           background-repeat: no-repeat;
           background-size: 200% 100%;
-          border: 1px solid #000;
           z-index: 3;
           backface-visibility: hidden;
-          transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1);
+          transition: transform 0.65s cubic-bezier(0.3, 0.7, 0.2, 1);
           transform-style: preserve-3d;
         }
-        .tc-flap-l {
+        .te-flap-l {
           left: 0;
-          border-radius: 8px 0 0 8px;
+          border-radius: 6px 0 0 6px;
           background-position: left top;
           transform-origin: left center;
-          box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.15);
+          box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.3);
         }
-        .tc-flap-r {
+        .te-flap-r {
           right: 0;
-          border-radius: 0 8px 8px 0;
+          border-radius: 0 6px 6px 0;
           background-position: right top;
           transform-origin: right center;
+          box-shadow: inset 2px 0 6px rgba(0, 0, 0, 0.1);
         }
-        .tc-card:hover .tc-flap-l,
-        .tc-card.open .tc-flap-l {
-          transform: rotateY(-140deg);
+        .te-card:hover .te-flap-l,
+        .te-card.open .te-flap-l {
+          transform: rotateY(-145deg);
         }
-        .tc-card:hover .tc-flap-r,
-        .tc-card.open .tc-flap-r {
-          transform: rotateY(140deg);
+        .te-card:hover .te-flap-r,
+        .te-card.open .te-flap-r {
+          transform: rotateY(145deg);
         }
 
+        /* Card border — subtle emboss feel */
+        .te-stage::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 6px;
+          z-index: 5;
+          pointer-events: none;
+        }
+
+        /* Info */
         @media (prefers-reduced-motion: reduce) {
-          .tc-flap, .tc-photo { transition: none; }
+          .te-flap, .te-photo { transition: none; }
+          .te-card { transition: none; }
         }
       `}</style>
 
-      <div className="tc-wrap">
+      <div style={{ position: 'relative' }}>
+        {/* Index number */}
+        <div className="te-index">{idx}</div>
+
         <div
-          className={`tc-card${isOpen ? " open" : ""}`}
-          onClick={toggle}
+          ref={cardRef}
+          className={`te-card`}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onClick={() => {
+            const el = cardRef.current;
+            if (el) el.classList.toggle("open");
+          }}
         >
-          <div className="tc-stage">
-            {/* Photo layer */}
-            <div className="tc-photo">
+          <div className="te-stage">
+            {/* Cursor radial light */}
+            <div ref={lightRef} className="te-light" />
+
+            {/* Photo */}
+            <div className="te-photo">
               {photo ? (
                 <img src={photo} alt={name} loading="lazy" />
               ) : (
@@ -143,14 +210,14 @@ export default function TeamCard({ name, role, photo }: TeamCardProps) {
                   style={{
                     width: "100%",
                     height: "100%",
-                    background: "linear-gradient(135deg, #e8e7f1, #c7c6cb)",
+                    background: "linear-gradient(135deg, #2a2a2e, #1a1a1e)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontFamily: "'Syne', sans-serif",
                     fontWeight: 800,
                     fontSize: 48,
-                    color: "var(--on-surface-variant, #46464b)",
+                    color: "#555",
                   }}
                 >
                   {name.split(" ").map((w) => w[0]).join("")}
@@ -158,49 +225,17 @@ export default function TeamCard({ name, role, photo }: TeamCardProps) {
               )}
             </div>
 
-            {/* Left flap — background-image via inline style for reliable loading */}
+            {/* Left flap */}
             <div
-              className="tc-flap tc-flap-l"
-              style={{
-                backgroundImage: `url(${CARD_IMG})`,
-              }}
+              className="te-flap te-flap-l"
+              style={{ backgroundImage: `url(${CARD_IMG})` }}
             />
             {/* Right flap */}
             <div
-              className="tc-flap tc-flap-r"
-              style={{
-                backgroundImage: `url(${CARD_IMG})`,
-              }}
+              className="te-flap te-flap-r"
+              style={{ backgroundImage: `url(${CARD_IMG})` }}
             />
           </div>
-        </div>
-
-        {/* Info below card */}
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <p
-            style={{
-              fontFamily: "'CremeEspana', cursive",
-              color: "var(--on-surface, #1a1b22)",
-              fontSize: 24,
-              fontWeight: 400,
-              margin: 0,
-            }}
-          >
-            {name}
-          </p>
-          <p
-            style={{
-              color: "var(--outline, #77767b)",
-              fontSize: 12,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              margin: "3px 0 0",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 500,
-            }}
-          >
-            {role}
-          </p>
         </div>
       </div>
     </>
