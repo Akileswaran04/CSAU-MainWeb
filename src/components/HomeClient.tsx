@@ -6,10 +6,10 @@ import LandingPage from "./LandingPage";
 import DescriptionPage from "./DescriptionPage";
 
 /* ============================================================
-   HOME CLIENT — Dark System View Flow
+   HOME CLIENT — White Sculptural Tactility Flow
 
    1. BootPreloader (cursor draws diamond, types CSAU)
-   2. LandingPage (neon rings, Sector034 CSAU, glitch, enter)
+   2. LandingPage (clay rings, Sector034 CSAU, glitch, enter)
    3. DescriptionPage (typewriter about CSAU)
 
    On initial load: boot → landing → description
@@ -69,7 +69,7 @@ export default function HomeClient() {
             transition: "transform 1.3s cubic-bezier(.7,0,.15,1), opacity 1.1s ease",
             transform: zooming ? "scale(9)" : "scale(1)",
             opacity: zooming ? 0 : 1,
-            backgroundColor: zooming ? "#050507" : undefined,
+            backgroundColor: zooming ? "var(--background)" : undefined,
           }}
         >
           <LandingPage onEnter={handleEnter} />

@@ -131,14 +131,54 @@
   --font-body: 'Plus Jakarta Sans', sans-serif;
   --font-geist-mono: 'JetBrains Mono', monospace;
   --font-space-grotesk: 'Syne', sans-serif;
-  --font-kenfolg: 'Syne', sans-serif;
-  --font-creme: 'Plus Jakarta Sans', sans-serif;
+  --font-kenfolg: 'Kenfolg', 'Syne', sans-serif;
+  --font-creme: 'CremeEspana', 'Plus Jakarta Sans', cursive;
+  --font-centrion: 'Centrion', 'Plus Jakarta Sans', sans-serif;
+  --font-wildworld: 'WildWorld', 'Syne', sans-serif;
+  --font-sector: 'Sector034', monospace;
 }
 
-/* ===== Custom Font: Sector 034 ===== */
+/* ===== Local Font Faces ===== */
 @font-face {
   font-family: 'Sector034';
   src: url('/fonts/sector-034/sector_034.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CremeEspana';
+  src: url('/fonts/creme/Creme Espana.woff2') format('woff2'),
+       url('/fonts/creme/Creme Espana.woff') format('woff'),
+       url('/fonts/creme/Creme Espana.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Kenfolg';
+  src: url('/fonts/kenfolg/MADEKenfolg.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Centrion';
+  src: url('/fonts/Centrion-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Centrion';
+  src: url('/fonts/Centrion-High.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'WildWorld';
+  src: url('/fonts/wild-world/WILD WORLD.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
