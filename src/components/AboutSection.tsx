@@ -59,6 +59,7 @@ export default function AboutSection() {
   return (
     <section
       ref={sectionRef}
+      data-section="about"
       style={{
         position: "relative",
         width: "100%",
