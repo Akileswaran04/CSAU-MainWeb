@@ -26,7 +26,7 @@ interface TeamCardProps {
 }
 
 const SIZES = {
-  large: { height: 460, nameSize: 26, roleSize: 12, borderRadius: 8 },
+  large: { height: 340, nameSize: 26, roleSize: 12, borderRadius: 8 },
   medium: { height: 300, nameSize: 20, roleSize: 11, borderRadius: 6 },
   small: { height: 320, nameSize: 18, roleSize: 10, borderRadius: 5 },
 };
