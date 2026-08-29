@@ -108,9 +108,9 @@ export default function TeamPage() {
 
         const st = ScrollTrigger.create({
           trigger: el,
-          start: "top 120%",
-          end: "top -10%",
-          scrub: 2,
+          start: "top 200%",
+          end: "bottom -100%",
+          scrub: 1.5,
           onUpdate: (self) => {
             setScrollProgs((prev) => ({ ...prev, [key]: self.progress }));
           },
@@ -122,7 +122,7 @@ export default function TeamPage() {
           const cardCenter = rect.top + rect.height / 2;
           const distFromCenter = Math.abs(cardCenter - viewportCenter);
           const maxDist = window.innerHeight;
-          const initialProgress = Math.max(0.5, Math.min(1, 1 - distFromCenter / maxDist));
+          const initialProgress = 1;
           setScrollProgs((prev) => ({ ...prev, [key]: initialProgress }));
         }
 
