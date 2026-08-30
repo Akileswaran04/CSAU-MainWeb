@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
 import AboutSection from "./AboutSection";
-import OptionWheel from "./OptionWheel";
+
 
 /* ============================================================
    HOME CLIENT — White Sculptural Tactility Flow
@@ -26,8 +25,7 @@ type Phase = "boot" | "landing" | "content";
 export default function HomeClient() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
-  const router = useRouter();
-
+  
   // Skip preloader on client-side navigation
   useEffect(() => {
     if (sessionStorage.getItem("csau-boot-done")) {
@@ -76,47 +74,6 @@ export default function HomeClient() {
           <HeroSection />
           <AboutSection />
 
-          {/* OptionWheel navigation — left side */}
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: 280,
-              height: "100vh",
-              zIndex: 200,
-              pointerEvents: "auto",
-            }}
-          >
-            <OptionWheel
-              items={["HOME", "ABOUT", "TEAM"]}
-              defaultSelected={0}
-              textColor="var(--outline)"
-              activeColor="var(--on-surface)"
-              side="left"
-              fontSize={1.1}
-              spacing={2.2}
-              tilt={8}
-              curve={0.8}
-              blur={1.5}
-              fade={0.3}
-              minOpacity={0.1}
-              smoothing={180}
-              inset={32}
-              loop={false}
-              draggable
-              onChange={(_idx, item) => {
-                if (item === "HOME") {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                } else if (item === "ABOUT") {
-                  const aboutEl = document.querySelector("[data-section='about']");
-                  aboutEl?.scrollIntoView({ behavior: "smooth" });
-                } else if (item === "TEAM") {
-                  router.push("/team");
-                }
-              }}
-            />
-          </div>
         </div>
       )}
     </>
