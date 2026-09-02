@@ -77,18 +77,22 @@ export function UplinkLoader({ className = "", style, progress = 0 }: UplinkLoad
           width: 100%;
         }
         .uplink-label {
-          font-size: 9px;
-          font-weight: 500;
-          letter-spacing: .14em;
-          color: #77767b;
-          opacity: .55;
+          font-family: 'Ethnocentric', 'Sector034', sans-serif;
+          font-size: 16px;
+          font-weight: 50;
+          letter-spacing: .06em;
+          color: var(--on-surface, #1a1b22);
+          opacity: .85;
+          text-shadow: 0 1px 2px rgba(0,0,0,.06);
         }
         .uplink-readout {
-          font-size: 10px;
-          font-weight: 300;
+          font-family: 'Ethnocentric', 'Sector034', sans-serif;
+          font-size: 12px;
+          font-weight: 50;
           letter-spacing: .7px;
-          color: #77767b;
-          text-shadow: 0 0 2px rgba(119,118,123,.12);
+          color: var(--on-surface, #1a1b22);
+          opacity: .7;
+          text-shadow: 0 0 2px rgba(0,0,0,.06);
         }
         .uplink-bar {
           width: 100%;

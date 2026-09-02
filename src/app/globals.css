@@ -136,6 +136,7 @@
   --font-centrion: 'Centrion', 'Plus Jakarta Sans', sans-serif;
   --font-wildworld: 'WildWorld', 'Syne', sans-serif;
   --font-sector: 'Sector034', monospace;
+  --font-ethnocentric: 'Ethnocentric', 'Sector034', sans-serif;
 }
 
 /* ===== Local Font Faces ===== */
@@ -179,6 +180,13 @@
 @font-face {
   font-family: 'WildWorld';
   src: url('/fonts/wild-world/WILD WORLD.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ethnocentric';
+  src: url('/fonts/Ethnocentric-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

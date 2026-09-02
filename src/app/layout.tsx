@@ -23,9 +23,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CSAU // CEG — Computer Science Association",
+  title: "CSAU // CEG — Computer Society of Anna University",
   description:
-    "Computer Science Association of the University, CEG — Build. Break. Ship.",
+    "Computer Society of Anna University, CEG — Build. Break. Ship.",
 };
 
 export default function RootLayout({

@@ -11,7 +11,7 @@ import Link from "next/link";
    ============================================================ */
 
 const PARAGRAPH =
-  "CSAU is the Computer Science Association of the University, CEG — a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where Anna University's computer science community writes, breaks, and ships things together.";
+  "CSAU is the Computer Society of Anna University, CEG — a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where Anna University's computer science community writes, breaks, and ships things together.";
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLDivElement>(null);

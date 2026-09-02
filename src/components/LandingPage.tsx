@@ -42,7 +42,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
       timeout = setTimeout(() => {
         if (brandRef.current) {
           brandRef.current.classList.add("glitching");
-          setTimeout(() => brandRef.current?.classList.remove("glitching"), 300);
+          setTimeout(() => brandRef.current?.classList.remove("glitching"), 150);
         }
         scheduleNext();
       }, delay);
@@ -54,13 +54,6 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
   return (
     <>
       <style>{`
-        @font-face {
-          font-family: 'Sector034';
-          src: url('/fonts/sector-034/sector_034.ttf') format('truetype');
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
-        }
         @keyframes ringPulse { 0%,100%{opacity:.25} 50%{opacity:.45} }
         @keyframes ringPulse2 { 0%,100%{opacity:.15} 50%{opacity:.35} }
         @keyframes glowPulse { 0%,100%{opacity:.08} 50%{opacity:.2} }
@@ -141,7 +134,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         {/* ===== Hero center content ===== */}
         <div className="relative text-center flex flex-col items-center w-full" style={{ zIndex: 20, gap: 16, padding: "0 12%" }}>
           {/* Brand word — BOLD Sector034 with glitch */}
-          <div ref={brandRef} className="relative" style={{ fontFamily: "'Sector034', sans-serif", fontWeight: 720, fontSize: "clamp(60px, 10vw, 130px)", letterSpacing: ".07em", color: "var(--on-surface)", opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: "opacity .4s ease, transform .4s ease", lineHeight: 1 }}>
+          <div ref={brandRef} className="relative" style={{ fontFamily: "'Ethnocentric', 'Sector034', sans-serif", fontWeight: 900, fontSize: "clamp(60px, 10vw, 130px)", letterSpacing: ".04em", color: "var(--on-surface)", opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: "opacity .4s ease, transform .4s ease", lineHeight: 1, textShadow: "0 2px 8px rgba(0,0,0,.06), 0 0 40px rgba(0,0,0,.02)" }}>
             {"CSAU..".split("").map((ch, i) => (
               <span key={i} className="glitch-char inline-block relative" data-text={ch} style={{ opacity: brandVisible ? 1 : 0, transform: brandVisible ? "translateY(0)" : "translateY(18px)", transition: `opacity .3s ease ${i * 0.08}s, transform .3s ease ${i * 0.08}s`, color: ch === "." ? "var(--on-surface-variant)" : "var(--on-surface)" }}>
                 {ch}

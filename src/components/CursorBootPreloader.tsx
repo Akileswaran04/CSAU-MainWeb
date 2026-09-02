@@ -383,9 +383,9 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
 
         {/* CSAU word */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
-          <div ref={wordRef} className="flex" style={{ fontFamily: "'Sector034', sans-serif", fontWeight: 400, fontSize: "clamp(60px,14vw,200px)", letterSpacing: ".18em", color: "transparent", WebkitTextStroke: "1.5px var(--primary-container)", textShadow: "0 0 30px rgba(39,39,42,.1)" }}>
+          <div ref={wordRef} className="flex" style={{ fontFamily: "'Ethnocentric', 'Sector034', sans-serif", fontWeight: 900, fontSize: "clamp(60px,14vw,200px)", letterSpacing: ".08em", color: "transparent", WebkitTextStroke: "2px var(--primary-container)", textShadow: "0 0 30px rgba(39,39,42,.1)" }}>
             {"CSAU".split("").map((ch, i) => (
-              <span key={i} className="boot-char inline-block" style={{ WebkitTextStroke: "1.5px var(--primary-container)" }}>{ch}</span>
+              <span key={i} className="boot-char inline-block" style={{ WebkitTextStroke: "2px var(--primary-container)" }}>{ch}</span>
             ))}
           </div>
         </div>

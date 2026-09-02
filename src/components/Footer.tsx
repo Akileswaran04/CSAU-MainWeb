@@ -45,7 +45,7 @@ export default function Footer() {
               className="mt-3 text-sm leading-relaxed max-w-xs"
               style={{ color: "var(--on-surface-variant)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
-              Computer Science Association of the University, CEG
+              Computer Society of Anna University, CEG
             </p>
             <p
               className="mt-4 text-xs tracking-widest uppercase"
