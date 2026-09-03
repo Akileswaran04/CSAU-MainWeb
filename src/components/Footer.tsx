@@ -1,7 +1,8 @@
-import Link from "next/link";
+"use client";
 
 /* ============================================================
    FOOTER — Minimal, Sculptural Tactility theme.
+   Global footer rendered from the root layout on every page.
    ============================================================ */
 
 const socialLinks = [
@@ -34,8 +35,8 @@ export default function Footer() {
             <p
               className="text-3xl font-bold tracking-wider"
               style={{
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 800,
+                fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
+                fontWeight: 900,
                 color: "var(--primary)",
               }}
             >
@@ -110,7 +111,7 @@ export default function Footer() {
               letterSpacing: "0.1em",
             }}
           >
-            © {new Date().getFullYear()} CSAU — CEG
+            © 2026 CSAU — CEG
           </p>
           <p
             className="text-xs tracking-widest uppercase"

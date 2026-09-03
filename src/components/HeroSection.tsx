@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 /* ============================================================
    HERO SECTION — Full-viewport hero after landing zoom
@@ -83,10 +83,10 @@ export default function HeroSection() {
         {/* Brand */}
         <h1
           style={{
-            fontFamily: "'Sector034', monospace",
-            fontWeight: 400,
+            fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
+            fontWeight: 900,
             fontSize: "clamp(48px, 8vw, 110px)",
-            letterSpacing: ".18em",
+            letterSpacing: ".04em",
             color: "var(--on-surface)",
             margin: 0,
             lineHeight: 1,
@@ -129,7 +129,7 @@ export default function HeroSection() {
         {/* Eyebrow */}
         <p
           style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 11,
             letterSpacing: ".2em",
             color: "var(--outline)",
@@ -155,7 +155,7 @@ export default function HeroSection() {
       >
         <span
           style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 9,
             letterSpacing: ".2em",
             color: "var(--outline)",

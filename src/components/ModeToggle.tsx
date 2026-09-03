@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 type ModeToggleProps = {
   inverted: boolean;
@@ -8,12 +8,13 @@ type ModeToggleProps = {
 };
 
 export default function ModeToggle({ inverted, onToggle }: ModeToggleProps) {
-  const [mounted, setMounted] = useState(false);
+  // Client-only mount check (hydrated read, no effect)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Prismatic shimmer animation on canvas
   useEffect(() => {

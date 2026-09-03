@@ -67,7 +67,7 @@ export function UplinkLoader({ className = "", style, progress = 0 }: UplinkLoad
           gap: 3px;
           width: 100%;
           height: 100%;
-          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
           -webkit-font-smoothing: antialiased;
         }
         .uplink-top-row {

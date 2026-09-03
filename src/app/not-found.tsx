@@ -9,8 +9,8 @@ export default function NotFound() {
       <p
         className="text-xs tracking-widest uppercase"
         style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontWeight: 600,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 500,
           color: "var(--outline)",
           letterSpacing: "0.15em",
         }}
@@ -20,8 +20,8 @@ export default function NotFound() {
       <h1
         className="text-6xl sm:text-7xl font-bold"
         style={{
-          fontFamily: "'Syne', sans-serif",
-          fontWeight: 800,
+          fontFamily: "'Kenfolg', 'Syne', sans-serif",
+          fontWeight: 400,
           color: "var(--primary)",
         }}
       >

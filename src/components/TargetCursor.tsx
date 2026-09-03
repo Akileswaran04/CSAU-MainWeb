@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useMemo, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import "./TargetCursor.css";
@@ -24,7 +24,12 @@ const TargetCursor = ({
 }: TargetCursorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const spinTl = useRef<gsap.core.Timeline | null>(null);
-  const [mounted, setMounted] = useState(false);
+  // Client-only mount check (hydrated read, no effect)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const isMobile = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -34,11 +39,6 @@ const TargetCursor = ({
     const ua = (navigator.userAgent || "").toLowerCase();
     const isMobileUA = /android|iphone|ipad|ipod/i.test(ua);
     return (hasTouchScreen && isSmallScreen) || isMobileUA;
-  }, []);
-
-  // Only render after mount
-  useEffect(() => {
-    setMounted(true);
   }, []);
 
   // React to color changes

@@ -91,7 +91,7 @@ export default function DescriptionPage({ onBack }: DescriptionPageProps) {
       {/* Content */}
       <div className="relative mx-auto" style={{ zIndex: 20, maxWidth: 820, textAlign: "left", paddingTop: "14vh", paddingBottom: "10vh", paddingLeft: "6%", paddingRight: "6%" }}>
         {/* Eyebrow */}
-        <div style={{ fontFamily: "'Plus Jakarta Sans', monospace", fontSize: 11, letterSpacing: ".35em", color: "var(--on-surface-variant)", marginBottom: 22, minHeight: "1em" }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".35em", color: "var(--on-surface-variant)", marginBottom: 22, minHeight: "1em" }}>
           {eyebrow}
           {eyebrow.length < "// WHO WE ARE".length && <span className="caret-blink" style={{ background: "var(--primary-container)" }} />}
         </div>

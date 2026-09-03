@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useCallback } from "react";
 
 /* ============================================================
@@ -18,7 +19,6 @@ interface TeamCardProps {
   role: string;
   photo?: string;
   coverImage?: string;
-  index: number;
   size?: "large" | "medium" | "small";
   scrollProgress?: number;
   inverted?: boolean;
@@ -35,7 +35,6 @@ export default function TeamCard({
   role,
   photo,
   coverImage = "/card-pattern.png",
-  index,
   size = "medium",
   scrollProgress = 0,
   inverted = false,
@@ -108,29 +107,17 @@ export default function TeamCard({
     []
   );
 
-  const handleMouseMoveReset = useCallback(() => {
-    const card = cardRef.current;
-    const light = lightRef.current;
-    if (card) card.style.transform = "";
-    if (light) light.style.opacity = "0";
-  }, []);
-
-  const idx = String(index).padStart(2, "0");
-
-  // Compute flap angle and photo opacity based on mode
-  let flapAngle: number;
+  // Compute photo opacity and background brightness based on mode
   let photoOpacity: number;
   let bgBrightness: number;
 
   if (inverted) {
     // Scroll-driven
-    flapAngle = scrollFlapAngle;
     photoOpacity = scrollPhotoOpacity;
     bgBrightness = 0.5 + p * 0.3;
   } else {
     // Hover-driven — handled via CSS .open class, so we use 0 for closed
     // and let CSS transitions do the work
-    flapAngle = 0; // CSS handles this
     photoOpacity = 0; // CSS handles this
     bgBrightness = 0.6;
   }
@@ -318,7 +305,13 @@ export default function TeamCard({
               style={inverted ? { opacity: photoOpacity } : undefined}
             >
               {photo ? (
-                <img src={photo} alt={name} loading="lazy" />
+                <Image
+                  src={photo}
+                  alt={name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectFit: "cover" }}
+                />
               ) : (
                 <div
                   style={{

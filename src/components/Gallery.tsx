@@ -48,7 +48,10 @@ export function Gallery({
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsRef = useRef({ speed, scale });
-  settingsRef.current = { speed, scale };
+
+  useEffect(() => {
+    settingsRef.current = { speed, scale };
+  }, [speed, scale]);
 
   useEffect(() => {
     const host = hostRef.current;

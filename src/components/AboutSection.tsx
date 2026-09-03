@@ -92,7 +92,7 @@ export default function AboutSection() {
         {/* Eyebrow */}
         <div
           style={{
-            fontFamily: "'Plus Jakarta Sans', monospace",
+            fontFamily: "'JetBrains Mono', monospace",
             fontSize: 11,
             letterSpacing: ".35em",
             color: "var(--on-surface-variant)",
@@ -102,7 +102,7 @@ export default function AboutSection() {
             transition: "opacity .6s ease, transform .6s ease",
           }}
         >
-          // WHO WE ARE
+          {"// WHO WE ARE"}
         </div>
 
         {/* Title */}

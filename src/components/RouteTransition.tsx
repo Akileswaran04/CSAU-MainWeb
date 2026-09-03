@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useRef, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ============================================================
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
    Brief overlay on navigation between routes.
    ============================================================ */
 
-function Overlay({ pathname }: { pathname: string }) {
+function Overlay() {
   return (
     <motion.div
       className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
@@ -56,14 +56,14 @@ function Overlay({ pathname }: { pathname: string }) {
 
 export default function RouteTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const initialPath = useRef(pathname);
-  const isInitial = pathname === initialPath.current;
+  const [initialPath] = useState(pathname);
+  const isInitial = pathname === initialPath;
 
   return (
     <>
       {!isInitial && (
         <AnimatePresence mode="wait">
-          <Overlay key={`overlay-${pathname}`} pathname={pathname} />
+          <Overlay key={`overlay-${pathname}`} />
         </AnimatePresence>
       )}
 

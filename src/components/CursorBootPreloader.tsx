@@ -60,7 +60,7 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
         const start = performance.now();
         const step = (t: number) => {
           if (cancelledRef.current) { resolve(); return; }
-          let p = Math.min((t - start) / duration, 1);
+          const p = Math.min((t - start) / duration, 1);
           const e = 1 - Math.pow(1 - p, 3);
           setCursor(sx + (x - sx) * e, sy + (y - sy) * e);
           if (p < 1) requestAnimationFrame(step);
@@ -187,7 +187,7 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
       cancelAnimationFrame(raf);
       window.removeEventListener("load", onLoad);
     };
-  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // ── Cursor animation sequence ──
   useEffect(() => {
@@ -391,7 +391,7 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
         </div>
 
         {/* Caret line */}
-        <div ref={caretLineRef} className="absolute left-1/2 text-center pointer-events-none" style={{ bottom: "32%", transform: "translateX(-50%)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, letterSpacing: ".25em", color: "var(--outline)", opacity: 0, transition: "opacity .5s", zIndex: 3 }}>
+        <div ref={caretLineRef} className="absolute left-1/2 text-center pointer-events-none" style={{ bottom: "32%", transform: "translateX(-50%)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: ".25em", color: "var(--outline)", opacity: 0, transition: "opacity .5s", zIndex: 3 }}>
           COMPUTER SCIENCE ASSOCIATION // CEG
         </div>
 
@@ -412,7 +412,7 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
             <circle cx="13" cy="13" r="11" fill="none" stroke="var(--outline-variant)" strokeWidth="1.4" opacity=".6" />
             <path d="M4 3 L4 20 L9 15.5 L12.5 22 L15.5 20.5 L12 14 L19 14 Z" fill="var(--on-surface)" stroke="var(--outline-variant)" strokeWidth="1" style={{ filter: "drop-shadow(0 0 4px rgba(119,118,123,0.3))" }} />
           </svg>
-          <div ref={labelRef} className="absolute whitespace-nowrap" style={{ left: 18, top: 16, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 10, color: "var(--on-surface-variant)", letterSpacing: ".1em", opacity: 0.85 }}>READY</div>
+          <div ref={labelRef} className="absolute whitespace-nowrap" style={{ left: 18, top: 16, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--on-surface-variant)", letterSpacing: ".1em", opacity: 0.85 }}>READY</div>
         </div>
       </div>
     </>

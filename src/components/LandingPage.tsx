@@ -86,7 +86,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         ))}
 
         {/* HUD topbar */}
-        <div className="absolute top-0 left-0 right-0 flex justify-between pointer-events-none" style={{ padding: "24px 5%", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".2em", color: "var(--outline)", zIndex: 20 }}>
+        <div className="absolute top-0 left-0 right-0 flex justify-between pointer-events-none" style={{ padding: "24px 5%", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".2em", color: "var(--outline)", zIndex: 20 }}>
           <div>CSAU // CEG <span style={{ color: "var(--primary-container)" }}>·</span> ANNA UNIV</div>
           <div>SYS <span style={{ color: "var(--on-surface-variant)" }}>ONLINE</span></div>
         </div>
@@ -144,7 +144,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
 
           {/* Tagline */}
           <div style={{ fontFamily: "'WildWorld', 'Syne', sans-serif", fontSize: 14, letterSpacing: ".25em", color: "var(--on-surface-variant)", textTransform: "uppercase", opacity: taglineVisible ? 1 : 0, transition: "opacity .6s ease" }}>
-            CODE <span style={{ color: "var(--outline)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11 }}>//</span> BUILD <span style={{ color: "var(--outline)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11 }}>//</span> BREAK
+            CODE <span style={{ color: "var(--outline)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11 }}>{"//"}</span> BUILD <span style={{ color: "var(--outline)", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11 }}>{"//"}</span> BREAK
           </div>
 
           {/* Enter button — clay style */}
@@ -154,7 +154,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         </div>
 
         {/* Footline */}
-        <div className="absolute left-0 right-0 flex justify-between pointer-events-none" style={{ bottom: 26, padding: "0 5%", zIndex: 20, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 10, letterSpacing: ".15em", color: "var(--outline)" }}>
+        <div className="absolute left-0 right-0 flex justify-between pointer-events-none" style={{ bottom: 26, padding: "0 5%", zIndex: 20, fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".15em", color: "var(--outline)" }}>
           <span>CHENNAI, IN</span>
           <span>{clock}</span>
         </div>

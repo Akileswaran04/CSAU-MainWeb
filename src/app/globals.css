@@ -75,7 +75,6 @@
   --color-text-muted: var(--outline);
 
   /* ── Legacy aliases ── */
-  --background: var(--background);
   --foreground: var(--on-surface);
   --bg-card: var(--surface-container-lowest);
   --bg-glass: rgba(251, 248, 255, 0.85);
