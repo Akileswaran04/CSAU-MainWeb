@@ -169,6 +169,7 @@ export default function AboutSection() {
         >
           <Link
             href="/team"
+            data-route-load
             className="group"
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",

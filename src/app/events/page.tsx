@@ -208,6 +208,7 @@ export default function EventsPage() {
         <div style={{ marginTop: 56, textAlign: "center" }}>
           <Link
             href="/crackit"
+            data-route-load
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontSize: 11,

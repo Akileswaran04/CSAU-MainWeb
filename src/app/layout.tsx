@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import LaserNav from "@/components/LaserNav";
+import RouteLoadGate from "@/components/RouteLoadGate";
 import "./globals.css";
 
 const syne = Syne({
@@ -42,7 +43,10 @@ export default function RootLayout({
         {/* Laser navigation — a floating button opens the fullscreen
             Matrix Junction laser overlay with the site links. */}
         <LaserNav />
-        {children}
+        {/* RouteLoadGate shows the loading sequence when travelling
+            between pages via the nav bar or marked CTAs, and staggers
+            the destination page's elements in as it clears. */}
+        <RouteLoadGate>{children}</RouteLoadGate>
       </body>
     </html>
   );

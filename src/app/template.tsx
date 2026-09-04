@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 
 /* ============================================================================
    ROUTE TEMPLATE — lightweight wrapper for route-level concerns.
-   
-   Page transitions are handled by RouteTransition in layout.tsx.
+
+   Page-to-page loading is handled by RouteLoadGate in layout.tsx
+   (loader + staggered entrance for nav-bar / CTA navigation).
    This template is kept minimal for any route-level setup.
    ========================================================================== */
 

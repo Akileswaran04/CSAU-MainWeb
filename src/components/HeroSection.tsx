@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 /* ============================================================
    HERO SECTION — Full-viewport hero after landing zoom

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 /* ============================================================
@@ -96,6 +99,15 @@ const kindColor: Record<Post["kind"], string> = {
 };
 
 export default function BlogPage() {
+  const [selectedKind, setSelectedKind] = useState<"ALL" | "BLOG" | "ARTICLE" | "POST">("ALL");
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const filtered = selectedKind === "ALL"
+    ? POSTS
+    : POSTS.filter((p) => p.kind === selectedKind);
+
+  const kindTabs: ("ALL" | "BLOG" | "ARTICLE" | "POST")[] = ["ALL", "BLOG", "ARTICLE", "POST"];
+
   return (
     <main style={{ background: "var(--background)", minHeight: "100vh", padding: "18vh 6% 10vh" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
@@ -138,37 +150,73 @@ export default function BlogPage() {
           the members, for everyone who codes.
         </p>
 
-        <div
+        {/* Article nav — kind tabs */}
+        <nav
+          aria-label="Article kinds"
           style={{
             display: "flex",
-            gap: 18,
+            gap: 8,
             marginTop: 34,
+            marginBottom: 26,
+          }}
+        >
+          {kindTabs.map((k) => (
+            <button
+              key={k}
+              onClick={() => setSelectedKind(k)}
+              aria-pressed={selectedKind === k}
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                letterSpacing: ".2em",
+                textTransform: "uppercase",
+                border: "1px solid",
+                borderColor: selectedKind === k ? "var(--primary-container)" : "var(--outline-variant)",
+                color: selectedKind === k ? "var(--on-surface)" : "var(--outline)",
+                background: selectedKind === k ? "var(--surface-container-lowest)" : "transparent",
+                padding: "8px 16px",
+                borderRadius: 999,
+                cursor: "pointer",
+                transition: "border-color .25s, color .25s, background .25s",
+                boxShadow: selectedKind === k
+                  ? "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)"
+                  : "none",
+              }}
+              onMouseEnter={(e) => {
+                if (selectedKind !== k) {
+                  e.currentTarget.style.borderColor = "var(--outline)";
+                  e.currentTarget.style.color = "var(--on-surface)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedKind !== k) {
+                  e.currentTarget.style.borderColor = "var(--outline-variant)";
+                  e.currentTarget.style.color = "var(--outline)";
+                }
+              }}
+            >
+              {k}
+            </button>
+          ))}
+        </nav>
+
+        {/* Counts */}
+        <div
+          style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 10,
             letterSpacing: ".2em",
+            color: "var(--outline)",
             textTransform: "uppercase",
+            marginBottom: 26,
           }}
         >
-          <span style={{ color: "var(--on-surface)" }}>ALL</span>
-          {(["BLOG", "ARTICLE", "POST"] as const).map((k) => (
-            <span key={k} style={{ color: "var(--outline)" }}>
-              {k}
-            </span>
-          ))}
+          {filtered.length} {filtered.length === 1 ? "piece" : "pieces"}
         </div>
-
-        <div
-          style={{
-            width: 48,
-            height: 1,
-            background: "var(--outline-variant)",
-            margin: "26px 0 40px",
-          }}
-        />
 
         {/* Posts */}
         <div style={{ display: "grid", gap: 16 }}>
-          {POSTS.map((post) => (
+          {filtered.map((post, idx) => (
             <article
               key={post.title}
               className="clay-card"
@@ -178,7 +226,13 @@ export default function BlogPage() {
                 flexWrap: "wrap",
                 gap: "10px 24px",
                 alignItems: "baseline",
+                opacity: hoveredIdx === idx ? 1 : 0.85,
+                transform: hoveredIdx === idx ? "translateY(-2px)" : "translateY(0)",
+                transition: "opacity .3s ease, transform .3s ease, box-shadow .3s ease",
+                boxShadow: hoveredIdx === idx ? "var(--clay-shadow-xl)" : "var(--clay-shadow-md)",
               }}
+              onMouseEnter={() => setHoveredIdx(idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
             >
               <span
                 style={{
@@ -244,6 +298,7 @@ export default function BlogPage() {
         <div style={{ marginTop: 52, textAlign: "center" }}>
           <Link
             href="/crackit"
+            data-route-load
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontSize: 11,

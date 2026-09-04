@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
@@ -15,26 +15,31 @@ import AboutSection from "./AboutSection";
       - Hero section (full viewport)
       - Scroll down reveals About Us section
 
-   The gate replays on EVERY full page load (opening or refreshing
-   the site). The module-level flag below survives client-side
-   navigation but resets on every full load, so navigating between
-   routes never replays the boot + landing gate.
+   The preloader + landing gate plays ONCE per browser session.
+   On refresh, the page goes straight to content with freshly
+   loaded data (no boot/landing replay).
    ============================================================ */
 
 type Phase = "boot" | "landing" | "content";
 
-let gateSeen = false;
+const GATE_KEY = "csau-gate-seen";
 
 export default function HomeClient() {
-  const [phase, setPhase] = useState<Phase>(() =>
-    gateSeen ? "content" : "boot"
-  );
+  // Start with "boot" on both server and client to avoid hydration mismatch.
+  // After mount, check sessionStorage to decide whether to skip the gate.
+  const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Mark the gate as seen on first mount so client-side navigation
-  // back to the home page skips straight to content.
   useEffect(() => {
-    gateSeen = true;
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    const seen = sessionStorage.getItem(GATE_KEY) === "true";
+    if (seen) {
+      setPhase("content");
+    } else {
+      sessionStorage.setItem(GATE_KEY, "true");
+    }
   }, []);
 
   // Lock scroll and reset to top while the boot/landing gate covers
