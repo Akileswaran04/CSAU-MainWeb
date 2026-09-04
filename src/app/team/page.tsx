@@ -1,22 +1,23 @@
 "use client";
 
-import Team3DWall from "@/components/Team3DWall";
+import TeamCarousel from "@/components/TeamCarousel";
 import { FEATURED, DEPUTIES, initials } from "./members";
 
 /* ============================================================
-   TEAM PAGE — 3D member wall + deputy grid
+   TEAM PAGE — Full-circle carousel + deputy grid
 
    • Pinned Three.js stage: the featured members (Presidents +
-     Heads) flow through the curved-panel rail as you scroll —
-     role on the left, name / dept / links on the right.
-   • Below the wall: the deputies in a clean editorial grid.
+     Heads) spin around a full circle — role on the left,
+     name / dept / links on the right, vertical CSAU wordmark
+     standing at the centre of the ring.
+   • Below the carousel: the deputies in a clean editorial grid.
    ============================================================ */
 
 export default function TeamPage() {
   return (
     <div style={{ background: "var(--background)" }}>
-      {/* ── 3D member wall ── */}
-      <Team3DWall members={FEATURED} />
+      {/* ── Full-circle member carousel ── */}
+      <TeamCarousel members={FEATURED} />
 
       {/* ── Deputies grid ── */}
       <section style={{ padding: "10vh 6% 12vh" }}>

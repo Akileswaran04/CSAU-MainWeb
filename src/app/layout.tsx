@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import LaserNav from "@/components/LaserNav";
-import Footer from "@/components/Footer";
 import "./globals.css";
 
 const syne = Syne({
@@ -44,8 +43,6 @@ export default function RootLayout({
             Matrix Junction laser overlay with the site links. */}
         <LaserNav />
         {children}
-        {/* Shared footer for every page */}
-        <Footer />
       </body>
     </html>
   );
