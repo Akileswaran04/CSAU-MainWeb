@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import LaserNav from "@/components/LaserNav";
+import PondBackdrop from "@/components/PondBackdrop";
 import RouteLoadGate from "@/components/RouteLoadGate";
 import "./globals.css";
 
@@ -40,6 +41,8 @@ export default function RootLayout({
       className={`${syne.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        {/* The pond every page floats on (fixed, behind all content). */}
+        <PondBackdrop />
         {/* Laser navigation — a floating button opens the fullscreen
             Matrix Junction laser overlay with the site links. */}
         <LaserNav />

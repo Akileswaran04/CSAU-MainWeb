@@ -1,32 +1,28 @@
 import Link from "next/link";
+import { RippleRule, KoiMark } from "@/components/PondOrnaments";
 
 export default function NotFound() {
   return (
     <main
       className="min-h-screen flex flex-col items-center justify-center gap-6 text-center px-6"
-      style={{ background: "var(--background)" }}
+      style={{ background: "transparent" }}
     >
-      <p
-        className="text-xs tracking-widest uppercase"
-        style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: 500,
-          color: "var(--outline)",
-          letterSpacing: "0.15em",
-        }}
-      >
-        SIGNAL LOST · SECTOR UNKNOWN
-      </p>
+      <p className="eyebrow">ERR 404 · NO ROUTE MATCHED</p>
       <h1
         className="text-6xl sm:text-7xl font-bold"
         style={{
           fontFamily: "'Kenfolg', 'Syne', sans-serif",
           fontWeight: 400,
-          color: "var(--primary)",
+          color: "var(--on-surface)",
+          margin: 0,
         }}
       >
-        404
+        4<span style={{ color: "var(--signal)" }}>0</span>4
       </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, maxWidth: "100%" }}>
+        <RippleRule width={160} />
+        <KoiMark size={34} />
+      </div>
       <p
         className="max-w-sm"
         style={{
@@ -34,25 +30,10 @@ export default function NotFound() {
           fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}
       >
-        This sector of the digital realm hasn&apos;t been charted yet.
+        That page doesn&apos;t exist. Check the URL, or head back to the start.
       </p>
-      <Link
-        href="/"
-        className="mt-2 inline-flex items-center gap-3 px-8 py-3 font-medium transition-all duration-300"
-        style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontWeight: 600,
-          fontSize: 12,
-          letterSpacing: "0.1em",
-          color: "var(--on-primary)",
-          background: "var(--primary)",
-          border: "none",
-          borderRadius: 999,
-          textDecoration: "none",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.2)",
-        }}
-      >
-        RETURN TO THE REALM →
+      <Link href="/" className="btn btn-primary mt-2">
+        BACK TO HOME →
       </Link>
     </main>
   );

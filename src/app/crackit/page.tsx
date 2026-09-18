@@ -1,6 +1,8 @@
 "use client";
 
 import { useSyncExternalStore, useState } from "react";
+import { KoiMark, LilyPad, RippleRule } from "@/components/PondOrnaments";
+import { POND_ARENA_CSS } from "../pond-arena-css";
 
 /* ============================================================
    CRACKIT — Coding events platform (frontend mock)
@@ -210,28 +212,32 @@ export default function CrackItPage() {
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <main style={{ background: "var(--background)", minHeight: "100vh", padding: "14vh 6% 10vh" }}>
+    <main style={{ background: "transparent", minHeight: "100vh", padding: "14vh 6% 10vh" }}>
+      <style>{POND_ARENA_CSS}</style>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         {/* ── Header ── */}
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".34em", color: "var(--outline)", textTransform: "uppercase" }}>
-          {"// CODING EVENTS"}
-        </div>
+        <div className="eyebrow">03 — CODING EVENTS</div>
         <h1 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(44px, 7.5vw, 96px)", color: "var(--on-surface)", margin: "12px 0 0", lineHeight: 1, letterSpacing: "-.02em" }}>
           CRACKIT
         </h1>
-        <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(14px, 1.6vw, 18px)", color: "var(--on-surface-variant)", lineHeight: 1.8, maxWidth: 620, margin: "20px 0 0" }}>
+        <p className="measure" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(14px, 1.6vw, 18px)", color: "var(--on-surface-variant)", lineHeight: 1.75, margin: "20px 0 0" }}>
           Competitive coding rounds run by CSAU. Attempt the live event
           with your name and roll number, revisit stored questions from
           past rounds, and climb the leaderboard.
         </p>
+        <div style={{ marginTop: 26 }}><RippleRule /></div>
 
         {/* ── Current event + assessment ── */}
-        <section style={{ marginTop: 54 }}>
-          <div className="clay-card" style={{ padding: "clamp(26px, 4vw, 46px)" }}>
+        <section style={{ marginTop: 40 }}>
+          <div className="pa-panel" style={{ padding: "clamp(22px, 4vw, 46px)" }}>
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 22, alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 260px" }}>
-                <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 9, letterSpacing: ".2em", fontWeight: 600, color: "var(--on-primary)", background: "var(--primary)", padding: "5px 12px", borderRadius: 999 }}>
-                  {CURRENT_EVENT.tag}
+                <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span className="chip chip-ink">
+                    <span className="chip-dot" data-state="live" />
+                    {CURRENT_EVENT.tag}
+                  </span>
+                  <KoiMark size={34} />
                 </span>
                 <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(30px, 4vw, 52px)", color: "var(--on-surface)", margin: "16px 0 6px", lineHeight: 1.05 }}>
                   {CURRENT_EVENT.title}
@@ -252,20 +258,24 @@ export default function CrackItPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Full name"
                       aria-label="Full name"
-                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 14, color: "var(--on-surface)", background: "var(--surface-container-lowest)", border: "1px solid var(--outline-variant)", borderRadius: 14, padding: "13px 16px", outline: "none" }}
+                      autoComplete="name"
+                      className="field pa-field"
                     />
                     <input
                       value={roll}
                       onChange={(e) => setRoll(e.target.value)}
                       placeholder="Roll number"
                       aria-label="Roll number"
-                      style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--on-surface)", background: "var(--surface-container-lowest)", border: "1px solid var(--outline-variant)", borderRadius: 14, padding: "13px 16px", outline: "none" }}
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="field pa-field tabular"
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     />
                     <button
                       type="button"
                       onClick={start}
                       disabled={!name.trim() || !roll.trim()}
-                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".2em", fontWeight: 600, color: "var(--on-primary)", background: "var(--primary)", border: "none", borderRadius: 999, padding: "14px 22px", cursor: "pointer", textTransform: "uppercase" }}
+                      className="pa-btn pa-btn-primary"
                     >
                       BEGIN ASSESSMENT →
                     </button>
@@ -288,19 +298,12 @@ export default function CrackItPage() {
                             key={opt}
                             type="button"
                             onClick={() => pick(i)}
-                            style={{
-                              fontFamily: "'Plus Jakarta Sans', sans-serif",
-                              fontSize: 13.5,
-                              textAlign: "left",
-                              color: "var(--on-surface)",
-                              background: selected ? "var(--surface-container)" : "var(--surface-container-lowest)",
-                              border: selected ? "1.5px solid var(--primary)" : "1px solid var(--outline-variant)",
-                              borderRadius: 12,
-                              padding: "12px 16px",
-                              cursor: "pointer",
-                            }}
+                            aria-pressed={selected}
+                            className="pa-opt"
                           >
-                            <span style={{ color: selected ? "var(--primary)" : "var(--outline)", marginRight: 8 }}>{selected ? "●" : "○"}</span>
+                            <span className="pa-opt-key">
+                              {String.fromCharCode(65 + i)}
+                            </span>
                             {opt}
                           </button>
                         );
@@ -311,7 +314,7 @@ export default function CrackItPage() {
                         type="button"
                         onClick={() => setCurrent((c) => Math.max(0, c - 1))}
                         disabled={current === 0}
-                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".16em", color: "var(--on-surface-variant)", background: "none", border: "1px solid var(--outline-variant)", borderRadius: 999, padding: "10px 18px", cursor: "pointer" }}
+                        className="pa-btn"
                       >
                         ← PREV
                       </button>
@@ -319,7 +322,7 @@ export default function CrackItPage() {
                         <button
                           type="button"
                           onClick={() => setCurrent((c) => Math.min(SAMPLE_QUESTIONS.length - 1, c + 1))}
-                          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".16em", color: "var(--on-surface)", background: "var(--surface-container)", border: "none", borderRadius: 999, padding: "10px 18px", cursor: "pointer" }}
+                          className="pa-btn"
                         >
                           NEXT →
                         </button>
@@ -327,7 +330,7 @@ export default function CrackItPage() {
                         <button
                           type="button"
                           onClick={submit}
-                          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".16em", fontWeight: 600, color: "var(--on-primary)", background: "var(--primary)", border: "none", borderRadius: 999, padding: "10px 20px", cursor: "pointer" }}
+                          className="pa-btn pa-btn-primary"
                         >
                           SUBMIT →
                         </button>
@@ -339,7 +342,7 @@ export default function CrackItPage() {
                 {phase === "done" && lastResult && (
                   <div style={{ display: "grid", gap: 12 }}>
                     <div style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontSize: 30, color: "var(--on-surface)" }}>
-                      {lastResult.score === lastResult.total ? "PERFECT ⚡" : "SUBMITTED"}
+                      {lastResult.score === lastResult.total ? "PERFECT" : "SUBMITTED"}
                     </div>
                     <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, color: "var(--on-surface)" }}>
                       {lastResult.name} · {lastResult.score} / {lastResult.total} pts
@@ -348,7 +351,7 @@ export default function CrackItPage() {
                       const ok = picks[i] === q.answer;
                       return (
                         <div key={q.q} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
-                          <span style={{ color: ok ? "var(--primary)" : "var(--error)", marginRight: 8 }}>{ok ? "✓" : "✕"}</span>
+                          <span style={{ color: ok ? "var(--ok)" : "var(--error)", marginRight: 8 }}>{ok ? "✓" : "✕"}</span>
                           {q.q}
                           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "var(--outline)", marginTop: 3 }}>
                             {ok ? q.explanation : `Correct: ${q.options[q.answer]} — ${q.explanation}`}
@@ -356,7 +359,7 @@ export default function CrackItPage() {
                         </div>
                       );
                     })}
-                    <button type="button" onClick={() => setPhase("form")} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, letterSpacing: ".16em", color: "var(--on-surface-variant)", background: "none", border: "1px solid var(--outline-variant)", borderRadius: 999, padding: "10px 18px", cursor: "pointer", marginTop: 4, width: "max-content" }}>
+                    <button type="button" onClick={() => setPhase("form")} className="pa-btn" style={{ marginTop: 4, width: "max-content" }}>
                       BACK TO FORM
                     </button>
                   </div>
@@ -368,58 +371,66 @@ export default function CrackItPage() {
 
         {/* ── Leaderboard ── */}
         <section style={{ marginTop: 64 }}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".32em", color: "var(--outline)", textTransform: "uppercase" }}>
-            {"// LEADERBOARD"}
-          </div>
+          <div className="eyebrow">LEADERBOARD</div>
           <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
             TOP CODEFIGHTERS
           </h2>
-          <div style={{ border: "1px solid var(--outline-variant)", borderRadius: "1.25rem", overflow: "hidden", background: "var(--surface-container-lowest)" }}>
-            {sorted.map((r, i) => {
-              const mine = lastResult?.roll === r.roll;
-              return (
-                <div
-                  key={r.roll}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "52px 1fr auto auto auto",
-                    gap: 16,
-                    alignItems: "center",
-                    padding: "13px 18px",
-                    borderBottom: "1px solid var(--outline-variant)",
-                    background: mine ? "var(--surface-container)" : "transparent",
-                  }}
-                >
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: i < 3 ? "var(--primary)" : "var(--outline)" }}>#{i + 1}</span>
-                  <span>
-                    <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600, fontSize: 13.5, color: "var(--on-surface)", display: "block" }}>
-                      {r.name}
-                      {mine && <span style={{ marginLeft: 8, fontSize: 9, letterSpacing: ".14em", color: "var(--on-surface-variant)" }}>· YOU</span>}
-                    </span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--outline)" }}>{r.roll}</span>
-                  </span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--on-surface)" }}>{r.score} pts</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "var(--on-surface)" }}>{r.score}/{r.total}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--outline)", textAlign: "right" }}>{fmt(r.timeSec)}</span>
-                </div>
-              );
-            })}
+          <div style={{ margin: "-10px 0 22px" }}><RippleRule width={180} /></div>
+          {/* A real table, not a grid of divs: column headers are exposed
+              to assistive tech and the fixed sort order is declared. */}
+          <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Leaderboard">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Codefighter</th>
+                  <th scope="col" className="num">Points</th>
+                  <th scope="col" className="num" aria-sort="descending">Score</th>
+                  <th scope="col" className="num">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((r, i) => {
+                  const mine = lastResult?.roll === r.roll;
+                  return (
+                    <tr key={r.roll} data-current={mine ? "true" : undefined}>
+                      <td style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: i < 3 ? "var(--on-surface)" : "var(--outline)" }}>
+                        #{i + 1}
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, display: "block" }}>
+                          {r.name}
+                          {mine && (
+                            <span className="pa-you">
+                              · YOU
+                            </span>
+                          )}
+                        </span>
+                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--outline)" }}>{r.roll}</span>
+                      </td>
+                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>{r.score} pts</td>
+                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>{r.score}/{r.total}</td>
+                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{fmt(r.timeSec)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
 
         {/* ── Previous question archive ── */}
         <section style={{ marginTop: 64 }}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".32em", color: "var(--outline)", textTransform: "uppercase" }}>
-            {"// QUESTION ARCHIVE"}
-          </div>
+          <div className="eyebrow">QUESTION ARCHIVE</div>
           <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
             PAST ROUNDS
           </h2>
           <div style={{ display: "grid", gap: 16 }}>
             {ARCHIVE.map((round) => (
-              <details key={round.round} className="clay-card" style={{ padding: "24px 28px" }}>
-                <summary style={{ cursor: "pointer", listStyle: "none" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 10 }}>
+              <details key={round.round} className="pa-panel" style={{ padding: "16px clamp(18px, 3vw, 28px)" }}>
+                <summary className="pa-sum">
+                  <span className="pa-pad"><LilyPad size={18} /></span>
+                  <div style={{ flex: 1, display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 10 }}>
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".24em", color: "var(--outline)", display: "block" }}>
                       {round.round} · {round.date}
                     </span>
@@ -435,7 +446,7 @@ export default function CrackItPage() {
                         Q{i + 1}
                       </span>
                       {q.q}
-                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--primary)", marginTop: 6 }}>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--ok)", marginTop: 6 }}>
                         ✓ {q.options[q.answer]}
                       </div>
                       <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "var(--outline)", marginTop: 2 }}>{q.explanation}</div>

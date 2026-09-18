@@ -1,71 +1,158 @@
 @import "tailwindcss";
 
 /* ============================================================
-   CSAU — Sculptural Tactility Design System
+   CSAU — Koi Pond Design System
 
-   Premium Claymorphism: matte, sculptural aesthetic with soft
-   inner shadows and double-layered outer glows. Digital surfaces
-   feel like molded ceramic or high-end matte polymers.
+   A dark teal pond at night with foam-white ink. Colour comes
+   from the fish: one koi-vermilion "signal" for anything
+   interactive, one gold for "current", lotus pink and lily
+   green as rare accents. Square hairlines, no glass, no glow.
 
-   Colors: surface #fbf8ff, on-surface #1a1b22
-   Fonts: Syne (display), Plus Jakarta Sans (body)
-   Style: Quiet luxury, editorial, tactile depth
+   Colors: washi #f1ebde, sumi #101a1a, koi #c72f16, gold #f0b73a,
+           pond #0b2b2e, lily #3f7d5c, lotus #f2a7a0
+   Fonts: Syne (display), Plus Jakarta Sans (body), JetBrains Mono (labels)
    ============================================================ */
 
 :root {
-  /* ── Core palette (Sculptural Tactility) ── */
-  --surface: #fbf8ff;
-  --surface-dim: #dad9e3;
-  --surface-bright: #fbf8ff;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f4f2fd;
-  --surface-container: #eeedf7;
-  --surface-container-high: #e8e7f1;
-  --surface-container-highest: #e3e1ec;
-  --on-surface: #1a1b22;
-  --on-surface-variant: #46464b;
-  --inverse-surface: #2f3038;
-  --inverse-on-surface: #f1effa;
-  --outline: #77767b;
-  --outline-variant: #c7c6cb;
-  --surface-tint: #5f5e61;
-  --primary: #121315;
-  --on-primary: #ffffff;
-  --primary-container: #27272a;
-  --on-primary-container: #8f8e91;
-  --inverse-primary: #c8c6c9;
-  --secondary: #5d5e60;
-  --on-secondary: #ffffff;
-  --secondary-container: #dfdfe0;
-  --on-secondary-container: #616364;
-  --tertiary: #111414;
-  --on-tertiary: #ffffff;
-  --tertiary-container: #262828;
-  --on-tertiary-container: #8e8f8f;
-  --error: #ba1a1a;
-  --on-error: #ffffff;
-  --error-container: #ffdad6;
-  --on-error-container: #93000a;
-  --primary-fixed: #e4e1e5;
-  --primary-fixed-dim: #c8c6c9;
-  --on-primary-fixed: #1b1b1e;
-  --on-primary-fixed-variant: #47464a;
-  --secondary-fixed: #e2e2e3;
-  --secondary-fixed-dim: #c6c6c7;
-  --on-secondary-fixed: #1a1c1d;
-  --on-secondary-fixed-variant: #454748;
-  --tertiary-fixed: #e2e2e2;
-  --tertiary-fixed-dim: #c6c6c7;
-  --on-tertiary-fixed: #1a1c1c;
-  --on-tertiary-fixed-variant: #454747;
-  --background: #fbf8ff;
-  --on-background: #1a1b22;
-  --surface-variant: #e3e1ec;
+  /* ============================================================
+     Layer 1 — PRIMITIVES (raw values, never referenced directly
+     by components; they exist so the semantic layer has a source)
+     ============================================================ */
+  --gray-000: #0d2c30;
+  --gray-050: #0a2529;
+  --gray-100: #08201f;
+  --gray-150: #061a1d;
+  --gray-200: #0f3236;
+  --gray-250: #143b3f;
+  --gray-300: #1d4a4e;
+  --gray-350: #285a5e;
+  /* Muted label ink on the dark pond — 7:1 against the deepest surface.
+     NOTE: the gray-* / ink names are inverted for the dark theme:
+     000 is the lifted card colour, 150 the pond, ink-950 the foam. */
+  --gray-450: #8fb0aa;
+  --gray-500: #bdd2cc;
+  --gray-900: #e9e4d4;
+  --ink-950: #f6f1e4;
+  --signal-500: #ee5b3a;
+  --signal-700: #c9391b;
+  --signal-100: #3a1f1c;
+  /* Pond palette — used by the story stage and accents */
+  --pond-950: #061a1d;
+  --pond-900: #0b2b2e;
+  --pond-700: #17545a;
+  --pond-300: #7fb5ad;
+  --lily-600: #3f7d5c;
+  --lotus-300: #f2a7a0;
+  --foam: #f6f1e4;
+  --marker-300: #f0b73a;
+  --marker-100: #3d3418;
+  --green-700: #7fd1a2;
+  --amber-700: #f0b73a;
+  --red-600: #ff7b6e;
+  --red-100: #3a1a19;
+  --red-900: #ffb3aa;
+
+  /* Motion — 150–300ms micro-interactions, exits on the shorter end. */
+  --dur-press: 90ms;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Spacing — 4/8 rhythm. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Touch — WCAG 2.5.8 / Apple HIG minimum interactive box. */
+  --tap-min: 44px;
+  /* Readable measure for prose (60–75ch per the UX guidelines). */
+  --measure: 65ch;
+
+  /* ============================================================
+     Layer 2 — SEMANTIC (purpose aliases; every component reads
+     from here, never from layer 1 and never from raw hex)
+     ============================================================ */
+  --surface: var(--gray-150);
+  --surface-dim: var(--gray-300);
+  --surface-bright: var(--gray-000);
+  --surface-container-lowest: var(--gray-000);
+  --surface-container-low: var(--gray-050);
+  --surface-container: var(--gray-100);
+  --surface-container-high: var(--gray-200);
+  --surface-container-highest: var(--gray-250);
+  --on-surface: var(--ink-950);
+  --on-surface-variant: var(--gray-500);
+  --inverse-surface: var(--ink-950);
+  --inverse-on-surface: var(--gray-150);
+  --outline: var(--gray-450);
+  --outline-variant: var(--gray-350);
+  --surface-tint: var(--gray-500);
+
+  /* ── Primary: graphite ink. Buttons, active rules, the wordmark. ── */
+  --primary: var(--ink-950);
+  --on-primary: var(--gray-000);
+  --primary-container: var(--gray-900);
+  --on-primary-container: #2b3a38;
+  --inverse-primary: var(--gray-250);
+
+  /* ── Secondary: quiet graphite. Body support, table headers. ── */
+  --secondary: var(--gray-500);
+  --on-secondary: var(--gray-000);
+  --secondary-container: var(--gray-200);
+  --on-secondary-container: #353936;
+
+  /* ── Tertiary: same graphite family, one step lighter. ── */
+  --tertiary: #33372f;
+  --on-tertiary: var(--gray-000);
+  --tertiary-container: var(--gray-250);
+  --on-tertiary-container: var(--gray-500);
+
+  /* ── Signal: the single interactive accent. Links, focus, active tab. ── */
+  --signal: var(--signal-500);
+  --signal-dim: var(--signal-700);
+  --signal-soft: var(--signal-100);
+
+  /* ── Marker: highlighter yellow, reserved for "current / selected". ── */
+  --marker: var(--marker-300);
+  --marker-soft: var(--marker-100);
+
+  /* ── Status. Text-weight, never glows. ── */
+  --ok: var(--green-700);
+  --warn: var(--amber-700);
+
+  /* ── Error ── */
+  --error: var(--red-600);
+  --on-error: var(--gray-000);
+  --error-container: var(--red-100);
+  --on-error-container: var(--red-900);
+
+  /* ── Fixed pairings ── */
+  --primary-fixed: var(--gray-250);
+  --primary-fixed-dim: var(--gray-350);
+  --on-primary-fixed: var(--ink-950);
+  --on-primary-fixed-variant: #353936;
+  --secondary-fixed: var(--gray-200);
+  --secondary-fixed-dim: var(--gray-350);
+  --on-secondary-fixed: var(--ink-950);
+  --on-secondary-fixed-variant: var(--gray-500);
+  --tertiary-fixed: var(--gray-250);
+  --tertiary-fixed-dim: var(--gray-350);
+  --on-tertiary-fixed: var(--ink-950);
+  --on-tertiary-fixed-variant: var(--gray-500);
+
+  --background: var(--gray-150);
+  --on-background: var(--ink-950);
+  --surface-variant: var(--gray-250);
 
   /* ── Semantic aliases ── */
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
-  --color-accent: var(--primary-container);
+  --color-accent: var(--signal);
   --color-background: var(--background);
   --color-surface: var(--surface-container-low);
   --color-surface-elevated: var(--surface-container-lowest);
@@ -77,49 +164,44 @@
   /* ── Legacy aliases ── */
   --foreground: var(--on-surface);
   --bg-card: var(--surface-container-lowest);
-  --bg-glass: rgba(251, 248, 255, 0.85);
+  --bg-glass: var(--surface-container-lowest);
+
+  /* ── Geometry: square by default. Nothing inflates. ── */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --rule: 1px;
+  /* Control boundary — fields take the muted-ink outline, not the
+     hairline, so their edge clears the 3:1 WCAG 1.4.11 threshold
+     on both paper and white. */
+  --control-border: var(--outline);
 
   /* ── Z-index ── */
   --z-preloader: 9999;
 
-  /* ── Claymorphism shadows ── */
-  --clay-shadow-sm:
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-  --clay-shadow-md:
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 8px 30px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-  --clay-shadow-lg:
-    0 4px 16px rgba(0, 0, 0, 0.04),
-    0 16px 48px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-  --clay-shadow-xl:
-    0 8px 24px rgba(0, 0, 0, 0.04),
-    0 24px 64px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  /* ── Elevation: print-like, not cloud-like.
+        Panels are flat; only overlays may lift. ── */
+  --clay-shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --clay-shadow-md: 0 1px 0 rgba(0, 0, 0, 0.06);
+  --clay-shadow-lg: 0 2px 0 rgba(0, 0, 0, 0.07);
+  --clay-shadow-xl: 0 2px 0 rgba(0, 0, 0, 0.09);
+  --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.1);
   /* Pressed / recessed */
-  --clay-inset:
-    inset 0 2px 6px rgba(0, 0, 0, 0.06),
-    inset 0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  --clay-inset: inset 0 1px 0 rgba(0, 0, 0, 0.06);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--on-surface);
-  --color-cyan: #00f0ff;
-  --color-magenta: #ff2b8f;
-  --color-neon-yellow: #ffb020;
-  --color-neon-green: #00f0ff;
-  --color-neon-red: #ff2b8f;
-  --color-neon-cyan: #00f0ff;
-  --color-neon-magenta: #ff2b8f;
+  --color-paper: var(--background);
+  --color-ink: var(--on-surface);
+  --color-rule: var(--outline-variant);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-marker: var(--marker);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
   --color-dark-surface: var(--surface-container-low);
   --color-dark-elevated: var(--surface-container-lowest);
   --color-bg-card: var(--bg-card);
@@ -209,11 +291,404 @@ body {
 ::-webkit-scrollbar { width: 0; background: transparent; }
 
 ::selection {
-  background: rgba(39, 39, 42, 0.15);
+  background: rgba(238, 91, 58, 0.28);
   color: var(--on-surface);
 }
 
-/* ===== Scanlines overlay ===== */
+/* Keyboard focus is always visible and always the signal blue.
+   Mouse users never see it. */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* ===== Type helpers ===== */
+/* Eyebrow — the numbered mono label above every section title.
+   Reads as an index entry, not a marketing tag. */
+.eyebrow {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--outline);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Numbers in tables, leaderboards, timers, stats. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ===== Rules — the primary structural device ===== */
+.rule {
+  height: var(--rule);
+  background: var(--outline-variant);
+  border: 0;
+}
+.rule-ink {
+  height: var(--rule);
+  background: var(--on-surface);
+  border: 0;
+}
+.rule-v {
+  width: var(--rule);
+  background: var(--outline-variant);
+  border: 0;
+  align-self: stretch;
+}
+.section-divider {
+  height: var(--rule);
+  background: var(--outline-variant);
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+/* ===== Panels =====
+   The one surface primitive. Flat, hairlined, slightly squared.
+   Hover darkens the border to ink — no lift, no shadow bloom. */
+.panel {
+  background: var(--surface-container-lowest);
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  position: relative;
+}
+.panel-flat {
+  background: transparent;
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+}
+.panel-inset {
+  background: var(--surface-container-low);
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+}
+.panel-hover {
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+.panel-hover:hover {
+  border-color: var(--on-surface);
+}
+/* Current item in a list of panels — a highlighter mark, not a glow. */
+.panel-current {
+  border-color: var(--on-surface);
+  box-shadow: inset 3px 0 0 0 var(--marker);
+}
+
+/* Legacy names — both now map to the ruled panel. */
+.clay-card {
+  background: var(--surface-container-lowest);
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+  position: relative;
+}
+.clay-card:hover {
+  border-color: var(--on-surface);
+}
+.clay-card:active {
+  background: var(--surface-container-low);
+}
+.holo-card {
+  background: var(--surface-container-lowest);
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+  position: relative;
+}
+.holo-card:hover {
+  border-color: var(--on-surface);
+}
+
+/* Solid surface — the honest version of the old glass panel. */
+.glass {
+  background: var(--surface-container-lowest);
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-md);
+}
+
+/* ===== Buttons =====
+   Squared, hairline-bordered, one primary per view.
+   No pills, no gradients, no glow, no drop shadow.
+   Interactive box clears the 44px touch minimum and the press state
+   never shifts the surrounding layout (transform only, ≤1px). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap-min);
+  padding: 10px 18px;
+  border: var(--rule) solid var(--on-surface);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out), transform var(--dur-press) ease;
+}
+.btn:hover {
+  background: var(--on-surface);
+  color: var(--background);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-primary {
+  background: var(--on-surface);
+  color: var(--background);
+}
+.btn-primary:hover {
+  background: var(--primary-container);
+  color: var(--background);
+}
+.btn-signal {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+.btn-signal:hover {
+  background: var(--signal);
+  color: #ffffff;
+}
+.btn-ghost {
+  border-color: transparent;
+  color: var(--on-surface-variant);
+  padding: 10px 4px;
+}
+.btn-ghost:hover {
+  background: transparent;
+  color: var(--on-surface);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ===== Chips & status =====
+   Square, monospace, unfilled. Status is a word plus a square dot. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: var(--rule) solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.chip-ink {
+  border-color: var(--on-surface);
+  color: var(--on-surface);
+}
+.chip-signal {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+.chip-marker {
+  border-color: var(--on-surface);
+  background: var(--marker-soft);
+  color: var(--on-surface);
+}
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: currentColor;
+}
+.chip-dot[data-state="live"] { color: var(--ok); }
+.chip-dot[data-state="open"] { color: var(--signal); }
+.chip-dot[data-state="closed"] { color: var(--outline); }
+
+/* ===== Filter tabs =====
+   Mono labels on a rule; the active one takes a signal underline.
+   No pills, no filled states. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  border-bottom: var(--rule) solid var(--outline-variant);
+}
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--outline);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.tab:hover { color: var(--on-surface); }
+.tab[aria-pressed="true"] { color: var(--on-surface); }
+.tab[aria-pressed="true"]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--signal);
+}
+
+/* ===== Fields =====
+   16px type is deliberate: anything smaller makes iOS Safari zoom the
+   viewport on focus. The resting border is the muted ink, not the
+   hairline, so the control boundary clears 3:1 (WCAG 1.4.11). */
+.field {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 10px 12px;
+  background: var(--surface-container-lowest);
+  border: var(--rule) solid var(--control-border);
+  border-radius: var(--radius-xs);
+  color: var(--on-surface);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+  font-size: 16px;
+  line-height: 1.5;
+  touch-action: manipulation;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.field::placeholder { color: var(--outline); }
+.field:hover { border-color: var(--on-surface); }
+.field:focus {
+  outline: none;
+  border-color: var(--on-surface);
+  box-shadow: inset 0 -2px 0 0 var(--signal);
+}
+
+/* ===== Tables =====
+   Real tabular treatment: ruled rows, no card wrapper. */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.data-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: var(--rule) solid var(--on-surface);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: var(--rule) solid var(--outline-variant);
+  font-size: 14px;
+  color: var(--on-surface);
+}
+.data-table tbody tr:hover td {
+  background: var(--surface-container-low);
+}
+.data-table .num {
+  text-align: right;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+.data-table tbody tr[data-current="true"] td {
+  background: var(--marker-soft);
+}
+
+/* ===== Portraits =====
+   Monochrome by default, full colour on hover — editorial, not avatar-round. */
+.photo-mono {
+  filter: grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04);
+  transition: filter 200ms ease;
+}
+.card-photo:hover .photo-mono {
+  filter: grayscale(0) contrast(1);
+}
+
+/* ===== Inline link ===== */
+.link-underline {
+  position: relative;
+  color: inherit;
+  text-decoration: none;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0;
+  height: var(--rule);
+  background: var(--signal);
+  transition: width 160ms ease;
+}
+.link-underline:hover::after { width: 100%; }
+
+/* ===== Textures =====
+   Paper grain and halftone dots replace gradient glow blobs. */
+/* Paper grain, applied site-wide from CSS alone — no extra DOM.
+   The E-Ink/paper direction calls for visible stock texture; this is
+   the whole of it, at 4% over the paper. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Prose measure — 60–75 characters per line. */
+.measure {
+  max-width: var(--measure);
+}
+.grain-local {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.halftone {
+  background-image: radial-gradient(var(--outline-variant) 0.6px, transparent 0.7px);
+  background-size: 6px 6px;
+}
+.halftone-ink {
+  background-image: radial-gradient(var(--on-surface) 0.7px, transparent 0.8px);
+  background-size: 10px 10px;
+  opacity: 0.14;
+}
+
+/* ===== Scanlines overlay (subtle, monochrome) ===== */
 .scanlines {
   position: fixed;
   inset: 0;
@@ -221,38 +696,30 @@ body {
   z-index: 9998;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(26, 27, 34, 0.015) 0px,
-    rgba(26, 27, 34, 0.015) 1px,
+    rgba(0, 0, 0, 0.014) 0px,
+    rgba(0, 0, 0, 0.014) 1px,
     transparent 1px,
     transparent 4px
   );
   mix-blend-mode: multiply;
 }
 
-/* ===== Vignette ===== */
-.vignette {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9997;
-  box-shadow: inset 0 0 220px 40px rgba(26, 27, 34, 0.06);
-}
-
 /* ===== Corner decorations ===== */
 .corner-dot {
   position: absolute;
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   background: var(--outline-variant);
-  box-shadow: 0 0 4px rgba(119, 118, 123, 0.2);
 }
 
-/* ===== Glow utilities ===== */
-.glow-cyan {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.3), 0 0 30px rgba(0, 240, 255, 0.1);
-}
-.glow-magenta {
-  text-shadow: 0 0 10px rgba(255, 43, 143, 0.2), 0 0 30px rgba(255, 43, 143, 0.08);
+/* ===== Colophon =====
+   The small type-spec line in the footer. Designers ship these. */
+.colophon {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--outline);
 }
 
 /* ===== Digital System Glitch =====
@@ -354,20 +821,20 @@ body {
 @keyframes glitchRGB {
   0%   { text-shadow: none; }
   5%   { text-shadow: none; }
-  7%   { text-shadow: -12px 0 rgba(186,26,26,0.7), 12px 0 rgba(0,80,220,0.6); }
-  11%  { text-shadow: 15px 0 rgba(186,26,26,0.6), -15px 0 rgba(0,80,220,0.7); }
-  15%  { text-shadow: -8px 0 rgba(186,26,26,0.8), 8px 0 rgba(0,80,220,0.5); }
-  19%  { text-shadow: 10px 0 rgba(186,26,26,0.5), -10px 0 rgba(0,80,220,0.6); }
+  7%   { text-shadow: -12px 0 rgba(179,38,30,0.7), 12px 0 rgba(31,95,91,0.6); }
+  11%  { text-shadow: 15px 0 rgba(179,38,30,0.6), -15px 0 rgba(31,95,91,0.7); }
+  15%  { text-shadow: -8px 0 rgba(179,38,30,0.8), 8px 0 rgba(31,95,91,0.5); }
+  19%  { text-shadow: 10px 0 rgba(179,38,30,0.5), -10px 0 rgba(31,95,91,0.6); }
   23%  { text-shadow: none; }
   38%  { text-shadow: none; }
-  40%  { text-shadow: -18px 0 rgba(186,26,26,0.7), 18px 0 rgba(0,80,220,0.6); }
-  44%  { text-shadow: 14px 0 rgba(186,26,26,0.8), -14px 0 rgba(0,80,220,0.7); }
-  48%  { text-shadow: -10px 0 rgba(186,26,26,0.6), 10px 0 rgba(0,80,220,0.5); }
-  52%  { text-shadow: 16px 0 rgba(186,26,26,0.5), -16px 0 rgba(0,80,220,0.6); }
+  40%  { text-shadow: -18px 0 rgba(179,38,30,0.7), 18px 0 rgba(31,95,91,0.6); }
+  44%  { text-shadow: 14px 0 rgba(179,38,30,0.8), -14px 0 rgba(31,95,91,0.7); }
+  48%  { text-shadow: -10px 0 rgba(179,38,30,0.6), 10px 0 rgba(31,95,91,0.5); }
+  52%  { text-shadow: 16px 0 rgba(179,38,30,0.5), -16px 0 rgba(31,95,91,0.6); }
   56%  { text-shadow: none; }
   70%  { text-shadow: none; }
-  72%  { text-shadow: -14px 0 rgba(186,26,26,0.7), 14px 0 rgba(0,80,220,0.6); }
-  76%  { text-shadow: 12px 0 rgba(186,26,26,0.6), -12px 0 rgba(0,80,220,0.7); }
+  72%  { text-shadow: -14px 0 rgba(179,38,30,0.7), 14px 0 rgba(31,95,91,0.6); }
+  76%  { text-shadow: 12px 0 rgba(179,38,30,0.6), -12px 0 rgba(31,95,91,0.7); }
   80%  { text-shadow: none; }
   100% { text-shadow: none; }
 }
@@ -413,7 +880,7 @@ body {
   top: 0;
   width: 100%;
   overflow: hidden;
-  color: rgba(186, 26, 26, 0.8);
+  color: rgba(179, 38, 30, 0.8);
   mix-blend-mode: multiply;
   animation: glitchSlice1 .3s steps(2) 1;
   pointer-events: none;
@@ -425,7 +892,7 @@ body {
   top: 0;
   width: 100%;
   overflow: hidden;
-  color: rgba(0, 80, 220, 0.7);
+  color: rgba(199, 47, 22, 0.7);
   mix-blend-mode: multiply;
   animation: glitchSlice2 .3s steps(2) 1;
   pointer-events: none;
@@ -470,9 +937,9 @@ body {
 }
 .caret-blink {
   display: inline-block;
-  width: 9px;
+  width: 8px;
   height: 1.1em;
-  background: var(--primary-container);
+  background: var(--on-surface);
   vertical-align: text-bottom;
   margin-left: 2px;
   animation: blink .9s steps(1) infinite;
@@ -497,86 +964,6 @@ body {
   50% { transform: translateY(6px); opacity: 0.7; }
 }
 
-/* ===== Neon flicker (subtler for light theme) ===== */
-@keyframes neon-flicker {
-  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-    opacity: 1;
-  }
-  20%, 24%, 55% {
-    opacity: 0.7;
-  }
-}
-.neon-flicker {
-  animation: neon-flicker 4s infinite alternate;
-}
-
-/* ===== Clay card ===== */
-.clay-card {
-  background: var(--surface-container-lowest);
-  border: 1px solid var(--outline-variant);
-  border-radius: 1.5rem;
-  box-shadow: var(--clay-shadow-md);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-.clay-card:hover {
-  box-shadow: var(--clay-shadow-xl);
-  transform: translateY(-2px);
-}
-.clay-card:active {
-  box-shadow: var(--clay-inset);
-  transform: translateY(0);
-}
-
-/* ===== Holographic card (legacy compat) ===== */
-.holo-card {
-  background: var(--surface-container-lowest);
-  border: 1px solid var(--outline-variant);
-  border-radius: 1.5rem;
-  box-shadow: var(--clay-shadow-md);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-.holo-card:hover {
-  box-shadow: var(--clay-shadow-xl);
-  transform: translateY(-2px);
-}
-
-/* ===== Neon underline ===== */
-.neon-underline {
-  position: relative;
-}
-.neon-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 2px;
-  background: var(--primary);
-  transition: width 0.3s ease;
-}
-.neon-underline:hover::after {
-  width: 100%;
-}
-
-/* ===== Glassmorphism (adapted for light) ===== */
-.glass {
-  background: rgba(251, 248, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--outline-variant);
-}
-
-/* ===== Section divider ===== */
-.section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--outline-variant), transparent);
-  margin: 0 auto;
-  max-width: 600px;
-}
-
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -585,4 +972,148 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============================================================
+   STORY — the koi pond on the home page
+   ============================================================ */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+.story {
+  position: relative; width: 100%; background: var(--pond-950);
+  --st-ink: var(--foam);
+  --st-mute: #b9cfc9;
+  --st-rule: rgba(246, 241, 228, 0.28);
+}
+.story-wave {
+  position: absolute; left: 0; top: 0; width: 100%; height: 48px;
+  transform: translateY(-99%); fill: var(--pond-950); pointer-events: none; z-index: 2;
+}
+.story-stage {
+  position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: hidden;
+  background: var(--pond-950);
+}
+.story-canvas { position: absolute; inset: 0; }
+
+.story-copy {
+  position: absolute; z-index: 5;
+  left: 6%; top: 50%; transform: translateY(-50%);
+  width: min(600px, 88%); pointer-events: none;
+}
+.story-chapter {
+  position: absolute; left: 0; top: 50%; width: 100%;
+  transform: translateY(-50%);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.45s var(--ease-out), visibility 0s linear 0.45s;
+}
+.story-chapter[data-state="active"] {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity 0.5s var(--ease-out) 0.15s, visibility 0s;
+}
+.story-eyebrow {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px; letter-spacing: 0.22em; color: var(--pond-300);
+  margin-bottom: 20px;
+}
+.story-no {
+  background: var(--signal); color: var(--foam);
+  padding: 3px 8px; letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
+}
+.story-title {
+  margin: 0 0 20px;
+  font-family: var(--font-syne), 'Syne', sans-serif;
+  font-weight: 800; letter-spacing: -0.02em; line-height: 1.02;
+  font-size: clamp(34px, 4.6vw, 64px);
+  color: var(--st-ink);
+}
+.story-chapter[data-kind="past"] .story-title,
+.story-chapter[data-kind="upcoming"] .story-title { font-size: clamp(32px, 4.2vw, 58px); }
+.story-line { display: block; overflow: hidden; padding-bottom: 0.1em; white-space: nowrap; }
+.story-line > span {
+  display: inline-block; transform: translateY(105%);
+  transition: transform 0.75s var(--ease-out);
+}
+.story-chapter[data-state="active"] .story-line > span { transform: translateY(0); }
+.story-chapter[data-state="past"] .story-line > span { transform: translateY(-105%); }
+
+/* gold brush stroke behind the keyword */
+.mark {
+  color: var(--pond-950);
+  background: linear-gradient(var(--marker), var(--marker)) no-repeat 0 78% / 0% 62%;
+  transition: background-size 0.7s var(--ease-out) 0.5s, color 0.3s ease 0.5s;
+  padding: 0 0.1em; margin: 0 -0.1em;
+}
+.story-chapter:not([data-state="active"]) .mark { color: var(--st-ink); }
+.story-chapter[data-state="active"] .mark { background-size: 100% 62%; }
+
+.story-body {
+  margin: 0; max-width: 44ch;
+  font-size: clamp(15px, 1.5vw, 18px); line-height: 1.7; color: var(--st-mute);
+  transform: translateY(14px); opacity: 0;
+  transition: transform 0.7s var(--ease-out) 0.25s, opacity 0.7s ease 0.25s;
+}
+.story-chapter[data-state="active"] .story-body { transform: none; opacity: 1; }
+
+.story-meta {
+  list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px;
+  opacity: 0; transition: opacity 0.7s ease 0.4s;
+}
+.story-chapter[data-state="active"] .story-meta { opacity: 1; }
+.story-meta li {
+  font-family: var(--font-mono, monospace); font-size: 10.5px; letter-spacing: 0.16em;
+  color: var(--st-ink); border: 1px solid var(--st-rule); padding: 5px 10px;
+}
+
+.story-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.story-btn, .story-btn-ghost { min-height: var(--tap-min); }
+.story-btn { background: var(--signal); color: var(--foam); border-color: var(--signal); }
+.story-btn:hover { background: var(--foam); color: var(--pond-950); border-color: var(--foam); }
+.story-btn-ghost { background: transparent; color: var(--st-ink); border-color: var(--st-rule); }
+.story-btn-ghost:hover { border-color: var(--foam); background: rgba(246,241,228,0.08); }
+
+/* section rail */
+.story-rail {
+  position: absolute; z-index: 6; right: 20px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-end;
+}
+.story-tick {
+  display: flex; align-items: center; gap: 10px; background: none; border: 0;
+  padding: 8px 0; cursor: pointer; color: var(--pond-300);
+  font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: 0.16em; min-height: 32px;
+}
+.story-tick-label { opacity: 0.55; transition: opacity 0.2s, color 0.2s; }
+.story-tick-bar {
+  display: block; width: 14px; height: 2px; background: rgba(246,241,228,0.22);
+  transition: width 0.3s var(--ease-out), background 0.3s;
+}
+.story-tick[data-done="true"] .story-tick-bar { background: var(--pond-300); }
+.story-tick[data-on="true"] { color: var(--foam); }
+.story-tick[data-on="true"] .story-tick-label { opacity: 1; }
+.story-tick[data-on="true"] .story-tick-bar { width: 34px; background: var(--signal); }
+.story-tick:hover .story-tick-label { opacity: 1; }
+
+@media (max-width: 820px) {
+  .story-copy {
+    left: 0; right: 0; top: auto; bottom: 0; transform: none; width: auto; height: 50%;
+    padding: 0 20px 26px;
+    background: linear-gradient(to top, var(--pond-950) 70%, transparent);
+  }
+  .story-chapter { top: auto; bottom: 26px; transform: none; padding: 0 20px; left: 0; }
+  .story-title, .story-chapter[data-kind="past"] .story-title, .story-chapter[data-kind="upcoming"] .story-title {
+    font-size: clamp(28px, 8.4vw, 40px); margin-bottom: 10px;
+  }
+  .story-eyebrow { margin-bottom: 10px; }
+  .story-body { font-size: 14px; line-height: 1.55; }
+  .story-meta { margin-top: 12px; }
+  .story-cta { margin-top: 16px; }
+  .story-rail { right: 8px; top: 24%; }
+  .story-tick-label { display: none; }
+}
+
+@keyframes ripple-out {
+  0%   { transform: scale(0.05); opacity: 0; }
+  12%  { opacity: 0.7; }
+  100% { transform: scale(1); opacity: 0; }
 }

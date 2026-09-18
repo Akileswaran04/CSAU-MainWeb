@@ -11,7 +11,7 @@ import Link from "next/link";
    ============================================================ */
 
 const PARAGRAPH =
-  "CSAU is the Computer Society of Anna University, CEG — a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where Anna University's computer science community writes, breaks, and ships things together.";
+  "CSAU is the Computer Society of Anna University, CEG — a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where CEG's computer science community writes, breaks, and ships things together.";
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -68,27 +68,32 @@ export default function AboutSection() {
         alignItems: "center",
         justifyContent: "center",
         padding: "12vh 6%",
-        background: `radial-gradient(ellipse at 50% 30%, var(--surface-container-low) 0%, transparent 55%), var(--background)`,
+        background: "var(--background)",
       }}
     >
+      {/* Halftone field — replaces the old radial glow */}
+      <div
+        className="absolute inset-0 pointer-events-none halftone"
+        style={{ opacity: 0.35 }}
+      />
+
       {/* Scanlines */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "repeating-linear-gradient(to bottom, rgba(26,27,34,.015) 0px, rgba(26,27,34,.015) 1px, transparent 1px, transparent 4px)",
+        style={{            background:
+              "repeating-linear-gradient(to bottom, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 0px, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 1px, transparent 1px, transparent 4px)",
           mixBlendMode: "multiply",
         }}
       />
 
-      {/* Content */}
-      <div
-        className="relative mx-auto"
-        style={{
-          zIndex: 10,
-          maxWidth: 820,
-          textAlign: "left",
-        }}
-      >
+      {/* Content */}        <div
+          className="relative mx-auto"
+          style={{
+            zIndex: 10,
+            maxWidth: 820,
+            textAlign: "left",
+          }}
+        >
         {/* Eyebrow */}
         <div
           style={{
@@ -120,7 +125,7 @@ export default function AboutSection() {
             transition: "opacity .7s ease .15s, transform .7s ease .15s",
           }}
         >
-          THE COMPUTER SCIENCE ASSOCIATION
+          COMPUTER SOCIETY OF ANNA UNIVERSITY
         </h2>
 
         {/* Decorative line */}
@@ -135,12 +140,14 @@ export default function AboutSection() {
           }}
         />
 
-        {/* Body — typewriter */}
+        {/* Body — typewriter. Measure is capped in `ch` so the line
+            length stays readable at every viewport width. */}
         <div
+          className="measure"
           style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: "clamp(15px, 1.6vw, 19px)",
-            lineHeight: 1.85,
+            lineHeight: 1.75,
             color: "var(--on-surface-variant)",
             letterSpacing: ".01em",
             minHeight: "8em",
@@ -167,29 +174,8 @@ export default function AboutSection() {
             transition: "opacity .6s ease, transform .6s ease",
           }}
         >
-          <Link
-            href="/team"
-            data-route-load
-            className="group"
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 11,
-              letterSpacing: ".2em",
-              color: "var(--on-surface-variant)",
-              border: "1px solid var(--outline-variant)",
-              padding: "10px 22px",
-              background: "var(--surface-container-lowest)",
-              cursor: "pointer",
-              transition: "color .25s, border-color .25s, box-shadow .25s",
-              display: "inline-block",
-              textDecoration: "none",
-              borderRadius: 999,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)",
-            }}
-          >
-            <span className="transition-colors group-hover:text-[var(--on-surface)]">
-              VIEW TEAM →
-            </span>
+          <Link href="/team" data-route-load className="btn">
+            VIEW TEAM →
           </Link>
         </div>
       </div>

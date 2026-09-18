@@ -15,24 +15,14 @@ import { FEATURED, DEPUTIES, initials } from "./members";
 
 export default function TeamPage() {
   return (
-    <div style={{ background: "var(--background)" }}>
+    <div style={{ background: "transparent" }}>
       {/* ── Full-circle member carousel ── */}
       <TeamCarousel members={FEATURED} />
 
       {/* ── Deputies grid ── */}
       <section style={{ padding: "10vh 6% 12vh" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".34em",
-              color: "var(--outline)",
-              textTransform: "uppercase",
-            }}
-          >
-            {"// SUPPORT CREW"}
-          </div>
+          <div className="eyebrow">SUPPORT CREW</div>
           <h2
             style={{
               fontFamily: "'Kenfolg', 'Syne', sans-serif",
@@ -66,9 +56,9 @@ export default function TeamPage() {
             }}
           >
             {DEPUTIES.map((m) => (
-              <div
+              <article
                 key={m.name}
-                className="clay-card"
+                className="clay-card card-photo"
                 style={{
                   padding: 0,
                   overflow: "hidden",
@@ -80,9 +70,9 @@ export default function TeamPage() {
                   style={{
                     position: "relative",
                     width: "100%",
-                    aspectRatio: "4 / 3",
-                    background:
-                      "linear-gradient(135deg, var(--surface-container) 0%, var(--surface-container-high) 100%)",
+                    aspectRatio: "4 / 5",
+                    background: "var(--surface-container-high)",
+                    borderBottom: "1px solid var(--outline-variant)",
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,33 +80,31 @@ export default function TeamPage() {
                     src={m.photo}
                     alt={m.name}
                     loading="lazy"
+                    className="photo-mono"
                     style={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
-                      filter: "grayscale(.4)",
                     }}
                   />
                   <span
                     style={{
                       position: "absolute",
-                      left: 12,
-                      top: 12,
+                      left: 10,
+                      top: 10,
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 10,
-                      letterSpacing: ".2em",
-                      color: "var(--on-primary)",
-                      background: "var(--primary-container)",
-                      borderRadius: 999,
-                      padding: "5px 12px",
-                      backdropFilter: "blur(6px)",
-                      WebkitBackdropFilter: "blur(6px)",
+                      letterSpacing: ".16em",
+                      color: "var(--background)",
+                      background: "var(--signal)",
+                      borderRadius: 2,
+                      padding: "3px 7px",
                     }}
                   >
                     {initials(m.name)}
                   </span>
                 </div>
-                <div style={{ padding: "18px 20px 20px" }}>
+                <div style={{ padding: "16px 18px 18px" }}>
                   <div
                     style={{
                       fontFamily: "'CremeEspana', 'Syne', sans-serif",
@@ -129,13 +117,20 @@ export default function TeamPage() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      width: 28,
+                      height: 2,
+                      background: "var(--signal)",
+                      margin: "10px 0 8px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: ".16em",
+                      fontWeight: 500,
+                      letterSpacing: ".14em",
                       textTransform: "uppercase",
-                      color: "var(--primary)",
-                      marginTop: 6,
+                      color: "var(--on-surface)",
                     }}
                   >
                     {m.role}
@@ -151,7 +146,7 @@ export default function TeamPage() {
                     {m.dept}
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>

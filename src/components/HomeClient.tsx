@@ -4,7 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
-import AboutSection from "./AboutSection";
+import Lenis from "lenis";
+import StorySection from "./story/StorySection";
+import { setLenis } from "./story/lenis";
 
 /* ============================================================
    HOME CLIENT — White Sculptural Tactility Flow
@@ -30,6 +32,22 @@ export default function HomeClient() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
   const initializedRef = useRef(false);
+  // Smooth scrolling for the story, once the gate has cleared.
+  useEffect(() => {
+    if (phase !== "content") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+    setLenis(lenis);
+    let raf = requestAnimationFrame(function tick(t) {
+      lenis.raf(t);
+      raf = requestAnimationFrame(tick);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      setLenis(null);
+      lenis.destroy();
+    };
+  }, [phase]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -59,6 +77,11 @@ export default function HomeClient() {
   }, []);
 
   const handleEnter = useCallback(() => {
+    // Reduced motion: no dive, just cross to the content.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPhase("content");
+      return;
+    }
     setZooming(true);
     setTimeout(() => {
       setPhase("content");
@@ -77,11 +100,12 @@ export default function HomeClient() {
           className="fixed inset-0"
           style={{
             zIndex: 600,
+            // Diving in: the surface rushes up and sinks into pond colour.
             transition:
-              "transform 1.3s cubic-bezier(.7,0,.15,1), opacity 1.1s ease",
-            transform: zooming ? "scale(9)" : "scale(1)",
+              "transform 1.3s cubic-bezier(.5,0,.2,1), opacity .9s ease .4s, background-color .7s ease",
+            transform: zooming ? "scale(2.8)" : "scale(1)",
             opacity: zooming ? 0 : 1,
-            backgroundColor: zooming ? "var(--background)" : undefined,
+            backgroundColor: zooming ? "var(--pond-950)" : "transparent",
           }}
         >
           <LandingPage onEnter={handleEnter} />
@@ -89,9 +113,9 @@ export default function HomeClient() {
       )}
 
       {phase === "content" && (
-        <div style={{ background: "var(--background)" }}>
+        <div style={{ background: "transparent" }}>
           <HeroSection />
-          <AboutSection />
+          <StorySection />
         </div>
       )}
     </>

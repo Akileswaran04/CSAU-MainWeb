@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { LaserCollection } from "@designcodeio/threeui";
-import "@designcodeio/threeui/style.css";
+import { KoiMark, LilyPad, RippleRule } from "@/components/PondOrnaments";
+import { POND_ARENA_CSS, QUICK_CODE_CSS } from "../pond-arena-css";
 
 /* ============================================================
    QUICK CODE — 5 Questions. 5 Minutes. One Chance.
 
-   The LaserCollection "matrix-field" (Matrix Junction) scene
-   fills the hero as a pointer-reactive laser field. The nav
-   bar floats above it — hovering a nav item grows the line
-   under the text while the junction's particles / lightning
-   reach toward the cursor.
+   The hero is a lightweight pond treatment (CSS light shafts +
+   slow ripple rings) laid over the shared PondBackdrop, so the
+   page needs no second WebGL context.
 
    Route: /quick-code
    ============================================================ */
@@ -34,9 +32,20 @@ const PAST = [
   { week: "WEEK 09", name: "BINARY", meta: "5 Questions · 5 Minutes · 1,240 Participants" },
 ];
 
+const SHAFTS: { left: string; width: number; r: number; d: number }[] = [
+  { left: "8%", width: 90, r: 4, d: 17 },
+  { left: "26%", width: 150, r: -3, d: 21 },
+  { left: "47%", width: 70, r: 5, d: 15 },
+  { left: "63%", width: 170, r: -4, d: 24 },
+  { left: "84%", width: 100, r: 3, d: 19 },
+];
+
 export default function QuickCodePage() {
   return (
-    <>        {/* ── HERO: full-bleed Matrix Junction laser field ── */}
+    <>
+      <style>{POND_ARENA_CSS + QUICK_CODE_CSS}</style>
+
+      {/* ── HERO: light shafts and ripples over the pond ── */}
       <section
         data-qc-hero
         style={{
@@ -44,43 +53,23 @@ export default function QuickCodePage() {
           minHeight: "100svh",
           width: "100%",
           overflow: "hidden",
-          background: "var(--background)",
+          background: "transparent",
         }}
       >
-        {/* Registered ThreeUI LaserCollection — Matrix Junction (matrix-field),
-            inverted so the dark laser field reads on the white theme */}
-        <div
-          className="shader-frame"
-          style={{
-            position: "absolute",
-            inset: 0,
-            filter: "invert(1) grayscale(1) contrast(1.1) brightness(1.5)",
-            opacity: 0.5,
-          }}
-        >
-          <LaserCollection
-            variant="matrix-field"
-            speed={1.0}
-            size={1.0}
-            length={1.0}
-            density={1.0}
-            opacity={1.0}
-            hue={0}
-            saturation={1.0}
-            brightness={1.0}
-          />
+        <div className="qc-water" aria-hidden>
+          {SHAFTS.map((s) => (
+            <div
+              key={s.left}
+              className="qc-shaft"
+              style={{ left: s.left, width: s.width, ["--r" as string]: `${s.r}deg`, ["--d" as string]: `${s.d}s` }}
+            />
+          ))}
+          <svg className="qc-rings" viewBox="0 0 1100 260" fill="none" stroke="var(--pond-300)" strokeWidth="1.2">
+            <ellipse cx="550" cy="130" rx="520" ry="120" />
+            <ellipse cx="550" cy="130" rx="520" ry="120" />
+            <ellipse cx="550" cy="130" rx="520" ry="120" />
+          </svg>
         </div>
-
-        {/* Soft white floor so content stays legible over the field */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse at 50% 30%, rgba(251,248,255,.0) 0%, rgba(251,248,255,.0) 42%, rgba(251,248,255,.86) 100%)",
-            pointerEvents: "none",
-          }}
-        />
 
         {/* Hero content */}
         <div
@@ -96,33 +85,28 @@ export default function QuickCodePage() {
             padding: "120px 6% 60px",
           }}
         >
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".34em",
-              color: "var(--outline)",
-              textTransform: "uppercase",
-              marginBottom: 22,
-            }}
-          >
-            CSAU // COMPETITIVE ARENA
+          <div className="eyebrow" style={{ marginBottom: 22 }}>
+            04 — COMPETITIVE ARENA
           </div>
 
           <h1
             style={{
               fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
               fontWeight: 900,
-              fontSize: "clamp(42px, 8.5vw, 128px)",
+              fontSize: "clamp(38px, 8.5vw, 128px)",
               letterSpacing: ".04em",
               lineHeight: 1,
               color: "var(--on-surface)",
               margin: 0,
-              textShadow: "0 0 40px rgba(26,27,34,.14)",
+              overflowWrap: "anywhere",
             }}
           >
             QUICK CODE
           </h1>
+
+          <div style={{ marginTop: 22 }}>
+            <RippleRule />
+          </div>
 
           <div
             style={{
@@ -130,7 +114,7 @@ export default function QuickCodePage() {
               fontSize: "clamp(20px, 3vw, 38px)",
               fontWeight: 400,
               color: "var(--on-surface)",
-              marginTop: 26,
+              marginTop: 22,
               lineHeight: 1.2,
             }}
           >
@@ -138,12 +122,12 @@ export default function QuickCodePage() {
           </div>
 
           <p
+            className="measure"
             style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontSize: "clamp(14px, 1.5vw, 17px)",
-              lineHeight: 1.8,
+              lineHeight: 1.75,
               color: "var(--on-surface-variant)",
-              maxWidth: 560,
               margin: "22px auto 0",
             }}
           >
@@ -152,64 +136,11 @@ export default function QuickCodePage() {
           </p>
 
           {/* CTA row */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42 }}>
-            <Link
-              href="#current-challenge"
-              style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: 11,
-                letterSpacing: ".2em",
-                fontWeight: 600,
-                color: "var(--on-primary)",
-                background: "var(--primary-container)",
-                padding: "14px 30px",
-                borderRadius: 999,
-                textDecoration: "none",
-                textTransform: "uppercase",
-                boxShadow: "0 2px 8px rgba(0,0,0,.04), 0 8px 30px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.08)",
-                transition: "box-shadow .3s ease, transform .3s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,.06), 0 16px 48px rgba(0,0,0,.1), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.08)";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,.04), 0 8px 30px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.08)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, justifyContent: "center" }}>
+            <Link href="#current-challenge" className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
               START THIS WEEK →
             </Link>
-            <Link
-              href="#leaderboard"
-              style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontSize: 11,
-                letterSpacing: ".2em",
-                fontWeight: 600,
-                color: "var(--on-surface-variant)",
-                background: "var(--surface-container-lowest)",
-                border: "1px solid var(--outline-variant)",
-                padding: "14px 30px",
-                borderRadius: 999,
-                textDecoration: "none",
-                textTransform: "uppercase",
-                boxShadow: "0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.02)",
-                transition: "background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--surface-container-low)";
-                e.currentTarget.style.color = "var(--on-surface)";
-                e.currentTarget.style.borderColor = "var(--primary-container)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,.04), 0 8px 30px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.02)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "var(--surface-container-lowest)";
-                e.currentTarget.style.color = "var(--on-surface-variant)";
-                e.currentTarget.style.borderColor = "var(--outline-variant)";
-                e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.02)";
-              }}
-            >
+            <Link href="#leaderboard" className="pa-btn" style={{ padding: "14px 26px" }}>
               VIEW LEADERBOARD
             </Link>
           </div>
@@ -227,11 +158,12 @@ export default function QuickCodePage() {
             {STATS.map((s) => (
               <div key={s.label} style={{ textAlign: "center" }}>
                 <div
+                  className="tabular"
                   style={{
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: "clamp(18px, 2.4vw, 26px)",
                     fontWeight: 500,
-                    color: "var(--on-surface)",
+                    color: "var(--marker)",
                     letterSpacing: ".04em",
                   }}
                 >
@@ -240,9 +172,9 @@ export default function QuickCodePage() {
                 <div
                   style={{
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: 9,
-                    letterSpacing: ".24em",
-                    color: "var(--outline)",
+                    fontSize: 11,
+                    letterSpacing: ".2em",
+                    color: "var(--on-surface-variant)",
                     textTransform: "uppercase",
                     marginTop: 6,
                   }}
@@ -259,28 +191,18 @@ export default function QuickCodePage() {
       <section
         id="current-challenge"
         style={{
-          background: "var(--background)",
+          background: "transparent",
           padding: "10vh 6%",
         }}
       >
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".32em",
-              color: "var(--outline)",
-              textTransform: "uppercase",
-            }}
-          >
-            {"// CURRENT CHALLENGE"}
-          </div>
+          <div className="eyebrow">CURRENT CHALLENGE</div>
 
           <h2
             style={{
               fontFamily: "'Kenfolg', 'Syne', sans-serif",
               fontWeight: 400,
-              fontSize: "clamp(30px, 4.6vw, 54px)",
+              fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
               margin: "14px 0 34px",
               lineHeight: 1.1,
@@ -289,7 +211,7 @@ export default function QuickCodePage() {
             THIS WEEK&apos;S CHALLENGE
           </h2>
 
-          <div className="clay-card" style={{ padding: "clamp(26px, 4vw, 52px)" }}>
+          <div className="pa-panel" style={{ padding: "clamp(22px, 4vw, 52px)" }}>
             <div
               style={{
                 display: "flex",
@@ -299,15 +221,18 @@ export default function QuickCodePage() {
               }}
             >
               <div>
-                <div
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 11,
-                    letterSpacing: ".3em",
-                    color: "var(--outline)",
-                  }}
-                >
-                  WEEK 12
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 11,
+                      letterSpacing: ".3em",
+                      color: "var(--outline)",
+                    }}
+                  >
+                    WEEK 12
+                  </span>
+                  <KoiMark size={34} />
                 </div>
                 <div
                   style={{
@@ -325,9 +250,9 @@ export default function QuickCodePage() {
                   style={{
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
                     fontSize: 15,
-                    lineHeight: 1.75,
+                    lineHeight: 1.6,
                     color: "var(--on-surface-variant)",
-                    maxWidth: 420,
+                    maxWidth: "var(--measure)",
                     margin: "14px 0 0",
                   }}
                 >
@@ -357,8 +282,8 @@ export default function QuickCodePage() {
                       <div
                         style={{
                           fontFamily: "'Plus Jakarta Sans', sans-serif",
-                          fontSize: 10,
-                          letterSpacing: ".16em",
+                          fontSize: 11,
+                          letterSpacing: ".14em",
                           color: "var(--outline)",
                           textTransform: "uppercase",
                         }}
@@ -369,32 +294,7 @@ export default function QuickCodePage() {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: 11,
-                    letterSpacing: ".2em",
-                    fontWeight: 600,
-                    color: "var(--on-primary)",
-                    background: "var(--primary)",
-                    border: "none",
-                    borderRadius: 999,
-                    padding: "13px 26px",
-                    marginTop: 26,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    transition: "box-shadow .3s ease, transform .3s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,.18)";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
+                <button type="button" className="pa-btn pa-btn-primary" style={{ marginTop: 26 }}>
                   START CHALLENGE →
                 </button>
               </div>
@@ -407,29 +307,20 @@ export default function QuickCodePage() {
       <section
         id="leaderboard"
         style={{
-          background: "var(--surface-container-low)",
+          background: "transparent",
           padding: "9vh 6%",
-          borderTop: "1px solid var(--outline-variant)",
-          borderBottom: "1px solid var(--outline-variant)",
         }}
       >
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".32em",
-              color: "var(--outline)",
-              textTransform: "uppercase",
-            }}
-          >
-            {"// THIS WEEK"}
+          <div style={{ marginBottom: 46 }}>
+            <RippleRule />
           </div>
+          <div className="eyebrow">THIS WEEK</div>
           <h2
             style={{
               fontFamily: "'Kenfolg', 'Syne', sans-serif",
               fontWeight: 400,
-              fontSize: "clamp(30px, 4.6vw, 54px)",
+              fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
               margin: "14px 0 10px",
               lineHeight: 1.1,
@@ -448,90 +339,58 @@ export default function QuickCodePage() {
             Who&apos;s the fastest quickcoder this week?
           </p>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 0,
-              border: "1px solid var(--outline-variant)",
-              borderRadius: "1.25rem",
-              overflow: "hidden",
-              background: "var(--surface-container-lowest)",
-            }}
-          >
-            {LEADERS.map((row) => (
-              <div
-                key={row.rank}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "56px 1fr auto auto",
-                  alignItems: "center",
-                  gap: 18,
-                  padding: "16px 22px",
-                  borderBottom: "1px solid var(--outline-variant)",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 14,
-                    color: row.rank <= 3 ? "var(--primary)" : "var(--outline)",
-                  }}
-                >
-                  #{row.rank}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    color: "var(--on-surface)",
-                  }}
-                >
-                  {row.name}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 14,
-                    color: "var(--on-surface)",
-                  }}
-                >
-                  {row.score} pts
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 13,
-                    color: "var(--outline)",
-                  }}
-                >
-                  {row.time}
-                </span>
-              </div>
-            ))}
+          {/* A real table so the columns announce themselves. The
+              ranking is fixed, so the sort order is declared rather
+              than left implicit. */}
+          <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Leaderboard">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Quickcoder</th>
+                  <th scope="col" className="num" aria-sort="descending">Score</th>
+                  <th scope="col" className="num">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {LEADERS.map((row) => (
+                  <tr key={row.rank} data-current={row.rank <= 3 ? "true" : undefined}>
+                    <td
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 14,
+                        color: row.rank === 1 ? "var(--marker)" : row.rank <= 3 ? "var(--on-surface)" : "var(--outline)",
+                      }}
+                    >
+                      #{row.rank}
+                    </td>
+                    <td style={{ fontWeight: 600, fontSize: 14, color: "var(--on-surface)" }}>
+                      {row.name}
+                    </td>
+                    <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "var(--on-surface)" }}>
+                      {row.score} pts
+                    </td>
+                    <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>
+                      {row.time}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
       {/* ── PREVIOUS CHALLENGES ── */}
-      <section style={{ background: "var(--background)", padding: "9vh 6%" }}>
+      <section style={{ background: "transparent", padding: "9vh 6% 12vh" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              letterSpacing: ".32em",
-              color: "var(--outline)",
-              textTransform: "uppercase",
-            }}
-          >
-            {"// ARCHIVE"}
-          </div>
+          <div className="eyebrow">ARCHIVE</div>
+
           <h2
             style={{
               fontFamily: "'Kenfolg', 'Syne', sans-serif",
               fontWeight: 400,
-              fontSize: "clamp(30px, 4.6vw, 54px)",
+              fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
               margin: "14px 0 34px",
               lineHeight: 1.1,
@@ -544,67 +403,46 @@ export default function QuickCodePage() {
             {PAST.map((ch) => (
               <div
                 key={ch.week}
-                className="clay-card"
-                style={{ padding: "26px 30px", display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center" }}
+                className="pa-panel"
+                style={{ padding: "22px clamp(18px, 3vw, 30px)", display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center" }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 10,
-                      letterSpacing: ".26em",
-                      color: "var(--outline)",
-                    }}
-                  >
-                    {ch.week}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Kenfolg', 'Syne', sans-serif",
-                      fontSize: "clamp(22px, 2.6vw, 32px)",
-                      fontWeight: 400,
-                      color: "var(--on-surface)",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {ch.name}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
-                      fontSize: 12,
-                      color: "var(--on-surface-variant)",
-                      marginTop: 4,
-                    }}
-                  >
-                    {ch.meta}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <span style={{ paddingTop: 5 }}><LilyPad size={18} /></span>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 11,
+                        letterSpacing: ".26em",
+                        color: "var(--outline)",
+                      }}
+                    >
+                      {ch.week}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Kenfolg', 'Syne', sans-serif",
+                        fontSize: "clamp(22px, 2.6vw, 32px)",
+                        fontWeight: 400,
+                        color: "var(--on-surface)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {ch.name}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        fontSize: 12.5,
+                        color: "var(--on-surface-variant)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {ch.meta}
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: 10,
-                    letterSpacing: ".18em",
-                    fontWeight: 600,
-                    color: "var(--on-surface-variant)",
-                    background: "var(--surface-container-lowest)",
-                    border: "1px solid var(--outline-variant)",
-                    borderRadius: 999,
-                    padding: "10px 22px",
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    transition: "color .3s ease, border-color .3s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "var(--on-surface)";
-                    e.currentTarget.style.borderColor = "var(--primary-container)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "var(--on-surface-variant)";
-                    e.currentTarget.style.borderColor = "var(--outline-variant)";
-                  }}
-                >
+                <button type="button" className="pa-btn">
                   VIEW →
                 </button>
               </div>

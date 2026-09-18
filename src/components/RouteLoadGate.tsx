@@ -27,8 +27,10 @@ const TOTAL_LOAD_MS = 5000; // target total time the loader is visible
 const EXIT_TOTAL_MS = 1400; // LoadingOverlay exit duration (x1→x3)
 const HOLD_UNTIL_MS = TOTAL_LOAD_MS - EXIT_TOTAL_MS; // start exiting at 3.6s
 const MAX_WAIT_MS = 8000; // safety net so the loader can never hang
+/* Stagger 30–50ms per item: fast enough to read as one motion, slow
+   enough to sequence. Above ~60ms it turns into a slideshow. */
 const STAGGER_BASE_MS = 140;
-const STAGGER_STEP_MS = 85;
+const STAGGER_STEP_MS = 45;
 const STAGGER_MAX_ITEMS = 12;
 
 const normalize = (p: string) => (p.endsWith("/") && p.length > 1 ? p.slice(0, -1) : p);
@@ -110,11 +112,11 @@ export default function RouteLoadGate({ children }: { children: ReactNode }) {
       gatherCandidates(host).forEach((el, i) => {
         el.animate(
           [
-            { opacity: 0, transform: "translateY(22px)", filter: "blur(3px)" },
-            { opacity: 1, transform: "translateY(0px)", filter: "blur(0px)" },
+            { opacity: 0, transform: "translateY(8px)" },
+            { opacity: 1, transform: "translateY(0px)" },
           ],
           {
-            duration: 680,
+            duration: 320,
             delay: STAGGER_BASE_MS + i * STAGGER_STEP_MS,
             easing: "cubic-bezier(.16,1,.3,1)",
             fill: "backwards",

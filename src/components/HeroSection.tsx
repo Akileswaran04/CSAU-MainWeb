@@ -30,45 +30,63 @@ export default function HeroSection() {
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
-        background: `radial-gradient(ellipse at 50% 45%, var(--surface-container-low) 0%, transparent 55%), var(--background)`,
+        background: "transparent",
       }}
     >
+      {/* Halftone field — replaces the old radial glow */}
+      <div
+        className="absolute inset-0 pointer-events-none halftone"
+        style={{ opacity: 0.45 }}
+      />
+
       {/* Scanlines */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "repeating-linear-gradient(to bottom, rgba(26,27,34,.015) 0px, rgba(26,27,34,.015) 1px, transparent 1px, transparent 4px)",
+          background:
+            "repeating-linear-gradient(to bottom, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 0px, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 1px, transparent 1px, transparent 4px)",
           mixBlendMode: "multiply",
         }}
       />
 
-      {/* Rotating rings — background decoration */}
+      {/* Water ripples — three rings widening from the centre, like a koi surfacing */}
       <div
         className="absolute pointer-events-none"
+        aria-hidden
         style={{
           top: "50%",
           left: "50%",
+          width: "min(80vw, 640px)",
+          height: "min(80vw, 640px)",
           transform: "translate(-50%, -50%)",
-          width: "min(65vw, 480px)",
-          height: "min(65vw, 480px)",
-          opacity: 0.35,
         }}
       >
-        <div className="absolute inset-0" style={{ animation: "spin 30s linear infinite" }}>
-          <svg viewBox="0 0 400 400" className="w-full h-full">
-            <circle cx="200" cy="200" r="180" fill="none" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="18 8 4 8 50 12" opacity=".4" />
-          </svg>
-        </div>
-        <div className="absolute inset-0" style={{ animation: "spinReverse 42s linear infinite" }}>
-          <svg viewBox="0 0 400 400" className="w-full h-full">
-            <circle cx="200" cy="200" r="145" fill="none" stroke="var(--outline)" strokeWidth="1" strokeDasharray="4 12 28 10 3 14" opacity=".25" />
-          </svg>
-        </div>
-        <div className="absolute inset-0" style={{ animation: "spin 56s linear infinite" }}>
-          <svg viewBox="0 0 400 400" className="w-full h-full">
-            <circle cx="200" cy="200" r="110" fill="none" stroke="var(--outline-variant)" strokeWidth=".8" strokeDasharray="6 16 2 16" opacity=".2" />
-          </svg>
-        </div>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              border: "1px solid var(--pond-700)",
+              opacity: 0,
+              animation: `ripple-out 9s cubic-bezier(.2,.6,.3,1) ${i * 3}s infinite`,
+            }}
+          />
+        ))}
+        <span
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 10,
+            height: 10,
+            marginLeft: -5,
+            marginTop: -5,
+            borderRadius: "50%",
+            background: "var(--signal)",
+          }}
+        />
       </div>
 
       {/* Center content */}
@@ -112,7 +130,7 @@ export default function HeroSection() {
             transition: "opacity .8s ease .2s, transform .8s ease .2s",
           }}
         >
-          THE COMPUTER SCIENCE ASSOCIATION
+          Computer Society of Anna University
         </p>
 
         {/* Decorative line */}

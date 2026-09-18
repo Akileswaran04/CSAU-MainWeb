@@ -1,10 +1,11 @@
 /* Headless verification:
-   1. Home ("/") renders the HERO directly
-   2. NAV button present; opens the WHITE glass-column overlay:
-      - pure surface (white) background
-      - WebGL three.js canvas with floating glass columns
-      - centered text only (no hints / emojis)
-      - hover grows the underline under the link
+   1. Home ("/") plays the boot → landing gate, then reveals the HERO
+      (sessionStorage is empty in a fresh headless profile, so the gate runs)
+   2. NAV button present; opens the paper index overlay:
+      - pure paper background
+      - WebGL three.js canvas with flat index bars
+      - plain uppercase text only (no hints / emojis)
+      - hover reveals the signal underline under the link
    3. Team page: white helix wall, counter advances, deputies grid
    4. Quick Code hero: light theme with the laser scene still mounted
    Run: node scripts/verify-pages.mjs  */
@@ -30,25 +31,61 @@ const fail = (name, detail) => {
 const pass = (name, detail = "") =>
   console.log(`PASS ${name}${detail ? " — " + detail : ""}`);
 
-/* 1. Home page — hero shown immediately */
+/* 1. Home page — walk the boot/landing gate, then expect the hero h1 */
 try {
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 45000 });
-  await page.waitForFunction(() => document.querySelector("h1"), { timeout: 30000 });
-  await sleep(1200);
+
+  // The gate is skipped when the session already saw it; otherwise the
+  // boot preloader runs first and the landing page offers ENTER SYSTEM.
+  const enter = await page
+    .waitForFunction(
+      () => {
+        const btn = [...document.querySelectorAll("button")].find((b) =>
+          /ENTER SYSTEM/i.test(b.textContent || "")
+        );
+        const hero = document.querySelector("h1");
+        if (hero && getComputedStyle(hero).opacity === "1") return "hero";
+        if (btn) return "enter";
+        return false;
+      },
+      { timeout: 45000, polling: 250 }
+    )
+    .then((handle) => handle.jsonValue())
+    .catch(() => null);
+
+  if (enter === "enter") {
+    await page.evaluate(() => {
+      const btn = [...document.querySelectorAll("button")].find((b) =>
+        /ENTER SYSTEM/i.test(b.textContent || "")
+      );
+      btn?.click();
+    });
+    await sleep(2000); // 1.3s zoom transition + first paint
+  }
+
+  await page.waitForFunction(
+    () => {
+      const h1 = document.querySelector("h1");
+      return h1 && getComputedStyle(h1).opacity === "1";
+    },
+    { timeout: 30000 }
+  );
+  await sleep(600);
   const home = await page.evaluate(() => {
     const h1 = document.querySelector("h1");
     return {
+      gate: !!document.querySelector(".ln-overlay") ? "boot-or-content" : "unknown",
       h1: h1?.textContent.trim().slice(0, 30) ?? null,
       h1Visible: h1 ? getComputedStyle(h1).opacity === "1" : false,
     };
   });
-  if (home.h1 === "CSAU.." && home.h1Visible) pass("/ hero direct", JSON.stringify(home.h1));
-  else fail("/ hero direct", JSON.stringify(home));
+  if (home.h1 === "CSAU.." && home.h1Visible) pass("/ hero after gate", JSON.stringify(home.h1));
+  else fail("/ hero after gate", JSON.stringify(home));
 } catch (err) {
-  fail("/ hero direct", err.message?.slice(0, 160));
+  fail("/ hero after gate", err.message?.slice(0, 160));
 }
 
-/* 2. Overlay — white bg, three.js glass canvas, centered links */
+/* 2. Overlay — paper bg, three.js index-bar canvas, centered block */
 try {
   await page.goto(`${BASE}/events`, { waitUntil: "domcontentloaded", timeout: 45000 });
   await page.waitForFunction(() => document.querySelector("h1"), { timeout: 30000 });
@@ -92,19 +129,19 @@ try {
 
   if (
     overlay.open &&
-    overlay.bg === "rgb(251, 248, 255)" &&
+    overlay.bg === "rgb(239, 240, 236)" &&
     overlay.hasCanvas &&
     overlay.webgl &&
     linksOk &&
     overlay.nonPlainLinks === 0 &&
     overlay.centered
   ) {
-    pass("overlay glass", `bg=${overlay.bg} webgl=${overlay.canvasSize} links=6 emojis=0 centered=true`);
+    pass("overlay paper", `bg=${overlay.bg} webgl=${overlay.canvasSize} links=6 emojis=0 centered=true`);
   } else {
-    fail("overlay glass", JSON.stringify(overlay));
+    fail("overlay paper", JSON.stringify(overlay));
   }
 
-  /* 2b. Hover a link → underline grows (scaleX → 1) */
+  /* 2b. Hover a link → signal underline wipes in (scaleX → 1) */
   const before = await page.evaluate(() => {
     const link = [...document.querySelectorAll(".ln-link")].find((l) => l.textContent === "HOME");
     const tr = getComputedStyle(link, "::after").transform;
@@ -131,13 +168,13 @@ try {
   fail("overlay", err.message?.slice(0, 200));
 }
 
-/* 3. Team page — white helix wall with upward scroll rail */
+/* 3. Team page — paper helix wall with upward scroll rail */
 try {
   await page.goto(`${BASE}/team`, { waitUntil: "domcontentloaded", timeout: 45000 });
   await sleep(2200);
 
   const wall = await page.evaluate(() => {
-    const canvas = document.querySelector("[data-team-wall] canvas");
+    const canvas = document.querySelector("[data-team-carousel] canvas");
     return canvas ? { w: canvas.width, h: canvas.height } : null;
   });
   if (wall) pass("team wall canvas", `${wall.w}x${wall.h}`);
@@ -196,7 +233,7 @@ try {
       qc.bg === "rgb(250, 250, 250)" ||
       qc.bg === "rgb(255, 255, 252)" ||
       qc.bg === "rgb(247, 247, 250)" ||
-      qc.bg === "rgb(251, 248, 255)";
+      qc.bg === "rgb(239, 240, 236)";
     if (lightBg) pass("quick-code hero light", qc.bg);
     else fail("quick-code hero light", qc.bg);
     if (qc.laser) pass("quick-code laser mounted", JSON.stringify(qc.laser));

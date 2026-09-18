@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { RippleRule, KoiMark, LilyPad, POND_PANEL_CSS } from "@/components/PondOrnaments";
 
 /* ============================================================
    BLOG — Blogs, Articles & Posts
@@ -38,7 +39,7 @@ const POSTS: Post[] = [
   },
   {
     kind: "POST",
-    title: "Quick Code Week 12 results are live ⚡",
+    title: "Quick Code Week 12 results are live",
     author: "CSAU Core",
     date: "19 AUG 2026",
     read: "1 MIN",
@@ -88,19 +89,12 @@ const POSTS: Post[] = [
     date: "18 JUL 2026",
     read: "5 MIN",
     blurb:
-      "Why we moved the site to a clay, sculptural theme — and the typography system behind every page you're reading.",
+      "Why the site now reads like a printed index — the paper palette, the hairline grid and the type system behind every page.",
   },
 ];
 
-const kindColor: Record<Post["kind"], string> = {
-  BLOG: "var(--on-surface)",
-  ARTICLE: "var(--primary)",
-  POST: "var(--secondary)",
-};
-
 export default function BlogPage() {
   const [selectedKind, setSelectedKind] = useState<"ALL" | "BLOG" | "ARTICLE" | "POST">("ALL");
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const filtered = selectedKind === "ALL"
     ? POSTS
@@ -109,20 +103,11 @@ export default function BlogPage() {
   const kindTabs: ("ALL" | "BLOG" | "ARTICLE" | "POST")[] = ["ALL", "BLOG", "ARTICLE", "POST"];
 
   return (
-    <main style={{ background: "var(--background)", minHeight: "100vh", padding: "18vh 6% 10vh" }}>
+    <main style={{ background: "transparent", minHeight: "100vh", padding: "18vh 6% 10vh" }}>
+      <style>{POND_PANEL_CSS}</style>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         {/* Header */}
-        <div
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            letterSpacing: ".34em",
-            color: "var(--outline)",
-            textTransform: "uppercase",
-          }}
-        >
-          {"// THOUGHTS FROM THE SOCIETY"}
-        </div>
+        <div className="eyebrow">02 — WRITING</div>
         <h1
           style={{
             fontFamily: "'Kenfolg', 'Syne', sans-serif",
@@ -137,12 +122,12 @@ export default function BlogPage() {
           BLOG
         </h1>
         <p
+          className="measure"
           style={{
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             fontSize: "clamp(14px, 1.6vw, 18px)",
             color: "var(--on-surface-variant)",
-            lineHeight: 1.8,
-            maxWidth: 600,
+            lineHeight: 1.75,
             margin: "20px 0 0",
           }}
         >
@@ -150,50 +135,23 @@ export default function BlogPage() {
           the members, for everyone who codes.
         </p>
 
+        <div style={{ margin: "30px 0 0", display: "flex", alignItems: "center", gap: 14 }}>
+          <RippleRule />
+          <KoiMark size={34} flip />
+        </div>
+
         {/* Article nav — kind tabs */}
         <nav
           aria-label="Article kinds"
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 34,
-            marginBottom: 26,
-          }}
+          className="tabs"
+          style={{ marginTop: 22, marginBottom: 22 }}
         >
           {kindTabs.map((k) => (
             <button
               key={k}
+              className="tab"
               onClick={() => setSelectedKind(k)}
               aria-pressed={selectedKind === k}
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                letterSpacing: ".2em",
-                textTransform: "uppercase",
-                border: "1px solid",
-                borderColor: selectedKind === k ? "var(--primary-container)" : "var(--outline-variant)",
-                color: selectedKind === k ? "var(--on-surface)" : "var(--outline)",
-                background: selectedKind === k ? "var(--surface-container-lowest)" : "transparent",
-                padding: "8px 16px",
-                borderRadius: 999,
-                cursor: "pointer",
-                transition: "border-color .25s, color .25s, background .25s",
-                boxShadow: selectedKind === k
-                  ? "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.02)"
-                  : "none",
-              }}
-              onMouseEnter={(e) => {
-                if (selectedKind !== k) {
-                  e.currentTarget.style.borderColor = "var(--outline)";
-                  e.currentTarget.style.color = "var(--on-surface)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedKind !== k) {
-                  e.currentTarget.style.borderColor = "var(--outline-variant)";
-                  e.currentTarget.style.color = "var(--outline)";
-                }
-              }}
             >
               {k}
             </button>
@@ -201,49 +159,28 @@ export default function BlogPage() {
         </nav>
 
         {/* Counts */}
-        <div
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10,
-            letterSpacing: ".2em",
-            color: "var(--outline)",
-            textTransform: "uppercase",
-            marginBottom: 26,
-          }}
-        >
+        <div className="eyebrow tabular" style={{ marginBottom: 22, display: "flex", alignItems: "center", gap: 8 }}>
+          <LilyPad />
           {filtered.length} {filtered.length === 1 ? "piece" : "pieces"}
         </div>
 
         {/* Posts */}
         <div style={{ display: "grid", gap: 16 }}>
-          {filtered.map((post, idx) => (
+          {filtered.map((post) => (
             <article
               key={post.title}
-              className="clay-card"
+              className="pond-panel"
               style={{
                 padding: "24px 28px",
                 display: "flex",
                 flexWrap: "wrap",
                 gap: "10px 24px",
                 alignItems: "baseline",
-                opacity: hoveredIdx === idx ? 1 : 0.85,
-                transform: hoveredIdx === idx ? "translateY(-2px)" : "translateY(0)",
-                transition: "opacity .3s ease, transform .3s ease, box-shadow .3s ease",
-                boxShadow: hoveredIdx === idx ? "var(--clay-shadow-xl)" : "var(--clay-shadow-md)",
               }}
-              onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
             >
               <span
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 9,
-                  letterSpacing: ".2em",
-                  fontWeight: 600,
-                  color: kindColor[post.kind],
-                  minWidth: 62,
-                  textTransform: "uppercase",
-                }}
+                className={post.kind === "ARTICLE" ? "chip chip-signal" : "chip"}
+                style={{ minWidth: 74, justifyContent: "center" }}
               >
                 {post.kind}
               </span>
@@ -268,7 +205,7 @@ export default function BlogPage() {
                     lineHeight: 1.7,
                     color: "var(--on-surface-variant)",
                     margin: "8px 0 0",
-                    maxWidth: 640,
+                    maxWidth: "var(--measure)",
                   }}
                 >
                   {post.blurb}
@@ -278,7 +215,7 @@ export default function BlogPage() {
               <div
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 9.5,
+                  fontSize: 10.5,
                   letterSpacing: ".12em",
                   color: "var(--outline)",
                   textAlign: "right",
@@ -295,24 +232,8 @@ export default function BlogPage() {
           ))}
         </div>
 
-        <div style={{ marginTop: 52, textAlign: "center" }}>
-          <Link
-            href="/crackit"
-            data-route-load
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: 11,
-              letterSpacing: ".2em",
-              fontWeight: 600,
-              color: "var(--on-primary)",
-              background: "var(--primary)",
-              borderRadius: 999,
-              padding: "13px 28px",
-              textDecoration: "none",
-              textTransform: "uppercase",
-              display: "inline-block",
-            }}
-          >
+        <div style={{ marginTop: 52 }}>
+          <Link href="/crackit" data-route-load className="btn btn-primary">
             JOIN A CODING ROUND →
           </Link>
         </div>

@@ -18,7 +18,7 @@ import { initials } from "@/app/team/members";
      stands at the centre of the ring, inside the carousel.
    • role / name / dept / links crossfade beside the front panel.
 
-   White stage — matches the site's light theme.
+   Transparent stage — floats over the shared night-pond backdrop.
    ============================================================ */
 
 interface TeamCarouselProps {
@@ -27,6 +27,21 @@ interface TeamCarouselProps {
 
 /* Draw a member portrait (photo or initials card) onto a canvas →
    dataURL texture. Keeps photos crisp, avoids WebGL/CORS tainting. */
+/* Canvas 2D cannot resolve CSS variables, so read the tokens once and
+   fall back to the documented literal if they are unavailable. */
+function tokenColor(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+/** Token colour at a given alpha, e.g. ink at 28%. */
+function tokenAlpha(name: string, alpha: number, fallback: string): string {
+  const hex = tokenColor(name, fallback).replace("#", "");
+  if (hex.length !== 6) return fallback;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas");
@@ -35,13 +50,21 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return resolve("");
 
+    /* hairline foam frame so the panel reads against dark water */
+    const paintFrame = () => {
+      ctx.strokeStyle = tokenAlpha("--foam", 0.35, "#f6f1e4");
+      ctx.lineWidth = 3;
+      ctx.strokeRect(1.5, 1.5, size - 3, size * 1.25 - 3);
+    };
+
     const paintFallback = () => {
       const g = ctx.createLinearGradient(0, 0, size, size * 1.25);
-      g.addColorStop(0, "#e8e7f1");
-      g.addColorStop(1, "#dad9e3");
+      g.addColorStop(0, tokenColor("--surface-container-high", "#0f3236"));
+      g.addColorStop(1, tokenColor("--pond-900", "#0b2b2e"));
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, size, size * 1.25);
-      ctx.fillStyle = "rgba(26,27,34,.28)";
+      paintFrame();
+      ctx.fillStyle = tokenAlpha("--foam", 0.7, "#f6f1e4");
       ctx.font = `700 ${size * 0.24}px 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -56,12 +79,20 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
         const s = Math.min(img.width, img.height);
         const sx = (img.width - s) / 2;
         const sy = (img.height - s) / 2;
-        ctx.filter = "grayscale(.35) contrast(1.05)";
+        ctx.filter = "grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04)";
         ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
         ctx.filter = "none";
-        // soft fade into the panel base
-        ctx.fillStyle = "rgba(255,255,255,.18)";
-        ctx.fillRect(0, size * 0.82, size, size * 0.43);
+        // pond tint so the photo sits in the water, then a fade into the panel base
+        ctx.globalCompositeOperation = "multiply";
+        ctx.fillStyle = tokenAlpha("--pond-300", 0.55, "#7fb5ad");
+        ctx.fillRect(0, 0, size, size);
+        ctx.globalCompositeOperation = "source-over";
+        const fade = ctx.createLinearGradient(0, size * 0.7, 0, size * 1.25);
+        fade.addColorStop(0, tokenAlpha("--pond-950", 0, "#061a1d"));
+        fade.addColorStop(1, tokenAlpha("--pond-950", 0.9, "#061a1d"));
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, size * 0.7, size, size * 0.55);
+        paintFrame();
         resolve(canvas.toDataURL("image/png"));
       } catch {
         paintFallback();
@@ -93,13 +124,11 @@ function totemDataURL(size = 384): Promise<string> {
       letters.forEach((ch, i) => {
         const y = startY + i * lh;
         ctx.save();
-        ctx.shadowColor = "rgba(39,39,42,0.4)";
-        ctx.shadowBlur = 22;
+        // Outline-only wordmark — no glow, no shadow bloom.
         ctx.lineWidth = Math.max(3, size * 0.022);
-        ctx.strokeStyle = "rgba(26,27,34,0.95)";
+        ctx.strokeStyle = tokenAlpha("--signal", 0.95, "#c72f16");
         ctx.strokeText(ch, canvas.width / 2, y);
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(251,248,255,0.14)";
+        ctx.fillStyle = tokenAlpha("--marker", 0.16, "#f0b73a");
         ctx.fillText(ch, canvas.width / 2, y);
         ctx.restore();
       });
@@ -161,7 +190,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         preserveDrawingBuffer: true,
       });
       renderer.setClearColor(0x000000, 0);
-      if ("outputColorSpace" in THREE) renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 120);
@@ -195,7 +224,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
       const makeTexture = (url: string) => {
         const t = new THREE.TextureLoader().load(url);
-        if ("colorSpace" in THREE) t.colorSpace = THREE.SRGBColorSpace;
+        t.colorSpace = THREE.SRGBColorSpace;
         t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
         return t;
       };
@@ -441,12 +470,14 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
       return x - Math.floor(x);
     };
+    // rounded so server and browser float maths serialise identically
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     return Array.from({ length: 14 }, (_, i) => ({
-      left: 18 + seeded(active + 1, i) * 64,
-      top: 22 + seeded(active + 2, i) * 56,
-      size: 2 + seeded(active + 3, i) * 4,
-      delay: seeded(active + 4, i) * 0.45,
-      dur: 0.9 + seeded(active + 5, i) * 0.7,
+      left: r2(18 + seeded(active + 1, i) * 64),
+      top: r2(22 + seeded(active + 2, i) * 56),
+      size: r2(2 + seeded(active + 3, i) * 4),
+      delay: r2(seeded(active + 4, i) * 0.45),
+      dur: r2(0.9 + seeded(active + 5, i) * 0.7),
     }));
   }, [active]);
 
@@ -463,18 +494,18 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           top: 0,
           height: "100vh",
           overflow: "hidden",
-          background:
-            "radial-gradient(ellipse at 50% 40%, #ffffff 0%, #f4f2fd 55%, #eeedf7 100%)",
+          background: "transparent",
         }}
       >
-        {/* paper-grid backdrop */}
+        {/* halftone backdrop */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "radial-gradient(rgba(26,27,34,.1) 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
+              "radial-gradient(var(--outline-variant) 0.6px, transparent 0.7px)",
+            backgroundSize: "22px 22px",
+            opacity: 0.55,
             pointerEvents: "none",
           }}
         />
@@ -501,7 +532,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 10,
                 letterSpacing: ".3em",
-                color: "var(--outline)",
+                color: "var(--signal)",
                 textTransform: "uppercase",
                 marginBottom: 10,
               }}
@@ -560,26 +591,12 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               {["X / TWITTER", "LINKEDIN", "GITHUB"].map((label) => (
                 <span
                   key={label}
+                  className="chip"
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 8.5,
                     letterSpacing: ".14em",
-                    color: "var(--on-surface-variant)",
-                    border: "1px solid var(--outline-variant)",
-                    borderRadius: 999,
-                    padding: "6px 12px",
-                    whiteSpace: "nowrap",
-                    transition: "color .3s ease, border-color .3s ease",
                     pointerEvents: "auto",
                     cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "var(--on-surface)";
-                    e.currentTarget.style.borderColor = "var(--primary-container)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "var(--on-surface-variant)";
-                    e.currentTarget.style.borderColor = "var(--outline-variant)";
                   }}
                 >
                   {label}
@@ -614,9 +631,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             left: "5vw",
             right: "5vw",
             bottom: 34,
-            height: 2,
-            background: "rgba(26,27,34,.14)",
-            borderRadius: 2,
+            height: 1,
+            background: "var(--outline-variant)",
             pointerEvents: "none",
           }}
         >
@@ -624,7 +640,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             style={{
               width: `${((active + 1) / N) * 100}%`,
               height: "100%",
-              background: "var(--on-surface)",
+              background: "var(--signal)",
               transition: "width .5s ease",
             }}
           />
@@ -645,6 +661,10 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             justify-content: space-between;
             gap: 20px;
           }
+          .tc-role-block, .tc-detail-block {
+            text-shadow: 0 1px 2px color-mix(in srgb, var(--pond-950) 90%, transparent),
+                         0 0 12px color-mix(in srgb, var(--pond-950) 75%, transparent);
+          }
           .tc-role-block { width: 24%; min-width: 150px; }
           .tc-detail-block { width: 30%; min-width: 220px; text-align: right; }
           .tc-links-row {
@@ -660,21 +680,17 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             .tc-stage-overlay { padding: 0; display: block; }
             .tc-role-block {
               position: absolute;
-              top: 7vh;
+              top: max(7vh, 84px);
               left: 4vw;
               width: auto;
               min-width: 0;
             }
             .tc-detail-block {
               position: absolute;
-              top: 7vh;
+              top: max(7vh, 84px);
               right: 4vw;
               width: auto;
               min-width: 0;
-            }
-            .tc-role-block, .tc-detail-block {
-              text-shadow: 0 1px 2px rgba(251,248,255,.85),
-                           0 0 14px rgba(251,248,255,.55);
             }
             .tc-links-row { flex-wrap: wrap; }
           }
@@ -687,9 +703,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }
           .tc-dust-mote {
             position: absolute;
-            border-radius: 50%;
-            background: rgba(39, 39, 42, 0.55);
-            box-shadow: 0 0 6px rgba(39, 39, 42, 0.25);
+            background: var(--marker);
             opacity: 0;
             animation: tc-dust-float 1.2s ease-out forwards;
           }
