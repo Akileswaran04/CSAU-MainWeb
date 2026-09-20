@@ -42,7 +42,194 @@ function tokenAlpha(name: string, alpha: number, fallback: string): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
+/* A koi seen from above, head to the right — painted once and bent
+   in the scene so it swims. Colours come from the site tokens. */
+function drawKoiCanvas(): HTMLCanvasElement {
+  const W = 512;
+  const H = 176;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const g = c.getContext("2d")!;
+  const foam = tokenColor("--foam", "#f6f1e4");
+  const red = tokenColor("--signal", "#ee5b3a");
+  const cy = H / 2;
+
+  const half = (t: number) => {
+    // t: 0 at the nose → 1 at the tail base
+    const f = t < 0.16 ? Math.sqrt(t / 0.16) * 0.92 : t < 0.35 ? 0.92 - (t - 0.16) * 0.1 : 0.9 + (0.22 - 0.9) * Math.pow((t - 0.35) / 0.65, 0.9);
+    return 34 * f;
+  };
+
+  // translucent forked tail
+  g.fillStyle = "rgba(246,241,228,0.5)";
+  g.beginPath();
+  g.moveTo(128, cy - 8);
+  g.bezierCurveTo(96, cy - 30, 50, cy - 50, 6, cy - 48);
+  g.quadraticCurveTo(34, cy, 6, cy + 48);
+  g.bezierCurveTo(50, cy + 50, 96, cy + 30, 128, cy + 8);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = "rgba(238,91,58,0.55)";
+  g.lineWidth = 1.5;
+  for (let i = 0; i < 9; i++) {
+    g.beginPath();
+    g.moveTo(126, cy);
+    g.lineTo(10, cy + (i - 4) * 11);
+    g.stroke();
+  }
+
+  // pectoral fins
+  g.fillStyle = "rgba(246,241,228,0.42)";
+  for (const s of [-1, 1]) {
+    g.beginPath();
+    g.moveTo(372, cy + s * 24);
+    g.quadraticCurveTo(352, cy + s * 62, 318, cy + s * 58);
+    g.quadraticCurveTo(340, cy + s * 40, 350, cy + s * 24);
+    g.closePath();
+    g.fill();
+  }
+
+  // body
+  const body = new Path2D();
+  const N = 44;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const x = 488 - t * 360;
+    const y = cy - half(t);
+    if (i === 0) body.moveTo(x, y);
+    else body.lineTo(x, y);
+  }
+  for (let i = N; i >= 0; i--) {
+    const t = i / N;
+    body.lineTo(488 - t * 360, cy + half(t));
+  }
+  body.closePath();
+  g.save();
+  g.clip(body);
+  g.fillStyle = foam;
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = red;
+  const patches: [number, number, number, number][] = [
+    [452, cy, 34, 24],
+    [372, cy - 6, 44, 20],
+    [300, cy + 8, 40, 22],
+    [226, cy - 4, 46, 18],
+    [164, cy + 4, 26, 12],
+  ];
+  patches.forEach(([x, y, rx, ry]) => {
+    g.beginPath();
+    g.ellipse(x, y, rx, ry, 0.15, 0, Math.PI * 2);
+    g.fill();
+  });
+  const shade = g.createLinearGradient(0, cy - 36, 0, cy + 36);
+  shade.addColorStop(0, "rgba(0,0,0,0.32)");
+  shade.addColorStop(0.5, "rgba(255,255,255,0.12)");
+  shade.addColorStop(1, "rgba(0,0,0,0.32)");
+  g.fillStyle = shade;
+  g.fillRect(0, cy - 40, W, 80);
+  g.restore();
+
+  // eyes
+  g.fillStyle = "#0a0f0f";
+  for (const s of [-1, 1]) {
+    g.beginPath();
+    g.arc(452, cy + s * 17, 4.2, 0, Math.PI * 2);
+    g.fill();
+  }
+  return c;
+}
+
+/* Printed-card detail painted on every portrait: scale texture, corner
+   brackets, a vermilion seal, the running number and a vertical role. */
+function paintOrnament(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  member: TeamMember,
+  index: number,
+  total: number
+) {
+  const W = size;
+  const H = size * 1.25;
+  const foam = tokenColor("--foam", "#f6f1e4");
+  const signal = tokenColor("--signal", "#ee5b3a");
+  const gold = tokenColor("--marker", "#f0b73a");
+
+  // koi-scale scallops, barely there
+  ctx.save();
+  ctx.strokeStyle = tokenAlpha("--foam", 0.05, "#f6f1e4");
+  ctx.lineWidth = 1.4;
+  const r = size * 0.05;
+  for (let row = 0; row * r * 0.9 < H + r; row++) {
+    for (let x = -r; x < W + r; x += r * 2) {
+      ctx.beginPath();
+      ctx.arc(x + (row % 2) * r, row * r * 0.9, r, 0, Math.PI);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // corner brackets
+  const m = size * 0.045;
+  const L = size * 0.09;
+  ctx.strokeStyle = signal;
+  ctx.lineWidth = Math.max(3, size * 0.006);
+  ctx.lineCap = "square";
+  const bracket = (x: number, y: number, sx: number, sy: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y + sy * L);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + sx * L, y);
+    ctx.stroke();
+  };
+  bracket(m, m, 1, 1);
+  bracket(W - m, m, -1, 1);
+  bracket(m, H - m, 1, -1);
+  bracket(W - m, H - m, -1, -1);
+
+  // vermilion seal (hanko) with initials
+  const sealS = size * 0.17;
+  ctx.save();
+  ctx.translate(W - m - sealS * 0.75, H * 0.31);
+  ctx.rotate(0.09);
+  ctx.fillStyle = signal;
+  ctx.fillRect(-sealS / 2, -sealS / 2, sealS, sealS);
+  ctx.strokeStyle = tokenAlpha("--pond-950", 0.55, "#061a1d");
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-sealS / 2 + 5, -sealS / 2 + 5, sealS - 10, sealS - 10);
+  ctx.fillStyle = tokenColor("--pond-950", "#061a1d");
+  ctx.font = `800 ${sealS * 0.42}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(initials(member.name), 0, 2);
+  ctx.restore();
+
+  // running number, bottom-left
+  const num = String(index + 1).padStart(2, "0");
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = foam;
+  ctx.font = `800 ${size * 0.19}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.fillText(num, m + size * 0.02, H - m - size * 0.06);
+  ctx.fillStyle = gold;
+  ctx.fillRect(m + size * 0.02, H - m - size * 0.06 - size * 0.2, size * 0.07, 3);
+  ctx.fillStyle = tokenAlpha("--foam", 0.6, "#f6f1e4");
+  ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
+  ctx.fillText(`/ ${String(total).padStart(2, "0")}`, m + size * 0.02 + size * 0.27, H - m - size * 0.06);
+
+  // vertical role along the right edge
+  ctx.save();
+  ctx.translate(W - m - size * 0.02, H - m - size * 0.08);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = tokenAlpha("--foam", 0.78, "#f6f1e4");
+  ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = "left";
+  const role = member.role.toUpperCase().split("").join("\u200A");
+  ctx.fillText(role, 0, 0);
+  ctx.restore();
+}
+
+function portraitDataURL(member: TeamMember, index: number, total: number, size = 512): Promise<string> {
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas");
     canvas.width = size;
@@ -56,6 +243,11 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
       ctx.lineWidth = 3;
       ctx.strokeRect(1.5, 1.5, size - 3, size * 1.25 - 3);
     };
+    const finish = () => {
+      paintOrnament(ctx, size, member, index, total);
+      paintFrame();
+      resolve(canvas.toDataURL("image/png"));
+    };
 
     const paintFallback = () => {
       const g = ctx.createLinearGradient(0, 0, size, size * 1.25);
@@ -63,13 +255,12 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
       g.addColorStop(1, tokenColor("--pond-900", "#0b2b2e"));
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, size, size * 1.25);
-      paintFrame();
       ctx.fillStyle = tokenAlpha("--foam", 0.7, "#f6f1e4");
       ctx.font = `700 ${size * 0.24}px 'Plus Jakarta Sans', sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(initials(member.name), size / 2, size * 0.62);
-      resolve(canvas.toDataURL("image/png"));
+      ctx.fillText(initials(member.name), size / 2, size * 0.5);
+      finish();
     };
 
     const img = new Image();
@@ -79,6 +270,8 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
         const s = Math.min(img.width, img.height);
         const sx = (img.width - s) / 2;
         const sy = (img.height - s) / 2;
+        ctx.fillStyle = tokenColor("--pond-950", "#061a1d");
+        ctx.fillRect(0, 0, size, size * 1.25);
         ctx.filter = "grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04)";
         ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
         ctx.filter = "none";
@@ -87,13 +280,13 @@ function portraitDataURL(member: TeamMember, size = 512): Promise<string> {
         ctx.fillStyle = tokenAlpha("--pond-300", 0.55, "#7fb5ad");
         ctx.fillRect(0, 0, size, size);
         ctx.globalCompositeOperation = "source-over";
-        const fade = ctx.createLinearGradient(0, size * 0.7, 0, size * 1.25);
+        const fade = ctx.createLinearGradient(0, size * 0.62, 0, size * 1.25);
         fade.addColorStop(0, tokenAlpha("--pond-950", 0, "#061a1d"));
-        fade.addColorStop(1, tokenAlpha("--pond-950", 0.9, "#061a1d"));
+        fade.addColorStop(0.55, tokenAlpha("--pond-950", 0.85, "#061a1d"));
+        fade.addColorStop(1, tokenAlpha("--pond-950", 0.96, "#061a1d"));
         ctx.fillStyle = fade;
-        ctx.fillRect(0, size * 0.7, size, size * 0.55);
-        paintFrame();
-        resolve(canvas.toDataURL("image/png"));
+        ctx.fillRect(0, size * 0.62, size, size * 0.63);
+        finish();
       } catch {
         paintFallback();
       }
@@ -159,7 +352,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const urls = await Promise.all(members.map((m) => portraitDataURL(m)));
+      const urls = await Promise.all(members.map((m, i) => portraitDataURL(m, i, members.length)));
       if (!cancelled) setTextureUrls(urls);
     })();
     return () => {
@@ -251,6 +444,83 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         carousel.add(pivot);
         panels.push(panel);
       });
+
+      /* ── Pond floor: breathing ripple rings, a pulse on every name
+         change, and two koi circling the ring ────────────────── */
+      const floorY = -PANEL_H / 2 - 0.4;
+      const ringGeo = new THREE.RingGeometry(0.985, 1, 160);
+      const floorRings: THREE.Mesh[] = [];
+      const ringColor = new THREE.Color(tokenColor("--pond-300", "#7fb5ad"));
+      [RADIUS + 0.5, RADIUS + 1.5, RADIUS + 2.8, RADIUS + 4.2].forEach((r) => {
+        const m = new THREE.Mesh(
+          ringGeo,
+          new THREE.MeshBasicMaterial({ color: ringColor, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.y = floorY;
+        m.scale.setScalar(r);
+        m.userData.r = r;
+        scene.add(m);
+        floorRings.push(m);
+      });
+      const pulse = new THREE.Mesh(
+        ringGeo,
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(tokenColor("--signal", "#ee5b3a")), transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })
+      );
+      pulse.rotation.x = -Math.PI / 2;
+      pulse.position.y = floorY;
+      pulse.visible = false;
+      scene.add(pulse);
+      let rippleStart = -1e9;
+
+      const koiTex = new THREE.CanvasTexture(drawKoiCanvas());
+      koiTex.colorSpace = THREE.SRGBColorSpace;
+      const koiMat = new THREE.MeshBasicMaterial({ map: koiTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+      const koiFish = [
+        { r: RADIUS + 0.9, speed: 0.12, dir: 1, ph: 0.6, sc: 1 },
+        { r: RADIUS + 2.2, speed: 0.08, dir: -1, ph: 3.4, sc: 0.78 },
+      ].map((cfg) => {
+        const geo = new THREE.PlaneGeometry(3.4, 1.15, 30, 4);
+        const base = Float32Array.from(geo.attributes.position.array as ArrayLike<number>);
+        const group = new THREE.Group();
+        const mesh = new THREE.Mesh(geo, koiMat);
+        mesh.rotation.x = -Math.PI / 2;
+        group.add(mesh);
+        group.scale.setScalar(cfg.sc);
+        scene.add(group);
+        return { ...cfg, geo, base, group };
+      });
+
+      const updateFloor = (t: number, calm: boolean) => {
+        floorRings.forEach((m, i) => {
+          const breathe = calm ? 0 : Math.sin(t * 0.5 + i * 1.1) * 0.05;
+          m.scale.setScalar((m.userData.r as number) * (1 + breathe));
+          (m.material as THREE.MeshBasicMaterial).opacity = 0.24 - i * 0.045;
+        });
+        const age = t - rippleStart;
+        const pm = pulse.material as THREE.MeshBasicMaterial;
+        if (age >= 0 && age < 2.2) {
+          pulse.visible = true;
+          pulse.scale.setScalar(1.6 + age * 3.6);
+          pm.opacity = (1 - age / 2.2) * 0.5;
+        } else pulse.visible = false;
+
+        koiFish.forEach((f) => {
+          const th = f.ph + (calm ? 0 : t) * f.speed * f.dir;
+          const dx = -Math.sin(th) * f.dir;
+          const dz = Math.cos(th) * f.dir;
+          f.group.position.set(Math.cos(th) * f.r, floorY + 0.03, Math.sin(th) * f.r);
+          f.group.rotation.y = Math.atan2(-dz, dx);
+          const pos = f.geo.attributes.position as THREE.BufferAttribute;
+          for (let i = 0; i < pos.count; i++) {
+            const x = f.base[i * 3];
+            const u = (x + 1.7) / 3.4; // 0 tail → 1 head
+            const bend = calm ? 0 : Math.sin(t * 3.4 - x * 2.2 + f.ph) * 0.22 * Math.pow(Math.max(0, 1 - u), 1.3);
+            pos.setY(i, f.base[i * 3 + 1] + bend);
+          }
+          pos.needsUpdate = true;
+        });
+      };
 
       /* ── Vertical CSAU wordmark at the centre of the ring ── */
       let totem: THREE.Mesh | null = null;
@@ -392,6 +662,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
            and the dust fade have time to breathe */
         if (idx !== prevIdx) {
           prevIdx = idx;
+          rippleStart = now / 1000;
           if (autoRotate) {
             targetS = idx;
             holdStart = now;
@@ -406,7 +677,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         px += (tx - px) * 0.04;
         py += (ty - py) * 0.04;
         camera.position.x = px * 0.7;
-        camera.position.y = py * 0.5;
+        camera.position.y = 2.1 + py * 0.5;
         camera.position.z = 12.5;
         camera.lookAt(0, 0, 0);
 
@@ -424,7 +695,10 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           const scl = 0.8 + 0.26 * frontness;
           panel.scale.set(scl, scl, 1);
           panel.renderOrder = i === idx ? 10 : 0;
+          panel.position.y = reducedMotion ? 0 : Math.sin((now / 1000) * 0.9 + i * 1.3) * 0.05;
         });
+
+        updateFloor(now / 1000, reducedMotion);
 
         renderer.render(scene, camera);
         raf = requestAnimationFrame(animFrame);
@@ -449,6 +723,12 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         textures.forEach((t) => t.dispose());
         totemTex?.dispose();
         totemGeo?.dispose();
+        ringGeo.dispose();
+        floorRings.forEach((m) => (m.material as THREE.Material).dispose());
+        (pulse.material as THREE.Material).dispose();
+        koiFish.forEach((f) => f.geo.dispose());
+        koiMat.dispose();
+        koiTex.dispose();
         renderer.dispose();
       };
     })();
@@ -569,6 +849,14 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             >
               {member.name}
             </div>
+            <svg
+              key={member.name + "-wave"}
+              className="tc-wave"
+              viewBox="0 0 160 14"
+              aria-hidden
+            >
+              <path d="M0 7 Q10 0 20 7 T40 7 T60 7 T80 7 T100 7 T120 7 T140 7 T160 7" />
+            </svg>
             <div
               key={member.name + "-dept"}
               style={{
@@ -578,7 +866,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
                 letterSpacing: ".18em",
                 textTransform: "uppercase",
                 color: "var(--on-surface-variant)",
-                marginTop: 12,
+                marginTop: 10,
                 animation: "tw-fade-in .6s ease .15s both",
               }}
             >
@@ -644,6 +932,27 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               transition: "width .5s ease",
             }}
           />
+          {/* a small koi rides the head of the bar */}
+          <svg
+            aria-hidden
+            viewBox="0 0 34 14"
+            style={{
+              position: "absolute",
+              top: -6,
+              left: `${((active + 1) / N) * 100}%`,
+              width: 34,
+              height: 14,
+              transform: "translateX(-100%)",
+              transition: "left .5s ease",
+            }}
+          >
+            <path d="M0 7 L9 2 L9 12 Z" fill="var(--foam)" opacity=".55" />
+            <ellipse cx="21" cy="7" rx="12" ry="4.6" fill="var(--foam)" />
+            <ellipse cx="22" cy="6.6" rx="4.6" ry="2.6" fill="var(--signal)" />
+            <ellipse cx="29" cy="7" rx="3" ry="2.6" fill="var(--signal)" />
+            <circle cx="30.4" cy="5.4" r=".8" fill="#0a0f0f" />
+            <circle cx="30.4" cy="8.6" r=".8" fill="#0a0f0f" />
+          </svg>
         </div>
 
         <style>{`
@@ -667,6 +976,30 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }
           .tc-role-block { width: 24%; min-width: 150px; }
           .tc-detail-block { width: 30%; min-width: 220px; text-align: right; }
+          .tc-role-block {
+            border-left: 2px solid var(--signal);
+            padding-left: 14px;
+          }
+          .tc-wave {
+            display: block;
+            width: 120px;
+            height: 11px;
+            margin: 12px 0 0 auto;
+            overflow: visible;
+          }
+          .tc-wave path {
+            fill: none;
+            stroke: var(--marker);
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-dasharray: 190;
+            stroke-dashoffset: 190;
+            animation: tc-wave-draw 0.9s ease 0.2s forwards;
+          }
+          @keyframes tc-wave-draw { to { stroke-dashoffset: 0; } }
+          @media (prefers-reduced-motion: reduce) {
+            .tc-wave path { animation: none; stroke-dashoffset: 0; }
+          }
           .tc-links-row {
             display: flex;
             gap: 10px;
