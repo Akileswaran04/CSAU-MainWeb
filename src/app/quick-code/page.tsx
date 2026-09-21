@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { KoiMark, LilyPad, RippleRule } from "@/components/PondOrnaments";
-import { POND_ARENA_CSS, QUICK_CODE_CSS } from "../pond-arena-css";
+import { ProbeMark, NodeMark } from "@/components/SpaceOrnaments";
+import { ARENA_CSS, QUICK_CODE_CSS } from "../arena-css";
 
 /* ============================================================
-   QUICK CODE — 5 Questions. 5 Minutes. One Chance.
+   QUICK CODE - 5 Questions. 5 Minutes. One Chance.
 
-   The hero is a lightweight pond treatment (CSS light shafts +
-   slow ripple rings) laid over the shared PondBackdrop, so the
-   page needs no second WebGL context.
+   The hero is a lightweight radar treatment (slow range rings) laid
+   over the shared SpaceBackdrop, so the page needs no second WebGL
+   context.
 
    Route: /quick-code
    ============================================================ */
@@ -32,39 +32,24 @@ const PAST = [
   { week: "WEEK 09", name: "BINARY", meta: "5 Questions · 5 Minutes · 1,240 Participants" },
 ];
 
-const SHAFTS: { left: string; width: number; r: number; d: number }[] = [
-  { left: "8%", width: 90, r: 4, d: 17 },
-  { left: "26%", width: 150, r: -3, d: 21 },
-  { left: "47%", width: 70, r: 5, d: 15 },
-  { left: "63%", width: 170, r: -4, d: 24 },
-  { left: "84%", width: 100, r: 3, d: 19 },
-];
-
 export default function QuickCodePage() {
   return (
     <>
-      <style>{POND_ARENA_CSS + QUICK_CODE_CSS}</style>
+      <style>{ARENA_CSS + QUICK_CODE_CSS}</style>
 
-      {/* ── HERO: light shafts and ripples over the pond ── */}
+      {/* ── HERO: radar rings over the star field ── */}
       <section
         data-qc-hero
         style={{
           position: "relative",
-          minHeight: "100svh",
+          minHeight: "100dvh",
           width: "100%",
           overflow: "hidden",
           background: "transparent",
         }}
       >
-        <div className="qc-water" aria-hidden>
-          {SHAFTS.map((s) => (
-            <div
-              key={s.left}
-              className="qc-shaft"
-              style={{ left: s.left, width: s.width, ["--r" as string]: `${s.r}deg`, ["--d" as string]: `${s.d}s` }}
-            />
-          ))}
-          <svg className="qc-rings" viewBox="0 0 1100 260" fill="none" stroke="var(--pond-300)" strokeWidth="1.2">
+        <div className="qc-field" aria-hidden>
+          <svg className="qc-rings" viewBox="0 0 1100 260" fill="none" stroke="var(--dim-300)" strokeWidth="1.2">
             <ellipse cx="550" cy="130" rx="520" ry="120" />
             <ellipse cx="550" cy="130" rx="520" ry="120" />
             <ellipse cx="550" cy="130" rx="520" ry="120" />
@@ -76,25 +61,25 @@ export default function QuickCodePage() {
           style={{
             position: "relative",
             zIndex: 2,
-            minHeight: "100svh",
+            minHeight: "100dvh",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "center",
-            textAlign: "center",
-            padding: "120px 6% 60px",
+            textAlign: "left",
+            padding: "clamp(96px, 16vh, 160px) var(--pg-x) 64px",
           }}
         >
           <div className="eyebrow" style={{ marginBottom: 22 }}>
-            04 — COMPETITIVE ARENA
+            Competitive arena
           </div>
 
           <h1
             style={{
-              fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
-              fontWeight: 900,
-              fontSize: "clamp(38px, 8.5vw, 128px)",
-              letterSpacing: ".04em",
+              fontFamily: "var(--font-display)",
+              fontWeight: 400,
+              fontSize: "clamp(32px, 8vw, 112px)",
+              letterSpacing: ".01em",
               lineHeight: 1,
               color: "var(--on-surface)",
               margin: 0,
@@ -104,13 +89,9 @@ export default function QuickCodePage() {
             QUICK CODE
           </h1>
 
-          <div style={{ marginTop: 22 }}>
-            <RippleRule />
-          </div>
-
           <div
             style={{
-              fontFamily: "'Kenfolg', 'Syne', sans-serif",
+              fontFamily: "var(--font-display)",
               fontSize: "clamp(20px, 3vw, 38px)",
               fontWeight: 400,
               color: "var(--on-surface)",
@@ -124,19 +105,19 @@ export default function QuickCodePage() {
           <p
             className="measure"
             style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: "clamp(14px, 1.5vw, 17px)",
-              lineHeight: 1.75,
+              fontFamily: "var(--font-mono)",
+              fontSize: "clamp(16px, 1.5vw, 18px)",
+              lineHeight: 1.7,
               color: "var(--on-surface-variant)",
-              margin: "22px auto 0",
+              margin: "22px 0 0",
             }}
           >
             Logic meets speed. Concepts meet challenges. A recurring
-            5-minute competitive assessment — scored instantly, archived forever.
+            5-minute competitive assessment - scored instantly, archived forever.
           </p>
 
           {/* CTA row */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, justifyContent: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, justifyContent: "flex-start" }}>
             <Link href="#current-challenge" className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
               START THIS WEEK →
             </Link>
@@ -151,19 +132,19 @@ export default function QuickCodePage() {
               display: "flex",
               flexWrap: "wrap",
               gap: "10px 44px",
-              justifyContent: "center",
+              justifyContent: "flex-start",
               marginTop: 54,
             }}
           >
             {STATS.map((s) => (
-              <div key={s.label} style={{ textAlign: "center" }}>
+              <div key={s.label} style={{ textAlign: "left" }}>
                 <div
                   className="tabular"
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "var(--font-mono)",
                     fontSize: "clamp(18px, 2.4vw, 26px)",
                     fontWeight: 500,
-                    color: "var(--marker)",
+                    color: "var(--lit)",
                     letterSpacing: ".04em",
                   }}
                 >
@@ -171,7 +152,7 @@ export default function QuickCodePage() {
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     letterSpacing: ".2em",
                     color: "var(--on-surface-variant)",
@@ -196,11 +177,10 @@ export default function QuickCodePage() {
         }}
       >
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div className="eyebrow">CURRENT CHALLENGE</div>
 
           <h2
             style={{
-              fontFamily: "'Kenfolg', 'Syne', sans-serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 400,
               fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
@@ -224,7 +204,7 @@ export default function QuickCodePage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <span
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 11,
                       letterSpacing: ".3em",
                       color: "var(--outline)",
@@ -232,11 +212,11 @@ export default function QuickCodePage() {
                   >
                     WEEK 12
                   </span>
-                  <KoiMark size={34} />
+                  <ProbeMark size={34} />
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Kenfolg', 'Syne', sans-serif",
+                    fontFamily: "var(--font-display)",
                     fontSize: "clamp(30px, 4vw, 52px)",
                     fontWeight: 400,
                     color: "var(--on-surface)",
@@ -248,7 +228,7 @@ export default function QuickCodePage() {
                 </div>
                 <p
                   style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontFamily: "var(--font-mono)",
                     fontSize: 15,
                     lineHeight: 1.6,
                     color: "var(--on-surface-variant)",
@@ -271,7 +251,7 @@ export default function QuickCodePage() {
                     <div key={top}>
                       <div
                         style={{
-                          fontFamily: "'JetBrains Mono', monospace",
+                          fontFamily: "var(--font-mono)",
                           fontSize: 15,
                           fontWeight: 500,
                           color: "var(--on-surface)",
@@ -281,7 +261,7 @@ export default function QuickCodePage() {
                       </div>
                       <div
                         style={{
-                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          fontFamily: "var(--font-mono)",
                           fontSize: 11,
                           letterSpacing: ".14em",
                           color: "var(--outline)",
@@ -312,13 +292,9 @@ export default function QuickCodePage() {
         }}
       >
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ marginBottom: 46 }}>
-            <RippleRule />
-          </div>
-          <div className="eyebrow">THIS WEEK</div>
           <h2
             style={{
-              fontFamily: "'Kenfolg', 'Syne', sans-serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 400,
               fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
@@ -330,7 +306,7 @@ export default function QuickCodePage() {
           </h2>
           <p
             style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "var(--font-mono)",
               fontSize: 14,
               color: "var(--on-surface-variant)",
               margin: "0 0 34px",
@@ -357,9 +333,9 @@ export default function QuickCodePage() {
                   <tr key={row.rank} data-current={row.rank <= 3 ? "true" : undefined}>
                     <td
                       style={{
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: "var(--font-mono)",
                         fontSize: 14,
-                        color: row.rank === 1 ? "var(--marker)" : row.rank <= 3 ? "var(--on-surface)" : "var(--outline)",
+                        color: row.rank === 1 ? "var(--lit)" : row.rank <= 3 ? "var(--on-surface)" : "var(--outline)",
                       }}
                     >
                       #{row.rank}
@@ -367,10 +343,10 @@ export default function QuickCodePage() {
                     <td style={{ fontWeight: 600, fontSize: 14, color: "var(--on-surface)" }}>
                       {row.name}
                     </td>
-                    <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, color: "var(--on-surface)" }}>
+                    <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--on-surface)" }}>
                       {row.score} pts
                     </td>
-                    <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>
+                    <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
                       {row.time}
                     </td>
                   </tr>
@@ -384,11 +360,10 @@ export default function QuickCodePage() {
       {/* ── PREVIOUS CHALLENGES ── */}
       <section style={{ background: "transparent", padding: "9vh 6% 12vh" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div className="eyebrow">ARCHIVE</div>
 
           <h2
             style={{
-              fontFamily: "'Kenfolg', 'Syne', sans-serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 400,
               fontSize: "clamp(28px, 4.6vw, 54px)",
               color: "var(--on-surface)",
@@ -407,11 +382,11 @@ export default function QuickCodePage() {
                 style={{ padding: "22px clamp(18px, 3vw, 30px)", display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center" }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                  <span style={{ paddingTop: 5 }}><LilyPad size={18} /></span>
+                  <span style={{ paddingTop: 5 }}><NodeMark size={18} /></span>
                   <div>
                     <div
                       style={{
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: "var(--font-mono)",
                         fontSize: 11,
                         letterSpacing: ".26em",
                         color: "var(--outline)",
@@ -421,7 +396,7 @@ export default function QuickCodePage() {
                     </div>
                     <div
                       style={{
-                        fontFamily: "'Kenfolg', 'Syne', sans-serif",
+                        fontFamily: "var(--font-display)",
                         fontSize: "clamp(22px, 2.6vw, 32px)",
                         fontWeight: 400,
                         color: "var(--on-surface)",
@@ -432,7 +407,7 @@ export default function QuickCodePage() {
                     </div>
                     <div
                       style={{
-                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        fontFamily: "var(--font-mono)",
                         fontSize: 12.5,
                         color: "var(--on-surface-variant)",
                         marginTop: 4,

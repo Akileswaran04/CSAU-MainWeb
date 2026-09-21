@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { RippleRule, KoiMark, LilyPad, POND_PANEL_CSS } from "@/components/PondOrnaments";
 
 /* ============================================================
-   BLOG — Blogs, Articles & Posts
+   BLOG - blogs, articles and posts.
+   The newest piece leads as a feature; the rest are ruled rows
+   (kind and date, then title and blurb, then author).
    Route: /blog
    ============================================================ */
 
+type Kind = "BLOG" | "ARTICLE" | "POST";
+
 interface Post {
-  kind: "BLOG" | "ARTICLE" | "POST";
+  kind: Kind;
   title: string;
   author: string;
   date: string;
@@ -25,8 +28,7 @@ const POSTS: Post[] = [
     author: "Aarav Sharma",
     date: "28 AUG 2026",
     read: "6 MIN",
-    blurb:
-      "From the Wednesday code-battle to a surprise design sprint — what a normal week looks like for the society.",
+    blurb: "From the Wednesday code-battle to a surprise design sprint - what a normal week looks like for the society.",
   },
   {
     kind: "ARTICLE",
@@ -34,8 +36,7 @@ const POSTS: Post[] = [
     author: "Meera Iyer",
     date: "21 AUG 2026",
     read: "8 MIN",
-    blurb:
-      "Halve, compare, repeat. A practical walkthrough of binary search with real interview twists and edge cases.",
+    blurb: "Halve, compare, repeat. A practical walkthrough of binary search with real interview twists and edge cases.",
   },
   {
     kind: "POST",
@@ -43,8 +44,7 @@ const POSTS: Post[] = [
     author: "CSAU Core",
     date: "19 AUG 2026",
     read: "1 MIN",
-    blurb:
-      "Arjun takes the crown with a perfect 500 in 02:18. Full leaderboard and question review on the Quick Code hub.",
+    blurb: "Arjun takes the crown with a perfect 500 in 02:18. Full leaderboard and question review on the Quick Code hub.",
   },
   {
     kind: "BLOG",
@@ -52,8 +52,7 @@ const POSTS: Post[] = [
     author: "Rohan Patel",
     date: "12 AUG 2026",
     read: "7 MIN",
-    blurb:
-      "Sleep is overrated, backups are not — lessons from shipping a 36-hour hackathon for 400+ hackers.",
+    blurb: "Sleep is overrated, backups are not - lessons from shipping a 36-hour hackathon for 400+ hackers.",
   },
   {
     kind: "ARTICLE",
@@ -61,8 +60,7 @@ const POSTS: Post[] = [
     author: "Sanjana Nair",
     date: "05 AUG 2026",
     read: "10 MIN",
-    blurb:
-      "GLSL for beginners — vertex and fragment stages, uniforms, and how the laser fields on this site actually work.",
+    blurb: "GLSL for beginners - vertex and fragment stages, uniforms, and how the laser fields on this site actually work.",
   },
   {
     kind: "POST",
@@ -70,8 +68,7 @@ const POSTS: Post[] = [
     author: "CSAU Core",
     date: "01 AUG 2026",
     read: "1 MIN",
-    blurb:
-      "Akil tops the board with a clean 500. The question archive is updated — go sharpen yourself for Round 25.",
+    blurb: "Akil tops the board with a clean 500. The question archive is updated - go sharpen yourself for Round 25.",
   },
   {
     kind: "ARTICLE",
@@ -79,8 +76,7 @@ const POSTS: Post[] = [
     author: "Priya Verma",
     date: "26 JUL 2026",
     read: "6 MIN",
-    blurb:
-      "Printers, message brokers, CPU scheduling — once you learn to spot FIFO, you never unsee it.",
+    blurb: "Printers, message brokers, CPU scheduling - once you learn to spot FIFO, you never unsee it.",
   },
   {
     kind: "BLOG",
@@ -89,154 +85,78 @@ const POSTS: Post[] = [
     date: "18 JUL 2026",
     read: "5 MIN",
     blurb:
-      "Why the site now reads like a printed index — the paper palette, the hairline grid and the type system behind every page.",
+      "Why the site now reads like a printed index - the paper palette, the hairline grid and the type system behind every page.",
   },
 ];
 
+const TABS: ("ALL" | Kind)[] = ["ALL", "BLOG", "ARTICLE", "POST"];
+
 export default function BlogPage() {
-  const [selectedKind, setSelectedKind] = useState<"ALL" | "BLOG" | "ARTICLE" | "POST">("ALL");
-
-  const filtered = selectedKind === "ALL"
-    ? POSTS
-    : POSTS.filter((p) => p.kind === selectedKind);
-
-  const kindTabs: ("ALL" | "BLOG" | "ARTICLE" | "POST")[] = ["ALL", "BLOG", "ARTICLE", "POST"];
+  const [kind, setKind] = useState<"ALL" | Kind>("ALL");
+  const shown = kind === "ALL" ? POSTS : POSTS.filter((p) => p.kind === kind);
+  const [lead, ...rest] = shown;
 
   return (
-    <main style={{ background: "transparent", minHeight: "100vh", padding: "18vh 6% 10vh" }}>
-      <style>{POND_PANEL_CSS}</style>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        {/* Header */}
-        <div className="eyebrow">02 — WRITING</div>
-        <h1
-          style={{
-            fontFamily: "'Kenfolg', 'Syne', sans-serif",
-            fontWeight: 400,
-            fontSize: "clamp(44px, 7.5vw, 96px)",
-            color: "var(--on-surface)",
-            margin: "12px 0 0",
-            lineHeight: 1,
-            letterSpacing: "-.02em",
-          }}
-        >
-          BLOG
-        </h1>
-        <p
-          className="measure"
-          style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: "clamp(14px, 1.6vw, 18px)",
-            color: "var(--on-surface-variant)",
-            lineHeight: 1.75,
-            margin: "20px 0 0",
-          }}
-        >
-          Long-form blogs, technical articles and quick posts — written by
-          the members, for everyone who codes.
-        </p>
+    <main className="pg">
+      <div className="pg-in">
+        <header>
+          <div className="eyebrow">Writing</div>
+          <h1 className="pg-title">Blog</h1>
+          <p className="pg-lede">Long-form blogs, technical articles and quick posts, written by the members for everyone who codes.</p>
+        </header>
 
-        <div style={{ margin: "30px 0 0", display: "flex", alignItems: "center", gap: 14 }}>
-          <RippleRule />
-          <KoiMark size={34} flip />
-        </div>
-
-        {/* Article nav — kind tabs */}
-        <nav
-          aria-label="Article kinds"
-          className="tabs"
-          style={{ marginTop: 22, marginBottom: 22 }}
-        >
-          {kindTabs.map((k) => (
-            <button
-              key={k}
-              className="tab"
-              onClick={() => setSelectedKind(k)}
-              aria-pressed={selectedKind === k}
-            >
+        <nav aria-label="Article kinds" className="bl-tabs">
+          {TABS.map((k) => (
+            <button key={k} type="button" className="bl-tab" onClick={() => setKind(k)} aria-pressed={kind === k}>
               {k}
             </button>
           ))}
+          <span className="bl-count tabular" aria-live="polite">
+            {shown.length} {shown.length === 1 ? "piece" : "pieces"}
+          </span>
         </nav>
 
-        {/* Counts */}
-        <div className="eyebrow tabular" style={{ marginBottom: 22, display: "flex", alignItems: "center", gap: 8 }}>
-          <LilyPad />
-          {filtered.length} {filtered.length === 1 ? "piece" : "pieces"}
-        </div>
-
-        {/* Posts */}
-        <div style={{ display: "grid", gap: 16 }}>
-          {filtered.map((post) => (
-            <article
-              key={post.title}
-              className="pond-panel"
-              style={{
-                padding: "24px 28px",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px 24px",
-                alignItems: "baseline",
-              }}
-            >
-              <span
-                className={post.kind === "ARTICLE" ? "chip chip-signal" : "chip"}
-                style={{ minWidth: 74, justifyContent: "center" }}
-              >
-                {post.kind}
+        {lead && (
+          <article className="bl-lead">
+            <div className="bl-meta">
+              <span className="bl-kind" data-kind={lead.kind}>
+                {lead.kind}
               </span>
+              <span>{lead.date}</span>
+              <span>{lead.read} read</span>
+            </div>
+            <h2 className="bl-lead-title">{lead.title}</h2>
+            <p className="bl-blurb">{lead.blurb}</p>
+            <div className="bl-author">{lead.author}</div>
+          </article>
+        )}
 
-              <div style={{ flex: "1 1 380px" }}>
-                <h2
-                  style={{
-                    fontFamily: "'Kenfolg', 'Syne', sans-serif",
-                    fontWeight: 400,
-                    fontSize: "clamp(21px, 2.4vw, 29px)",
-                    color: "var(--on-surface)",
-                    margin: 0,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {post.title}
-                </h2>
-                <p
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: 13.5,
-                    lineHeight: 1.7,
-                    color: "var(--on-surface-variant)",
-                    margin: "8px 0 0",
-                    maxWidth: "var(--measure)",
-                  }}
-                >
-                  {post.blurb}
-                </p>
+        <div className="bl-list">
+          {rest.map((post) => (
+            <article key={post.title} className="bl-row">
+              <div className="bl-meta">
+                <span className="bl-kind" data-kind={post.kind}>
+                  {post.kind}
+                </span>
+                <span>{post.date}</span>
               </div>
-
-              <div
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10.5,
-                  letterSpacing: ".12em",
-                  color: "var(--outline)",
-                  textAlign: "right",
-                  whiteSpace: "nowrap",
-                  marginLeft: "auto",
-                }}
-              >
-                <div>{post.author}</div>
-                <div style={{ marginTop: 4 }}>
-                  {post.date} · {post.read} READ
-                </div>
+              <div>
+                <h2 className="bl-title">{post.title}</h2>
+                <p className="bl-blurb">{post.blurb}</p>
+              </div>
+              <div className="bl-author">
+                {post.author}
+                <span>{post.read} read</span>
               </div>
             </article>
           ))}
         </div>
 
-        <div style={{ marginTop: 52 }}>
+        <p className="pg-next">
           <Link href="/crackit" data-route-load className="btn btn-primary">
-            JOIN A CODING ROUND →
+            Join a coding round →
           </Link>
-        </div>
+        </p>
       </div>
     </main>
   );

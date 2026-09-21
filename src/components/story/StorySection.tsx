@@ -6,13 +6,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SECTIONS, STOPS } from "./stops";
 import { scrollToY } from "./lenis";
 
-const PondScene = dynamic(() => import("./PondScene"), { ssr: false });
+const SpaceScene = dynamic(() => import("./SpaceScene"), { ssr: false });
 
 /* ============================================================
-   STORY SECTION — the koi guides you through the pond.
+   STORY SECTION - you fly through the constellation.
 
    The section is tall; an inner stage sticks to the viewport
-   while scroll progress drives the koi, and swaps the copy for
+   while scroll progress drives the camera from star to star, and swaps the copy for
    whichever stop it is visiting. Progress lives in a ref so the
    scene never triggers React renders.
    ============================================================ */
@@ -36,6 +36,9 @@ export default function StorySection() {
   const sectionRef = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const [active, setActive] = useState(0);
+  // Phones: the height of the copy panel, measured from the tallest stop so nothing is clipped
+  // and the scene gets exactly the rest of the screen. null on wide screens.
+  const [panel, setPanel] = useState<number | null>(null);
   const [inView, setInView] = useState(true);
   const [reduced] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -71,6 +74,28 @@ export default function StorySection() {
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
+    const mq = window.matchMedia("(max-width: 820px)");
+    const measure = () => {
+      if (!mq.matches) {
+        setPanel(null);
+        return;
+      }
+      let h = 0;
+      el.querySelectorAll<HTMLElement>(".story-chapter").forEach((c) => {
+        h = Math.max(h, c.scrollHeight);
+      });
+      const cap = Math.round(window.innerHeight * 0.52);
+      setPanel(Math.min(cap, Math.max(250, Math.ceil(h) + 28)));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    void document.fonts?.ready.then(measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
     const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "120px 0px" });
     io.observe(el);
     return () => io.disconnect();
@@ -97,15 +122,16 @@ export default function StorySection() {
       data-section="story"
       aria-label="The CSAU story"
       className="story"
-      style={{ height: `${TOTAL_W * VH_PER_WEIGHT + 100}vh` }}
+      style={{
+        height: `${TOTAL_W * VH_PER_WEIGHT + 100}vh`,
+        ...(panel ? ({ "--story-panel": `${panel}px` } as React.CSSProperties) : null),
+      }}
     >
-      <svg className="story-wave" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden>
-        <path d="M0 48V22C120 6 240 6 360 20s240 26 360 14 240-28 360-16 240 22 360 8V48Z" />
-      </svg>
+      <div className="story-rule" aria-hidden />
 
       <div className="story-stage">
         <div className="story-canvas" aria-hidden>
-          <PondScene progress={progress} active={inView} reduced={reduced} />
+          <SpaceScene progress={progress} active={inView} reduced={reduced} />
         </div>
 
         <div className="story-copy">
@@ -120,7 +146,7 @@ export default function StorySection() {
                 aria-hidden={state !== "active"}
               >
                 <div className="story-eyebrow">
-                  {c.count && <span className="story-no">{c.count}</span>}
+                  {c.count && <span className="story-no">{c.count.replace(" / ", " of ").replace(/^0/, "").replace(" of 0", " of ")}</span>}
                   <span>{c.eyebrow}</span>
                 </div>
                 <h2 className="story-title">

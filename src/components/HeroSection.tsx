@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 /* ============================================================
-   HERO SECTION — Full-viewport hero after landing zoom
-   
-   Centered "CSAU" brand, subtitle, scroll indicator.
-   Scroll down reveals the about section below.
+   HERO SECTION - Full-viewport hero after the power-on handoff
+
+   Left-aligned wordmark and telemetry block; three radar rings
+   widen from a signal dot on the right. Scroll down to follow
+   the signal.
    ============================================================ */
 
 export default function HeroSection() {
@@ -16,48 +17,41 @@ export default function HeroSection() {
   useEffect(() => {
     const t1 = setTimeout(() => setVisible(true), 100);
     const t2 = setTimeout(() => setScrollHint(true), 1200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
+
+  const rise = (delay: number, dist = 20) => ({
+    opacity: visible ? 1 : 0,
+    transform: visible ? "translateY(0)" : `translateY(${dist}px)`,
+    transition: `opacity .8s ease ${delay}s, transform .8s cubic-bezier(.2,.8,.2,1) ${delay}s`,
+  });
 
   return (
     <section
       style={{
         position: "relative",
         width: "100%",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         justifyContent: "center",
+        padding: "0 8%",
         overflow: "hidden",
         background: "transparent",
       }}
     >
-      {/* Halftone field — replaces the old radial glow */}
-      <div
-        className="absolute inset-0 pointer-events-none halftone"
-        style={{ opacity: 0.45 }}
-      />
-
-      {/* Scanlines */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "repeating-linear-gradient(to bottom, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 0px, color-mix(in srgb, var(--on-surface) 1.4%, transparent) 1px, transparent 1px, transparent 4px)",
-          mixBlendMode: "multiply",
-        }}
-      />
-
-      {/* Water ripples — three rings widening from the centre, like a koi surfacing */}
+      {/* Radar rings - three rings widening from a signal dot, off to the right */}
       <div
         className="absolute pointer-events-none"
         aria-hidden
         style={{
           top: "50%",
-          left: "50%",
-          width: "min(80vw, 640px)",
-          height: "min(80vw, 640px)",
+          left: "74%",
+          width: "min(70vw, 560px)",
+          height: "min(70vw, 560px)",
           transform: "translate(-50%, -50%)",
         }}
       >
@@ -68,9 +62,9 @@ export default function HeroSection() {
               position: "absolute",
               inset: 0,
               borderRadius: "50%",
-              border: "1px solid var(--pond-700)",
+              border: "1px solid var(--hull-700)",
               opacity: 0,
-              animation: `ripple-out 9s cubic-bezier(.2,.6,.3,1) ${i * 3}s infinite`,
+              animation: `ping-out 9s cubic-bezier(.2,.6,.3,1) ${i * 3}s infinite`,
             }}
           />
         ))}
@@ -89,82 +83,59 @@ export default function HeroSection() {
         />
       </div>
 
-      {/* Center content */}
-      <div
-        className="relative text-center flex flex-col items-center"
-        style={{
-          zIndex: 10,
-          gap: 20,
-          padding: "0 12%",
-        }}
-      >
-        {/* Brand */}
+      {/* Content */}
+      <div className="relative" style={{ zIndex: 10, display: "flex", flexDirection: "column", gap: 20, maxWidth: 720 }}>
         <h1
           style={{
-            fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
-            fontWeight: 900,
-            fontSize: "clamp(48px, 8vw, 110px)",
+            fontFamily: "var(--font-display)",
+            fontWeight: 400,
+            fontSize: "clamp(44px, 9vw, 120px)",
             letterSpacing: ".04em",
             color: "var(--on-surface)",
             margin: 0,
             lineHeight: 1,
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(24px)",
-            transition: "opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1)",
+            ...rise(0.1, 24),
           }}
         >
-          CSAU..
+          CSAU
         </h1>
 
-        {/* Subtitle */}
+        <div style={{ width: 48, height: 1, background: "var(--lit)", ...rise(0.3, 0) }} />
+
         <p
           style={{
-            fontFamily: "'WildWorld', 'Syne', sans-serif",
+            fontFamily: "var(--font-mono)",
             fontSize: "clamp(13px, 1.4vw, 16px)",
-            letterSpacing: ".25em",
+            letterSpacing: ".2em",
             color: "var(--on-surface-variant)",
             textTransform: "uppercase",
             margin: 0,
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(16px)",
-            transition: "opacity .8s ease .2s, transform .8s ease .2s",
+            ...rise(0.2, 16),
           }}
         >
           Computer Society of Anna University
         </p>
 
-        {/* Decorative line */}
-        <div
-          style={{
-            width: 48,
-            height: 1,
-            background: "var(--outline-variant)",
-            opacity: visible ? 1 : 0,
-            transition: "opacity .8s ease .4s",
-          }}
-        />
-
-        {/* Eyebrow */}
         <p
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: ".2em",
             color: "var(--outline)",
             textTransform: "uppercase",
             margin: 0,
-            opacity: visible ? 1 : 0,
-            transition: "opacity .8s ease .5s",
+            ...rise(0.4, 0),
           }}
         >
-          CEG · ANNA UNIVERSITY · CHENNAI
+          CEG, Anna University, 13.08 N 80.27 E
         </p>
       </div>
 
       {/* Scroll indicator */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="absolute flex flex-col gap-2"
         style={{
+          left: "8%",
           bottom: 40,
           zIndex: 10,
           opacity: scrollHint ? 1 : 0,
@@ -173,20 +144,20 @@ export default function HeroSection() {
       >
         <span
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 9,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
             letterSpacing: ".2em",
             color: "var(--outline)",
             textTransform: "uppercase",
           }}
         >
-          SCROLL
+          Scroll
         </span>
         <div
           style={{
             width: 1,
             height: 32,
-            background: "linear-gradient(to bottom, var(--outline-variant), transparent)",
+            background: "var(--outline-variant)",
             animation: "scroll-dot 2s ease-in-out infinite",
           }}
         />

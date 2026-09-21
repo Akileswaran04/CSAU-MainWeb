@@ -5,14 +5,15 @@ import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
 import Lenis from "lenis";
+import { lockScroll } from "@/lib/scrollLock";
 import StorySection from "./story/StorySection";
 import { setLenis } from "./story/lenis";
 
 /* ============================================================
-   HOME CLIENT — White Sculptural Tactility Flow
+   HOME CLIENT - Deep Space Network Flow
 
    1. BootPreloader (cursor draws diamond, types CSAU)
-   2. LandingPage (clay rings, Sector034 CSAU, glitch, enter)
+   2. LandingPage (3D power-on intro: board, traces, C S A U)
    3. Zoom transition → scrollable page:
       - Hero section (full viewport)
       - Scroll down reveals About Us section
@@ -57,6 +58,8 @@ export default function HomeClient() {
       setPhase("content");
     } else {
       sessionStorage.setItem(GATE_KEY, "true");
+      // Warm the 3D intro chunk while the boot preloader plays.
+      void import("./space/PowerOnIntro");
     }
   }, []);
 
@@ -64,12 +67,8 @@ export default function HomeClient() {
   // the page, so the hero is what you land on after entering.
   useEffect(() => {
     if (phase === "content") return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.scrollTo(0, 0);
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return lockScroll();
   }, [phase]);
 
   const handleBootComplete = useCallback(() => {
@@ -100,12 +99,12 @@ export default function HomeClient() {
           className="fixed inset-0"
           style={{
             zIndex: 600,
-            // Diving in: the surface rushes up and sinks into pond colour.
+            // Handoff: the wordmark rushes up and sinks into the void.
             transition:
               "transform 1.3s cubic-bezier(.5,0,.2,1), opacity .9s ease .4s, background-color .7s ease",
             transform: zooming ? "scale(2.8)" : "scale(1)",
             opacity: zooming ? 0 : 1,
-            backgroundColor: zooming ? "var(--pond-950)" : "transparent",
+            backgroundColor: zooming ? "var(--void-950)" : "transparent",
           }}
         >
           <LandingPage onEnter={handleEnter} />

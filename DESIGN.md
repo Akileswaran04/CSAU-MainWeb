@@ -1,198 +1,134 @@
 # CSAU Main Web — Design Overview
 
-This document captures the current visual direction and page structure of the CSAU website as it exists in the app.
+The current visual direction and structure of the CSAU site. The code is the source of truth; this file describes it.
 
-## 1. Design direction — Graphite & Signal
+## 1. Direction — Deep Space Network
 
-The site is a technical journal on paper, not a dark neon product page. The system is:
+Pitch-black space with graphite surfaces and warm starlight ink. No teal, green or purple anywhere in the interface. Colour carries meaning, not decoration:
 
-- Cool bone paper backgrounds (`--background: #eff0ec`) with white card surfaces
-- Near-black graphite ink (`--on-surface: #0f1211`) for type, rules and filled buttons
-- Exactly one interactive accent: signal blue (`--signal: #1b4dff`) for links, focus rings, the active tab underline and the live status dot
-- Exactly one highlight colour: highlighter yellow (`--marker: #f5e663`) — reserved for the *current / selected* row and nothing else
-- Hairline 1px rules (`--outline-variant: #cfd2cb`, ink for emphatic rules) as the primary structural device instead of borders-and-shadows
-- Squared geometry: 2px radius on buttons, chips and fields; 4px on panels. No 999px pills anywhere
-- Little to no elevation. Panels are flat and hover only darkens the border to ink
-- Paper grain and halftone dot fields instead of gradient glow blobs
-- Monospace (JetBrains Mono) for every label, chip, status, table cell and eyebrow
-- Large, left-aligned display typography (Syne, Kenfolg, Ethnocentric, Sector034) with numbered eyebrows (`01 — WHAT WE RUN`)
+| Token | Value | Meaning |
+|-------|-------|---------|
+| `--space-black` | `#000000` | The 3D scenes, the star backdrop and the boot screen: pitch black |
+| `--void-950` | `#0a0a0b` | UI surfaces. Neutral near-black |
+| `--hull-900` / `--hull-700` | `#17181c` / `#2f3238` | Panels, board surface, model bodies |
+| `--starlight` | `#f6f1e4` | Text and stars |
+| `--dim-300` | `#a3a8b0` | Labels, hairlines, unpowered parts |
+| `--signal` | `#ee5b3a` | The power current only (plus the interactive accent) |
+| `--lit` | `#f0b73a` | Something that has been powered or is active |
 
-Deliberately absent: gradients, glow text-shadows, glassmorphism / backdrop blur, violet-and-cyan accent pairs, pure-white surfaces, and any colour used purely as decoration.
+Rules: hairline 1px rules, mono telemetry labels, coordinates, numbered eyebrows (`01 / SIGNAL CHECK`), left-aligned asymmetric layouts. No gradients or glow text in the UI, no glassmorphism, purple or identical card grids. The 3D space itself is realistic (lit planet, nebula sky, ship, saucer) but stays inside the palette: every colour is derived from the tokens. Square geometry (2–4px radii). Flat panels; only overlays lift.
 
-The visual system is designed to feel like a student-run engineering publication with strong campus-tech energy.
+Tone: dry, no exclamation marks, no emoji. The story reads as a signal route: "Follow the signal", "Join the crew".
 
 ### 1.1 Token architecture
 
-`globals.css` is layered so the palette can change in one place:
+`src/app/globals.css` is layered:
 
-| Layer | What it holds | Rule |
-|-------|---------------|------|
-| **Primitive** | Raw values with no meaning: `--gray-150`, `--ink-950`, `--signal-500`, `--marker-300`, `--red-600` | Never referenced by components |
-| **Semantic** | Purpose aliases: `--background`, `--on-surface`, `--outline`, `--signal`, `--marker`, `--ok`, `--error`, `--control-border` | What components read |
-| **Component** | `--radius-*`, `--rule`, `--dur-*`, `--space-*`, `--tap-min`, `--measure`, `--shadow-pop` | Used by the primitives in section 3 |
+| Layer | Holds | Rule |
+|-------|-------|------|
+| Primitive | Raw values: `--gray-*`, `--ink-950`, `--void-950`, `--hull-*`, `--dim-300`, `--starlight`, `--signal-*`, `--lit-*` | Not referenced by components except the space tokens above |
+| Semantic | Purpose aliases: `--surface*`, `--on-surface*`, `--outline*`, `--signal`, `--lit`, `--ok`, `--error*` | Components read from here |
 
-No component or page contains a raw palette value. `grep` for `rgba(` or `#hex` across `src/**/*.tsx` returns only deliberate `var(--token, #fallback)` guards; the Three.js and canvas-2D scenes read their colours from the tokens at runtime, so repainting the theme repaints the canvas.
+Three.js and canvas scenes read the same tokens at runtime (`src/components/space/tokens.ts`, `readPalette` in `space2d.ts`), so re-theming needs no scene changes.
 
-### 1.2 Accessibility contract
+## 2. Type
 
-The palette is verified, not assumed. `scripts/verify-palette.mjs` computes every text and control-boundary pair and fails the build if any of these slip:
+Two families, nothing else:
 
-| Pair | Ratio | Requirement |
-|------|-------|-------------|
-| `--on-surface` on paper | 16.45:1 | 4.5:1 |
-| `--on-surface-variant` on paper | 7.31:1 | 4.5:1 |
-| `--outline` (all mono labels) on paper | 4.83:1 | 4.5:1 |
-| `--outline` on white card | 5.53:1 | 4.5:1 |
-| `--signal` on paper | 5.16:1 | 4.5:1 |
-| `--control-border` (field edge) on white | 5.53:1 | 3:1 (WCAG 1.4.11) |
+- **Ethnocentric** (`/public/fonts/Ethnocentric-Regular.otf`, `--font-display`) — the wordmark and big headlines. Single weight; never bold it.
+- **JetBrains Mono** (`next/font`, `--font-mono`) — everything else. Body copy 15–16px at a 65ch measure (`--measure`).
 
-`--outline` is at 4.83:1 and must not be lightened — the earlier `#6b7069` sat at 4.42:1 and failed silently. Other standing rules: interactive boxes are ≥44px (`--tap-min`), fields are 16px so iOS does not zoom on focus, `:focus-visible` always draws a 2px signal ring, and `prefers-reduced-motion` disables the loader, the carousel auto-rotate and all transitions.
+Interactive targets keep a 44px minimum (`--tap-min`). Canvas text resolves the mono family through `--font-jetbrains`.
 
-Light mode only. The E-Ink/paper direction is explicitly a light-mode style; there is no dark theme to keep in sync, and inventing one would reintroduce the neon look this system replaced.
+## 3. Motion and scroll
 
-## 2. Current page structure
+- Micro-interactions 90–220ms (`--dur-*`); exits shorter than entrances.
+- Every animation has a `prefers-reduced-motion` path: the intro lights C, S, A, U in sequence with no travel, the story scene stops damping, the backdrop is a still star field.
+- **One scroll lock.** `src/lib/scrollLock.ts` is reference-counted (`lockScroll()` returns a release function) and toggles `html.scroll-locked`; it also stops/starts Lenis. The boot gate, the route loader and the nav overlay all use it. Nothing writes `body.style.overflow`. `body` uses `overflow-x: clip` so it never becomes a scroll container and `position: sticky` (the story stage) keeps working.
 
-### Home
-Route: /
+## 4. Home page flow
 
-- Entry sequence: cursor boot preloader → landing gate (`CSAU..` wordmark, hairline rotating rings, ENTER SYSTEM) → zoom into the page
-- Then a full-viewport hero (`CSAU..`, the full society name, Chennai eyebrow, scroll cue) and the About section with its typewriter statement and a single `VIEW TEAM` button
-- The gate plays once per browser session (`csau-gate-seen` in sessionStorage); later visits land straight on the hero
-- Purpose: brand moment plus orientation, not a conversion funnel
+1. **Boot preloader** (`CursorBootPreloader`) — a probe crosses a fixed star field, CSAU comes online letter by letter, `UplinkLoader` shows real load progress. Plays once per session (`sessionStorage` key `csau-gate-seen`).
+2. **Start** (`LandingPage` + `space/PowerOnIntro.tsx`) — real 3D. Standby shows one thing: the start button (a real `<button aria-label="Start">` over the 3D model) with a faint radar ping. Pressing it removes the button and flies the camera out into a star warp past the particle Earth, a ship that the camera overtakes, and a saucer with a tractor beam (streaks come from one shader uniform). Out of the dark C, S, A and U appear one at a time (dim, one flicker, steady amber, lit through material emissive), each joined to the last by a hairline link. When U connects a pulse runs C to U and the camera goes through the wordmark (~3.6s); `HomeClient` then runs its 1.3s zoom into the hero. Telemetry and SKIP appear only once it is running. Restrained bloom on desktop only; mobile drops dpr, bloom and star count. Reduced motion: no flight, letters light in sequence and the links appear.
+3. **Hero** — left-aligned wordmark and telemetry, radar rings.
+4. **Story** (`story/StorySection` + `story/SpaceScene.tsx`) — from Earth to the Sun, on a spaceship. A rotating particle Earth (tens of thousands of tetrahedra: oceans, land, polar ice, a cloud layer, an atmosphere) sits in pitch-black space with satellites orbiting it. A ship leaves it and follows a route through every stop in `stops.ts` (order and weights unchanged). Scroll drives the ship; the camera runs ahead of it looking back, so Earth recedes behind it, then swings round to chase it over the last stops as the Sun comes into view. Along the way: a belt of asteroids, saucers hovering to the side and one sweeping across the ship's path. The route line and the stop beacons light amber as the ship reaches them.
 
-### Blog
-Route: /blog
+## 5. 3D models
 
-- Long-form article and post feed: 8 seeded posts
-- Filter tabs: ALL, BLOG, ARTICLE, POST, with a live piece count
-- Ruled list rows show kind chip, title, blurb, author, date and read time
-- Purpose: publishing and community storytelling
+No model files, no textures. Everything is built in three.js. `space/bodies.tsx`: `EarthModel` (particle planet: layout computed once on the CPU, spun on the GPU), `SunModel` (fbm granulation, limb darkening, billboarded corona), `ShipModel` (fuselage, swept wings, tail, animated engine flames, blinking nav lights), `UfoModel` (lens hull, glass dome, chasing rim lights, optional beam), `AsteroidField` (lumpy instanced rocks). `space/models.tsx`: `SatelliteModel`, `PowerButtonModel`. `space/Bloom.tsx`: restrained bloom, desktop only. Geometry is built once and disposed on unmount; colours read the tokens; mobile lowers particle counts, segments and noise octaves.
 
-### CrackIt
-Route: /crackit
+## 6. Pages
 
-- Coding contest / event page with a live assessment concept
-- Includes current event panel, sample questions, leaderboard, and archive sections
-- Stores leaderboard entries in local storage
-- Purpose: competitive coding and participation funnel
+| Route | Notes |
+|-------|-------|
+| `/` | Boot → start → hero → story |
+| `/team` | `TeamCarousel`: a 3D ring of member panels around a CSAU totem, two satellites orbiting the floor rings |
+| `/events`, `/blog` | Archive panels with radar-ping hover (`space-panel`) |
+| `/crackit`, `/quick-code` | Arena pages (`arena-css.ts`); quick-code hero uses CSS radar rings |
+| not-found | Ping rule and probe mark |
 
-### Events
-Route: /events
+Navigation is the fullscreen `LaserNav` overlay: a probe wanders the void and flies to the hovered link. Travelling by nav or `[data-route-load]` CTAs plays `RouteLoadGate` / `LoadingOverlay` (~5s, unchanged behaviour).
 
-- Event archive and initiative listing
-- Each card includes date, status, summary, and tags
-- Purpose: showcase events and community milestones
+## 7. Verification
 
-### Quick Code
-Route: /quick-code
+- `npm run lint`, `npm run build`
+- `node scripts/verify-palette.mjs [url]` — tokens, WCAG contrast, two-font rule on every route, `overflow-x: clip`
+- `node scripts/verify-intro.mjs [url] [shotsDir]` — intro end to end, scroll after handoff, every route on desktop and mobile widths, overlapping locks (nav + intro, nav + route loader)
 
-- Full-screen interactive contest experience
-- Monochrome laser-field hero (the shader is inverted and greyscaled so it stays paper-toned), stats row, this week's challenge panel, leaderboard with column headers, and the previous-challenges archive
-- Purpose: weekly competitive coding challenge page
+Both scripts need the site running (`npm run start` or `npm run dev`) and Chrome at the path set in the script.
 
-### Team
-Route: /team
+## 8. Update: planets, the ship, mobile and the dev-mode fix
 
-- Leadership and committee profiles
-- Featured members (president and heads) in the full-circle Three.js carousel, then the deputies grid below
-- Deputy cards use 4:5 greyscale-until-hover portraits, display-font names, mono role labels and a hairline above the department
-- Purpose: humanize the organization and highlight leadership
+**Route.** The story now runs Earth, then a flyby of Venus, an asteroid belt with saucers, a flyby of Mercury, and the Sun. The start page shows Earth's limb rising behind the Start button; the story begins with the ship leaving Earth.
 
-### Not Found
-Route: /not-found
+**Particle planets** (`space/bodies.tsx`, `ParticlePlanet`): Earth, Venus, Mercury and the Sun are all spheres of tetrahedron particles on an even (jittered Fibonacci) lattice. Colours come from 3D noise: Earth has continents, coastlines, deserts, ice caps and a cloud layer; Venus has swirling sulphur cloud; Mercury has craters; the Sun has granulation, sunspots and a particle corona. A vertex shader lights each particle from the Sun (day side, terminator, dark night side, limb glow). `grain` shrinks the particles for planets seen close up (the start-page Earth).
 
-- Custom 404 page
-- Purpose: fallback UX for invalid routes
+**Ship.** An X-wing style fighter: long nose, cockpit, astromech, four S-foil wings with engine pods and laser cannons, animated engine flames.
 
-## 3. Shared design patterns
+**Mobile (phones first).**
+- Story: the scene fills the top of the screen, the copy is a solid panel below it (`max(46%, 340px)`), buttons are 44px and stack full width, the section rail is a thin strip with 44px targets.
+- Pages (`.pg`): one column, 16px body copy, 44px controls, no horizontal overflow, `100dvh`, safe-area insets, real viewport meta.
+- Events group by year with ruled rows; blog leads with the newest piece then ruled rows; the leaderboard drops its duplicate Score column on phones; the team ring pulls back on portrait screens and stacks role, name, department and links at the bottom.
+- Rules from `.agents` applied: no em dashes, no numbered eyebrows (one plain eyebrow per page), no identical card grids, left-aligned heroes, `text-wrap: balance/pretty`, skip link.
 
-Across the site, these repeated primitives are visible (all defined in `globals.css`):
+**Dev-mode fix.** In `next dev` the Start button used to die. The 3D letters load a font asynchronously; fiber suspends while it loads, that suspend bubbled out to the page-level loader and re-mounted the whole intro, and fiber then force-lost the WebGL context. The letters are now wrapped in their own `<Suspense>` inside the scene, and each Canvas mounts once via `useSettled`. `next build` verification runs use `NEXT_DIST_DIR=.next-verify` (see `next.config.ts`) so they never overwrite a running dev server's `.next`.
 
-- **Nav** — a fixed square `.ln-toggle` button (mono `NAV` label, inverts to ink on hover) opening the fullscreen `.ln-overlay`
-- **Page header** — numbered `.eyebrow`, display-font `<h1>`, a short description capped at ~60ch, then a hairline rule
-- **`.panel`** — the one surface: white, 1px `--outline-variant` border, 4px radius, flat. `.clay-card` and `.holo-card` are legacy aliases that now resolve to this
-- **`.btn` / `.btn-primary` / `.btn-signal` / `.btn-ghost`** — squared, mono uppercase, hairline ink border, ink invert on hover, ≥44px tall. One primary per view
-- **`.chip`** — square mono tag; `.chip-ink`, `.chip-signal`, `.chip-marker` variants; `.chip-dot` with `data-state="live|open|closed"` for status
-- **`.tabs` / `.tab`** — mono filter labels on a rule, active one takes a 2px signal underline; each tab is a ≥44px touch target
-- **`.data-table`** — ruled rows, tabular figures, right-aligned `.num`, `[data-current]` row takes the highlighter fill. Both leaderboards (CrackIt, Quick Code) are real `<table>`s with `scope="col"` headers and a declared `aria-sort`, not grids of divs
-- **`.field`** — 16px input, `--control-border` edge, ink border plus a signal underline on focus
-- **`.eyebrow`, `.tabular`, `.colophon`** — mono index labels, tabular numerals, type-spec line
-- **`.measure`** — caps prose at `--measure` (65ch); page intros and body copy reference it instead of pixel widths
-- **`.rule`, `.rule-ink`, `.rule-v`** — hairlines; **`.halftone`, `.halftone-ink`** — dot fields
-- **Paper grain** — a single fixed `body::after` turbulence layer at 4%, applied from CSS so no page needs to render it
-- **`.photo-mono`** — portraits are greyscale until hovered
-- **Motion** — `--dur-fast: 150ms` / `--dur-base: 220ms`, exits shorter than enters, transform/opacity only, ≤10px travel, and a 30–50ms stagger between list items. No page animates every section on scroll
-- No footer component exists yet; the landing footline is a mono HUD line
+## 9. Update: Earth is the start control, the drift, and the phone framing
 
-### 3.1 Verified in a browser
+**Start page.** Earth alone, turning in the dark, is the whole page; there is no button. It is the tap target (a real round `<button aria-label="Start">` laid over the planet) with one hint line, "Tap Earth to launch". Radar pings ring the planet.
 
-Four headless suites assert this system rather than describing it — `verify-palette` (tokens, contrast, square primitives, touch heights), `verify-pages` (gate, nav overlay, canvas mounts, per-page background), `verify-team` (carousel + deputies) and `verify-preloader` (boot gate and CTA). Run them with `npm run dev` on :3000.
+**The drift.** Tapping Earth sends the camera around Earth's limb and into real 3D space along a curve, looking along it. A glowing line runs through the letters C, S, A and U, which stand in space one after another (left, right, left, right) and are passed one at a time: each powers on (dim, one flicker, amber) as the camera reaches it, and the line lights up behind the camera with a small signal-coloured head. Stars streak past. The flight is about 4.2s and hands off to the hero. Reduced motion: no drifting, the camera steps from letter to letter.
 
-## 4. Content and tone
+**Story on phones.** The scene has its own area above the copy panel, so it is framed for that area: a wider lens (58 degrees), Earth, the Sun and the planet flybys pulled toward the centre line (`layoutFor(portrait)`), the ship larger and low in frame, the destination high. The section rail becomes a horizontal progress strip on the panel's top edge (44px tap targets), out of the scene.
 
-The site communicates:
+## 10. Update: palette, the straight flight, loaders, phone structure
 
-- Innovation and technical excellence
-- High-energy student community culture
-- Campus-first identity with an engineering-publication feel
-- Strong emphasis on coding, events, learning, and inclusion
-- Copy is dry and specific, sentence case in prose, no exclamation marks, emoji or hyped filler ("elevate your journey" style strings are treated as bugs)
-- **The identity is the Computer Society of Anna University** (CSAU) — not "the Computer Science Association". Every user-facing string now spells the name out in full; the acronym is only ever used on its own or as `CSAU // CEG`
-- **Almost none of the shipped data is verified.** Team, events, leaderboards, blog bylines and stats are illustrative placeholder content. See *Content audit* under Known gaps before the site is treated as a public record of the society
+**Palette.** Neutral graphite (`--void-950` #0a0a0b, `--hull-900` #17181c, `--hull-700` #2f3238), silver labels (`--dim-300` #a3a8b0), warm starlight, one orange signal and one amber "lit". The old teal tones and the green "live" status are gone (status is amber). The 3D planets keep natural Earth blues and greens; that is the planet, not the interface.
 
-## 5. Current route map
+**Start flight.** Earth is the start control. The camera never turns: it holds one heading (into -Z) and only translates - it accelerates forward, strafes sideways to slingshot past Earth's limb (with a little roll and a lens that widens with speed), then settles onto the lane. There is no guide line. Traffic crosses the lane in different directions - satellites left and right, tumbling rocks rising and falling, a fighter right to left, a saucer falling diagonally, a second fighter left to right - while C, S, A and U stand in the lane and power on as the camera reaches them (~5s, then the hero).
 
-- / — Home
-- /blog — Blog
-- /crackit — CrackIt
-- /events — Events
-- /quick-code — Quick Code
-- /team — Team
-- /not-found — 404 fallback
+**Loaders.** Boot: a pre-flight checklist (big counter, six systems flipping WAIT to OK, "Cleared for launch"), driven by time but held at 92 until the page has really loaded. Route change: a hyperspace jump of streaming stars with one word, slowing and fading when the destination has painted. Both are reduced-motion safe.
 
-The numbered eyebrows follow that order: `01 — WHAT WE RUN` (/events), `02 — WRITING` (/blog), `03 — CODING EVENTS` (/crackit), `04 — COMPETITIVE ARENA` (/quick-code). The sequence is not yet complete — Home carries no numbered eyebrow and `/team` uses an unnumbered one (`SUPPORT CREW`).
+**Phone structure.** Header: the CSAU wordmark on the left (links home), the menu on the thumb side; the menu overlay lists links left-aligned at 56px+. The story keeps its phone layout (scene above, copy panel below, progress strip). The team carousel sits a little higher in its stage.
 
-## 6. Notes
+## 11. Update: phone intro letters and the phone story panel
 
-This document reflects the current state of the app in the source tree and should be updated if new pages or major UI changes are introduced.
+**Phone intro.** On narrow screens the flight is longer (6.4s), the letters stand closer to the lane (2.5 off centre instead of 3.8) and further down it, and a letter only lights once it is both near enough and actually in front of the camera. This keeps C from flashing past at the screen edge while the camera is still sliding around Earth. Letters must stay clear of the camera's own line (about 2.5 off it): closer than that and the camera flies through the glyph.
 
-The palette is enforced by `scripts/verify-palette.mjs`, which asserts the token values, WCAG contrast for every text pair, the absence of the legacy cyan/magenta/neon tokens, paper backgrounds on every page, the quick-code CTA spec, square primitives, 44px touch heights and the nav overlay treatment. Update that script whenever a token changes, or the checks will fail by design.
+**Phone story (rewritten).** The scene fills the top; below it is one panel whose height is measured from the tallest stop (`--story-panel`, set in `StorySection`), so no stop is ever clipped and the scene gets exactly the rest of the screen. Reading order in the panel: where you are (section and "6 of 8" as quiet text), the title, the sentence, the facts as one quiet row, then full-width actions stacked. On short phones (under 720px tall) the second and third actions share a row.
 
-### Known gaps
+## 12. Update: clearer planets
 
-- **`/team` has no `<h1>`.** Every other route has one (Home gets it from the hero). The page's first heading is the `DEPUTIES` `<h2>`, so assistive tech sees a skipped level. Fixing it means the page needs a real title above the carousel — new visible content, which was out of scope for a refinement pass that was explicitly asked not to add things.
-- **CrackIt's assessment fields are labelled by placeholder + `aria-label`.** A visible `<label>` per field would be better UX, but adds visible chrome to an existing panel.
-- **No skip-to-content link.** A visually-hidden one would be the standard fix; again, an added element rather than a refinement.
+The story looked pixelated because each planet was only tetrahedron particles, and phones rendered at low pixel density. Every planet is now a **smooth surface** (vertex colours from the same 3D noise, up to 320x160 segments, soft shoreline blend, lit per fragment from the Sun) with particles kept only where they help: Earth's clouds and atmosphere haze, Venus's haze, the Sun's corona. Haze particles are culled on the planet's face and show only as a halo at its edge. Mercury and the Earth/Venus/Sun bodies keep their close-ups clear. Both canvases now use full pixel density (`dpr` up to 2) with antialiasing on every device.
 
-### Settled: identity scope and tagline
+## 13. Phones only, bigger story, richer loaders
 
-Both were decided from primary sources rather than preference, in September 2026.
+- The smooth planet surface, 2x pixel ratio and denser clarity work apply on phones only (`smooth` prop on `ParticlePlanet`, `mobile` in the scenes). Desktop keeps the particle-only planets.
+- Phone story text is larger (title up to 40px, body 17-20px, 52px buttons); short phones (height 720px or less) keep compact sizes. The panel cap is 70% of the viewport.
+- Route loader: crossing fighters, swelling planets, rotating reticle, status line, 12-segment charge bar. Boot loader: turning globe with an orbiting satellite, scrolling telemetry ticker, T-minus readout. All motion stops under reduced motion.
 
-**Scope — CSAU is a CEG club, and `// CEG` stays.** CEG's official clubs page describes it as *"one of the oldest and most prominent technical clubs at the College of Engineering, Guindy"*, functioning under the **Ramanujan Computing Centre** with the aim of *"extending computer science knowledge beyond traditional CS and IT disciplines"* (https://ceg.annauniv.edu/clubs.html). CSAU's own site says the same: *"one of CEG's oldest technical clubs, functioning under Ramanujan Computing Centre"* (https://www.csau.in). So the `CSAU // CEG` tags on the preloader, landing HUD and boot caret line are correct, and "of Anna University" is the society's formal name rather than a claim of university-wide reach. This also retroactively explains two things that looked like errors: the team roster spanning Mechanical, ECE and EEE, and the embedded/Firmware events — reaching beyond CS and IT is the society's stated aim, not a misfiling.
+## 14. Themed waiting screens
 
-**Tagline — `Build. Break. Ship.`** It was already the site's public identity: it is the meta description, which is what search results and link previews show, and the About paragraph already carries the same triad ("writes, breaks, and ships"). The one-off `CODE // BUILD // BREAK` on the landing gate is retired; the gate now reads `BUILD // BREAK // SHIP` so the wording matches everywhere while the monospace slash lockup keeps its rhythm. Note this is the *site's* tagline, not CSAU's own — the society's public lines elsewhere are "Tech - for everyone" (Instagram bio) and "The Oldest Technical Society of The Oldest Technical…" (LinkedIn billing line, truncated in the listing).
-
-### Content audit — claims the code cannot back
-
-A copy pass over every route found one naming error (now fixed) and a set of statements that present placeholder data as fact. These are content problems, not design ones, and none of them was changed, because correcting them needs real chapter data rather than a code edit.
-
-| Where | The claim | Status |
-|-------|-----------|--------|
-| `/team` + `/blog` bylines | 22 named officers (President, Co-President, 8 Heads, 12 Deputies) with `pravatar.cc` stand-in portraits | Invented. Presented as the real committee — the highest-risk item on the site |
-| Team cards | `X / TWITTER`, `LINKEDIN`, `GITHUB` chips | Not links — `<span>`s with `cursor: pointer` and no `href`, and `members.ts` carries no URL field to wire up. They advertise a social presence that cannot be clicked |
-| `/events` | 8 events with exact dates and attendance (`HackCEG 6.0`, `412 HACKERS`; `Byte Me`, `286 REGISTERED`; `DevCon CEG`; `Socket Wars`; `Firmware Fridays`), introduced as "every event we have run" | Unverified. `HackCEG` in particular may be a college-wide event rather than a CSAU one |
-| `/quick-code` | `WEEK 12`, `1,248 QUICKCODERS PARTICIPATING`, weeks 9–11 with participant counts, top-3 leaderboard | Invented sample data |
-| `/crackit` | `LOGIC LIFT-OFF`, `SEP 2026`, `45 MIN`, seeded leaderboard rows with names and roll numbers | Mock data — the file header calls it a "frontend mock" |
-| `AboutSection` | "a student-run collective" | Supported — `csau.in` calls it "a student club functioning under the Ramanujan Computing Centre". Left as is; only the scope claim in that paragraph ("Anna University's computer science community" → "CEG's") was tightened |
-
-Not a problem, for the record: `CEG · ANNA UNIVERSITY · CHENNAI` (hero) and `CSAU // CEG · ANNA UNIV` (landing HUD) are consistent with each other, and the meta description, `<title>` and About paragraph all now name the society correctly.
-
-### Changelog
-
-- **2026-09 — scope and tagline settled.** Confirmed from CEG's official clubs page and `csau.in` that CSAU is a technical club **at CEG** working under the Ramanujan Computing Centre, so the `// CEG` tags stay and the About paragraph's overreach ("Anna University's computer science community") was narrowed to "CEG's". Picked **`Build. Break. Ship.`** as the single tagline — it was already the meta description — and retired the landing gate's conflicting `CODE // BUILD // BREAK` in favour of `BUILD // BREAK // SHIP`. Both decisions and their sources are recorded under *Settled* above.
-
-- **2026-09 — identity correction and copy audit.** Corrected the organisation name: the site called itself "THE COMPUTER SCIENCE ASSOCIATION" in three display lockups (hero subtitle, About heading, boot-preloader caret line) when the society is the **Computer Society of Anna University**. The hero string is now title case in source and uppercased by CSS as before; the About heading and preloader line keep literal uppercase because neither has a `text-transform` rule and their source casing is what renders. Also audited every user-facing string across all routes — see *Content audit* above for the unverified placeholder claims that the pass surfaced.
-
-- **2026-09 — skill pass.** Applied the `ui-ux-pro-max` / `design-system` / `ui-styling` / `brand` / `ponytail` design rules on top of the palette: split the tokens into primitive → semantic → component layers, darkened `--outline` from `#6b7069` to `#656a63` (it was failing 4.5:1 on paper at 4.42:1), gave field borders the 3:1 `--control-border` edge, raised every interactive box to the 44px minimum, set field type to 16px to stop iOS zoom-on-focus, moved motion onto 150ms tokens with a 45ms stagger, converted both leaderboards to real tables, replaced pixel measures with a 65ch `.measure`, retired the last hardcoded palette values from the Three.js and canvas scenes, and wired the paper grain in from CSS. The engine's own reading of this content came back as the **E-Ink / Paper** style — paper-like, matte, high contrast, texture, calm, slow tech, monochrome, WCAG AAA — which is the direction above; its *suggested palette* (warm brown on cream with an indigo accent) and fonts (Exo + Roboto Mono) were declined because the colour scheme and typefaces are already decided, and re-picking them would be a redesign, not a refinement.
-
-- **2026-09 — Graphite & Signal.** Replaced the purple/near-black neon direction and the lavender-tinted "Sculptural Tactility" pass with the paper + graphite + single signal-blue system described in section 1. Removed `--color-cyan`, `--color-magenta`, all `--color-neon-*` aliases, `.glow-cyan`, `.glow-magenta`, `.neon-flicker` and the 999px pill / backdrop-blur / clay-shadow card vocabulary. Dropped the `/blogs`, `/join`, `/practicehub` and `/projects` sections from this document because those routes no longer exist in the source tree.
+- Boot loader: a deep-space-network signal acquisition. A radar sweeps over a constellation that draws itself edge by edge as the count climbs, with a status line (Searching / Locking / Aligning / Link established), a turning globe, a telemetry ticker and the astronaut moon.
+- Route loader: each page is a place (`src/lib/destinations.ts`, glyphs in `DestGlyph.tsx`). A relay of the six glyphs hops along, then the destination's glyph is shown large with "Now flying you to <PAGE>".
+- Nav menu: each link has its glyph and a sector caption (shown on hover, focus, the active page, and always on touch).

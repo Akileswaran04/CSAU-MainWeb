@@ -2,40 +2,36 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import DestGlyph from "./DestGlyph";
+import { DESTINATIONS } from "@/lib/destinations";
+import { lockScroll } from "@/lib/scrollLock";
 import { usePathname } from "next/navigation";
 import {
-  KoiSwimmer,
-  drawKoi,
-  drawLily,
-  drawRipples,
+  Craft,
+  drawProbe,
+  drawSatellite,
+  drawPings,
   prefersReducedMotion,
   readPalette,
   startCanvasLoop,
   type Pt,
-  type Ripple,
-} from "./koi/koi";
+  type Ping,
+} from "./space/space2d";
 
 /* ============================================================
-   LASER NAV — fullscreen navigation over a night pond.
+   LASER NAV - fullscreen navigation over the void.
 
-     • dark pond water with slow ripple rings and a few lily pads
+     • dark void with slow radar rings and a few drifting satellites
      • clean typographic links, each a >=44px touch target
-     • a koi wanders the water; hovering or focusing a link sends
-       it swimming over to that link, dropping a ripple on arrival
-     • the pointer leaves faint ripples as it moves over the water
+     • a probe wanders the void; hovering or focusing a link sends
+       it flying over to that link, sending a ping on arrival
+     • the pointer leaves faint pings as it moves
    Routes, keyboard (Esc closes) and aria behaviour are unchanged.
    ============================================================ */
 
-const NAV_LINKS = [
-  { label: "HOME", href: "/" },
-  { label: "EVENTS", href: "/events" },
-  { label: "BLOG", href: "/blog" },
-  { label: "CRACKIT", href: "/crackit" },
-  { label: "TEAM", href: "/team" },
-  { label: "QUICK CODE", href: "/quick-code" },
-];
+const NAV_LINKS = DESTINATIONS;
 
-const PADS = [
+const SATS = [
   { fx: 0.08, fy: 0.9, k: 1.0, rot: 0.8 },
   { fx: 0.93, fy: 0.13, k: 0.85, rot: 2.7 },
   { fx: 0.9, fy: 0.9, k: 0.6, rot: 4.4 },
@@ -47,7 +43,7 @@ export default function LaserNav() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const hoverRef = useRef<number | null>(null);
-  const ripplesRef = useRef<Ripple[]>([]);
+  const pingsRef = useRef<Ping[]>([]);
 
   // Close on Escape
   useEffect(() => {
@@ -62,16 +58,12 @@ export default function LaserNav() {
   // Lock body scroll while the overlay is open
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
+    return lockScroll();
   }, [open]);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
-  /* ── Koi-in-the-pond canvas (runs only while open) ── */
+  /* ── Probe-in-the-void canvas (runs only while open) ── */
   useEffect(() => {
     if (!open) return;
     const canvas = canvasRef.current;
@@ -79,9 +71,9 @@ export default function LaserNav() {
 
     const reduced = prefersReducedMotion();
     const pal = readPalette();
-    const ripples = ripplesRef.current;
-    ripples.length = 0;
-    let koi: KoiSwimmer | null = null;
+    const pings = pingsRef.current;
+    pings.length = 0;
+    let probe: Craft | null = null;
     let lastHover: number | null = null;
     let nextWake = 0;
     let nextAmbient = 0.5;
@@ -93,7 +85,7 @@ export default function LaserNav() {
       if (Math.hypot(e.clientX - lastPx, e.clientY - lastPy) < 120) return;
       lastPx = e.clientX;
       lastPy = e.clientY;
-      ripples.push({ x: e.clientX, y: e.clientY, born: clock, max: 70, life: 1.8, strength: 0.5 });
+      pings.push({ x: e.clientX, y: e.clientY, born: clock, max: 70, life: 1.8, strength: 0.5 });
     };
     if (!reduced) window.addEventListener("pointermove", onPointer, { passive: true });
 
@@ -102,8 +94,8 @@ export default function LaserNav() {
       ctx.clearRect(0, 0, W, H);
       const L = Math.max(100, Math.min(170, W * 0.12));
 
-      PADS.forEach((p, i) => {
-        drawLily(
+      SATS.forEach((p, i) => {
+        drawSatellite(
           ctx,
           p.fx * W + Math.sin(t * 0.2 + i) * 3,
           p.fy * H + Math.cos(t * 0.16 + i * 2) * 3,
@@ -113,8 +105,8 @@ export default function LaserNav() {
         );
       });
 
-      if (!koi) koi = new KoiSwimmer(W * 0.78, H * 0.3, Math.PI * 0.8, L, 90);
-      koi.L = L;
+      if (!probe) probe = new Craft(W * 0.78, H * 0.3, Math.PI * 0.8, L, 90);
+      probe.L = L;
 
       const hover = hoverRef.current;
       let target: Pt;
@@ -132,7 +124,7 @@ export default function LaserNav() {
         turn = 2.6;
         if (hover !== lastHover) {
           lastHover = hover;
-          ripples.push({ x: tx, y: r.top + r.height / 2, born: t, max: 110, life: 2.2, strength: 0.9 });
+          pings.push({ x: tx, y: r.top + r.height / 2, born: t, max: 110, life: 2.2, strength: 0.9 });
         }
       } else {
         lastHover = null;
@@ -140,19 +132,19 @@ export default function LaserNav() {
       }
 
       if (!reduced) {
-        koi.step(dt, target, turn, hover !== null ? 1.5 : 1);
+        probe.step(dt, target, turn, hover !== null ? 1.5 : 1);
         if (t >= nextWake) {
           nextWake = t + 0.9;
-          ripples.push({ x: koi.x, y: koi.y, born: t, max: L * 0.7, life: 2.4, strength: 0.45 });
+          pings.push({ x: probe.x, y: probe.y, born: t, max: L * 0.7, life: 2.4, strength: 0.45 });
         }
         if (t >= nextAmbient) {
           nextAmbient = t + 2 + Math.random() * 2.5;
-          ripples.push({ x: Math.random() * W, y: Math.random() * H, born: t, max: 50 + Math.random() * 90, life: 3.2, strength: 0.35 });
+          pings.push({ x: Math.random() * W, y: Math.random() * H, born: t, max: 50 + Math.random() * 90, life: 3.2, strength: 0.35 });
         }
       }
 
-      drawRipples(ctx, ripples, t, pal.ripple, 0.6);
-      drawKoi(ctx, koi.spine, L, t, pal, { beat: 5, sway: 0.95 });
+      drawPings(ctx, pings, t, pal.dim, 0.6);
+      drawProbe(ctx, probe.trail, L, t, pal, { beat: 5 });
     };
 
     const stop = startCanvasLoop(canvas, draw, { still: reduced });
@@ -176,11 +168,11 @@ export default function LaserNav() {
   return (
     <>
       <style>{`
-        /* ── Floating button — squared, hairline, inverts on hover ── */
+        /* ── Floating button - squared, hairline, inverts on hover ── */
         .ln-toggle {
           position: fixed;
-          top: 20px;
-          left: 20px;
+          top: max(20px, env(safe-area-inset-top));
+          left: max(20px, env(safe-area-inset-left));
           z-index: 400;
           display: inline-flex;
           align-items: center;
@@ -195,7 +187,26 @@ export default function LaserNav() {
           cursor: pointer;
           transition: background-color 90ms ease, color 90ms ease;
           user-select: none;
-          font-family: 'JetBrains Mono', monospace;
+          font-family: var(--font-mono);
+        }
+        .ln-brand {
+          display: none;
+          position: fixed;
+          z-index: 399;
+          top: max(20px, env(safe-area-inset-top));
+          left: max(20px, env(safe-area-inset-left));
+          min-height: 44px;
+          align-items: center;
+          font-family: var(--font-display);
+          font-size: 18px;
+          letter-spacing: .1em;
+          color: var(--starlight);
+          text-decoration: none;
+        }
+        .ln-brand:focus-visible { outline: 2px solid var(--signal); outline-offset: 4px; }
+        @media (max-width: 820px) {
+          .ln-brand { display: inline-flex; }
+          .ln-toggle { left: auto; right: max(16px, env(safe-area-inset-right)); }
         }
         .ln-toggle:hover {
           background: var(--on-surface, #101a1a);
@@ -223,18 +234,18 @@ export default function LaserNav() {
           white-space: nowrap;
         }
 
-        /* ── Fullscreen overlay (night pond) ── */
+        /* ── Fullscreen overlay (void) ── */
         .ln-overlay {
           position: fixed;
           inset: 0;
           z-index: 500;
-          background: var(--pond-900);
+          background: var(--hull-900);
           opacity: 0;
           pointer-events: none;
           transition: opacity .28s ease;
           overflow: hidden;
         }
-        .ln-ripples {
+        .ln-pings {
           position: absolute;
           left: 70%;
           top: 42%;
@@ -244,20 +255,20 @@ export default function LaserNav() {
           pointer-events: none;
           overflow: visible;
         }
-        .ln-ripples circle {
+        .ln-pings circle {
           fill: none;
-          stroke: var(--pond-300);
+          stroke: var(--dim-300);
           stroke-width: 1;
           transform-origin: 50% 50%;
           opacity: 0;
         }
-        .ln-overlay.open .ln-ripples circle { animation: lnRipple 7s cubic-bezier(.2,.6,.3,1) infinite; }
-        @keyframes lnRipple {
+        .ln-overlay.open .ln-pings circle { animation: lnPing 7s cubic-bezier(.2,.6,.3,1) infinite; }
+        @keyframes lnPing {
           0% { transform: scale(.2); opacity: 0; }
           12% { opacity: .4; }
           100% { transform: scale(1); opacity: 0; }
         }
-        @media (prefers-reduced-motion: reduce) { .ln-overlay.open .ln-ripples circle { animation: none; opacity: .25; } }
+        @media (prefers-reduced-motion: reduce) { .ln-overlay.open .ln-pings circle { animation: none; opacity: .25; } }
         .ln-overlay.open { opacity: 1; pointer-events: auto; }
         .ln-canvas {
           position: absolute;
@@ -278,10 +289,10 @@ export default function LaserNav() {
           align-items: center;
           justify-content: center;
           border-radius: 2px;
-          border: 1px solid var(--pond-300);
-          background: var(--pond-950);
-          color: var(--foam);
-          font-family: 'JetBrains Mono', monospace;
+          border: 1px solid var(--dim-300);
+          background: var(--void-950);
+          color: var(--starlight);
+          font-family: var(--font-mono);
           font-size: 14px;
           line-height: 1;
           cursor: pointer;
@@ -290,7 +301,7 @@ export default function LaserNav() {
         .ln-close:hover {
           background: var(--signal-700);
           border-color: var(--signal-700);
-          color: var(--foam);
+          color: var(--starlight);
         }
         .ln-list {
           position: relative;
@@ -309,9 +320,9 @@ export default function LaserNav() {
           align-items: center;
           min-height: 44px;
           text-decoration: none;
-          color: var(--pond-300);
-          font-family: 'Ethnocentric', 'Sector034', sans-serif;
-          font-weight: 900;
+          color: var(--dim-300);
+          font-family: var(--font-display);
+          font-weight: 400;
           font-size: clamp(30px, 6vw, 68px);
           letter-spacing: .06em;
           line-height: 1.12;
@@ -319,20 +330,27 @@ export default function LaserNav() {
           text-align: left;
           transition: color .16s ease;
         }
+        .ln-link { gap: 14px; }
+        .ln-txt { display: flex; flex-direction: column; align-items: flex-start; }
+        .ln-cap { font-family: var(--font-mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim-300);
+          max-height: 0; opacity: 0; overflow: hidden; transition: max-height .25s ease, opacity .25s ease; }
+        .ln-link:hover .ln-cap, .ln-link:focus-visible .ln-cap, .ln-link.is-active .ln-cap { max-height: 1.6em; opacity: 1; }
+        .ln-link .dg { transition: transform .5s ease; }
+        .ln-link:hover .dg, .ln-link:focus-visible .dg { transform: rotate(18deg) scale(1.12); }
         .ln-link::after {
           content: "";
           position: absolute;
-          left: 8px;
+          left: 62px;
           right: 8px;
           bottom: 2px;
           height: 2px;
-          background: var(--marker, #f0b73a);
+          background: var(--lit, #f0b73a);
           transform: scaleX(0);
           transform-origin: left;
           transition: transform .18s ease;
         }
-        .ln-link:hover, .ln-link:focus-visible, .ln-link.is-active { color: var(--foam, #f6f1e4); }
-        .ln-link:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+        .ln-link:hover, .ln-link:focus-visible, .ln-link.is-active { color: var(--starlight, #f6f1e4); }
+        .ln-link:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
         .ln-link:hover::after, .ln-link:focus-visible::after, .ln-link.is-active::after {
           transform: scaleX(1);
         }
@@ -340,11 +358,21 @@ export default function LaserNav() {
           .ln-list { padding: 10vh 6vw 10vh 6vw; }
           .ln-link { font-size: clamp(28px, 8.4vw, 40px); }
         }
+        @media (hover: none) { .ln-cap { max-height: 1.6em; opacity: 1; } }
         @media (prefers-reduced-motion: reduce) {
           .ln-overlay { transition: none; }
           .ln-link::after { transition: none; }
         }
+        @media (max-width: 820px) {
+          .ln-list { align-items: flex-start; padding: 14vh 24px calc(8vh + env(safe-area-inset-bottom)) 24px; gap: 6px; }
+          .ln-link { font-size: clamp(30px, 9vw, 44px); min-height: 56px; }
+        }
       `}</style>
+
+      {/* Phone header: the wordmark links home; the menu button sits on the thumb side */}
+      <Link href="/" className="ln-brand" aria-label="CSAU home">
+        CSAU
+      </Link>
 
       {/* Floating button */}
       <button
@@ -362,9 +390,9 @@ export default function LaserNav() {
         <span className="ln-word">NAV</span>
       </button>
 
-      {/* Fullscreen pond navigation */}
+      {/* Fullscreen void navigation */}
       <div className={`ln-overlay${open ? " open" : ""}`}>
-        <svg className="ln-ripples" viewBox="0 0 400 400" aria-hidden>
+        <svg className="ln-pings" viewBox="0 0 400 400" aria-hidden>
           <circle cx="200" cy="200" r="190" />
           <circle cx="200" cy="200" r="190" style={{ animationDelay: "2.3s" }} />
           <circle cx="200" cy="200" r="190" style={{ animationDelay: "4.6s" }} />
@@ -401,7 +429,11 @@ export default function LaserNav() {
                 transition: `opacity .3s ease ${0.03 * i + 0.06}s, transform .3s ease ${0.03 * i + 0.06}s, color .16s ease`,
               }}
             >
-              {link.label}
+              <DestGlyph kind={link.glyph} size={40} on={isActive(link.href)} />
+              <span className="ln-txt">
+                <span className="ln-label">{link.label}</span>
+                <span className="ln-cap">{link.sector}</span>
+              </span>
             </Link>
           ))}
         </nav>

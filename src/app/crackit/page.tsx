@@ -1,11 +1,11 @@
 "use client";
 
 import { useSyncExternalStore, useState } from "react";
-import { KoiMark, LilyPad, RippleRule } from "@/components/PondOrnaments";
-import { POND_ARENA_CSS } from "../pond-arena-css";
+import { ProbeMark, NodeMark } from "@/components/SpaceOrnaments";
+import { ARENA_CSS } from "../arena-css";
 
 /* ============================================================
-   CRACKIT — Coding events platform (frontend mock)
+   CRACKIT - Coding events platform (frontend mock)
 
    • Current coding event + online assessment (name + roll)
    • Previous question archive (stored, expandable)
@@ -50,7 +50,7 @@ const SAMPLE_QUESTIONS: Question[] = [
     explanation: "A queue is First-In-First-Out; a stack is LIFO.",
   },
   {
-    q: "int x = 5; cout << x + 10; — what prints?",
+    q: "int x = 5; cout << x + 10; - what prints?",
     options: ["5", "10", "15", "50"],
     answer: 2,
     explanation: "5 + 10 evaluates to 15 before being printed.",
@@ -200,7 +200,7 @@ export default function CrackItPage() {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      /* storage unavailable — keep in-memory */
+      /* storage unavailable - keep in-memory */
     }
     cached = [...SEED_LEADERBOARD, ...next];
     emitChange(); // re-render board from the external store
@@ -212,20 +212,17 @@ export default function CrackItPage() {
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <main style={{ background: "transparent", minHeight: "100vh", padding: "14vh 6% 10vh" }}>
-      <style>{POND_ARENA_CSS}</style>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+    <main className="pg">
+      <style>{ARENA_CSS}</style>
+      <div className="pg-in">
         {/* ── Header ── */}
-        <div className="eyebrow">03 — CODING EVENTS</div>
-        <h1 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(44px, 7.5vw, 96px)", color: "var(--on-surface)", margin: "12px 0 0", lineHeight: 1, letterSpacing: "-.02em" }}>
-          CRACKIT
-        </h1>
-        <p className="measure" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(14px, 1.6vw, 18px)", color: "var(--on-surface-variant)", lineHeight: 1.75, margin: "20px 0 0" }}>
+        <div className="eyebrow">Coding events</div>
+        <h1 className="pg-title">Crackit</h1>
+        <p className="pg-lede">
           Competitive coding rounds run by CSAU. Attempt the live event
           with your name and roll number, revisit stored questions from
           past rounds, and climb the leaderboard.
         </p>
-        <div style={{ marginTop: 26 }}><RippleRule /></div>
 
         {/* ── Current event + assessment ── */}
         <section style={{ marginTop: 40 }}>
@@ -237,12 +234,12 @@ export default function CrackItPage() {
                     <span className="chip-dot" data-state="live" />
                     {CURRENT_EVENT.tag}
                   </span>
-                  <KoiMark size={34} />
+                  <ProbeMark size={34} />
                 </span>
-                <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(30px, 4vw, 52px)", color: "var(--on-surface)", margin: "16px 0 6px", lineHeight: 1.05 }}>
+                <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(30px, 4vw, 52px)", color: "var(--on-surface)", margin: "16px 0 6px", lineHeight: 1.05 }}>
                   {CURRENT_EVENT.title}
                 </h2>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".16em", color: "var(--outline)", textTransform: "uppercase", margin: 0 }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".16em", color: "var(--outline)", textTransform: "uppercase", margin: 0 }}>
                   {CURRENT_EVENT.date} · {CURRENT_EVENT.questions} QUESTIONS · {CURRENT_EVENT.duration}
                 </p>
               </div>
@@ -250,7 +247,7 @@ export default function CrackItPage() {
               <div style={{ flex: "1 1 320px", maxWidth: 460 }}>
                 {phase === "form" && (
                   <div style={{ display: "grid", gap: 14 }}>
-                    <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13, color: "var(--on-surface-variant)", margin: 0 }}>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--on-surface-variant)", margin: 0 }}>
                       Enter your student identity to begin the online assessment.
                     </p>
                     <input
@@ -269,7 +266,7 @@ export default function CrackItPage() {
                       autoComplete="off"
                       spellCheck={false}
                       className="field pa-field tabular"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      style={{ fontFamily: "var(--font-mono)" }}
                     />
                     <button
                       type="button"
@@ -284,10 +281,10 @@ export default function CrackItPage() {
 
                 {phase === "quiz" && (
                   <div style={{ display: "grid", gap: 14 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: ".24em", color: "var(--outline)" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".24em", color: "var(--outline)" }}>
                       QUESTION {String(current + 1).padStart(2, "0")} / {String(SAMPLE_QUESTIONS.length).padStart(2, "0")}
                     </div>
-                    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15, fontWeight: 600, lineHeight: 1.6, color: "var(--on-surface)" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 600, lineHeight: 1.6, color: "var(--on-surface)" }}>
                       {SAMPLE_QUESTIONS[current].q}
                     </div>
                     <div style={{ display: "grid", gap: 8 }}>
@@ -341,20 +338,20 @@ export default function CrackItPage() {
 
                 {phase === "done" && lastResult && (
                   <div style={{ display: "grid", gap: 12 }}>
-                    <div style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontSize: 30, color: "var(--on-surface)" }}>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--on-surface)" }}>
                       {lastResult.score === lastResult.total ? "PERFECT" : "SUBMITTED"}
                     </div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, color: "var(--on-surface)" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--on-surface)" }}>
                       {lastResult.name} · {lastResult.score} / {lastResult.total} pts
                     </div>
                     {SAMPLE_QUESTIONS.map((q, i) => {
                       const ok = picks[i] === q.answer;
                       return (
-                        <div key={q.q} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
+                        <div key={q.q} style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
                           <span style={{ color: ok ? "var(--ok)" : "var(--error)", marginRight: 8 }}>{ok ? "✓" : "✕"}</span>
                           {q.q}
-                          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "var(--outline)", marginTop: 3 }}>
-                            {ok ? q.explanation : `Correct: ${q.options[q.answer]} — ${q.explanation}`}
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--outline)", marginTop: 3 }}>
+                            {ok ? q.explanation : `Correct: ${q.options[q.answer]} - ${q.explanation}`}
                           </div>
                         </div>
                       );
@@ -371,11 +368,9 @@ export default function CrackItPage() {
 
         {/* ── Leaderboard ── */}
         <section style={{ marginTop: 64 }}>
-          <div className="eyebrow">LEADERBOARD</div>
-          <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
             TOP CODEFIGHTERS
           </h2>
-          <div style={{ margin: "-10px 0 22px" }}><RippleRule width={180} /></div>
           {/* A real table, not a grid of divs: column headers are exposed
               to assistive tech and the fixed sort order is declared. */}
           <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Leaderboard">
@@ -385,7 +380,7 @@ export default function CrackItPage() {
                   <th scope="col">Rank</th>
                   <th scope="col">Codefighter</th>
                   <th scope="col" className="num">Points</th>
-                  <th scope="col" className="num" aria-sort="descending">Score</th>
+                  <th scope="col" className="num col-score" aria-sort="descending">Score</th>
                   <th scope="col" className="num">Time</th>
                 </tr>
               </thead>
@@ -394,7 +389,7 @@ export default function CrackItPage() {
                   const mine = lastResult?.roll === r.roll;
                   return (
                     <tr key={r.roll} data-current={mine ? "true" : undefined}>
-                      <td style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: i < 3 ? "var(--on-surface)" : "var(--outline)" }}>
+                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: i < 3 ? "var(--on-surface)" : "var(--outline)" }}>
                         #{i + 1}
                       </td>
                       <td>
@@ -406,11 +401,11 @@ export default function CrackItPage() {
                             </span>
                           )}
                         </span>
-                        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--outline)" }}>{r.roll}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--outline)" }}>{r.roll}</span>
                       </td>
-                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>{r.score} pts</td>
-                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>{r.score}/{r.total}</td>
-                      <td className="num" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{fmt(r.timeSec)}</td>
+                      <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>{r.score} pts</td>
+                      <td className="num col-score" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>{r.score}/{r.total}</td>
+                      <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{fmt(r.timeSec)}</td>
                     </tr>
                   );
                 })}
@@ -421,35 +416,34 @@ export default function CrackItPage() {
 
         {/* ── Previous question archive ── */}
         <section style={{ marginTop: 64 }}>
-          <div className="eyebrow">QUESTION ARCHIVE</div>
-          <h2 style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
             PAST ROUNDS
           </h2>
           <div style={{ display: "grid", gap: 16 }}>
             {ARCHIVE.map((round) => (
               <details key={round.round} className="pa-panel" style={{ padding: "16px clamp(18px, 3vw, 28px)" }}>
                 <summary className="pa-sum">
-                  <span className="pa-pad"><LilyPad size={18} /></span>
+                  <span className="pa-pad"><NodeMark size={18} /></span>
                   <div style={{ flex: 1, display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 10 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: ".24em", color: "var(--outline)", display: "block" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: ".24em", color: "var(--outline)", display: "block" }}>
                       {round.round} · {round.date}
                     </span>
-                    <span style={{ fontFamily: "'Kenfolg', 'Syne', sans-serif", fontSize: 26, color: "var(--on-surface)", textTransform: "uppercase" }}>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: 26, color: "var(--on-surface)", textTransform: "uppercase" }}>
                       {round.event}
                     </span>
                   </div>
                 </summary>
                 <div style={{ marginTop: 20, display: "grid", gap: 16 }}>
                   {round.questions.map((q, i) => (
-                    <div key={q.q} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--outline)", marginRight: 8 }}>
+                    <div key={q.q} style={{ fontFamily: "var(--font-mono)", fontSize: 13.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--outline)", marginRight: 8 }}>
                         Q{i + 1}
                       </span>
                       {q.q}
-                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--ok)", marginTop: 6 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ok)", marginTop: 6 }}>
                         ✓ {q.options[q.answer]}
                       </div>
-                      <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "var(--outline)", marginTop: 2 }}>{q.explanation}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--outline)", marginTop: 2 }}>{q.explanation}</div>
                     </div>
                   ))}
                 </div>

@@ -4,10 +4,10 @@ import TeamCarousel from "@/components/TeamCarousel";
 import { FEATURED, DEPUTIES, initials } from "./members";
 
 /* ============================================================
-   TEAM PAGE — Full-circle carousel + deputy grid
+   TEAM PAGE - Full-circle carousel + deputy grid
 
    • Pinned Three.js stage: the featured members (Presidents +
-     Heads) spin around a full circle — role on the left,
+     Heads) spin around a full circle - role on the left,
      name / dept / links on the right, vertical CSAU wordmark
      standing at the centre of the ring.
    • Below the carousel: the deputies in a clean editorial grid.
@@ -25,7 +25,7 @@ export default function TeamPage() {
           <div className="eyebrow">SUPPORT CREW</div>
           <h2
             style={{
-              fontFamily: "'Kenfolg', 'Syne', sans-serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 400,
               fontSize: "clamp(30px, 4.6vw, 54px)",
               color: "var(--on-surface)",
@@ -37,7 +37,7 @@ export default function TeamPage() {
           </h2>
           <p
             style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "var(--font-mono)",
               fontSize: 14,
               color: "var(--on-surface-variant)",
               margin: "0 0 40px",
@@ -92,7 +92,7 @@ export default function TeamPage() {
                       position: "absolute",
                       left: 10,
                       top: 10,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       letterSpacing: ".16em",
                       color: "var(--background)",
@@ -107,7 +107,7 @@ export default function TeamPage() {
                 <div style={{ padding: "16px 18px 18px" }}>
                   <div
                     style={{
-                      fontFamily: "'CremeEspana', 'Syne', sans-serif",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 22,
                       color: "var(--on-surface)",
                       lineHeight: 1.15,
@@ -125,7 +125,7 @@ export default function TeamPage() {
                   />
                   <div
                     style={{
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       fontWeight: 500,
                       letterSpacing: ".14em",
@@ -137,7 +137,7 @@ export default function TeamPage() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 11.5,
                       color: "var(--on-surface-variant)",
                       marginTop: 4,

@@ -6,10 +6,10 @@ import type { TeamMember } from "@/app/team/members";
 import { initials } from "@/app/team/members";
 
 /* ============================================================
-   TEAM CAROUSEL — Full-circle 3D ring of featured members.
+   TEAM CAROUSEL - Full-circle 3D ring of featured members.
 
    • Every member stands at the SAME height, evenly spaced
-     around a complete circle — member i sits at i · (360°/N).
+     around a complete circle - member i sits at i · (360°/N).
      With an even N the card directly behind the front card is
      exactly 180° opposite it.
    • Scrolling spins the whole ring; each member swings around
@@ -18,7 +18,7 @@ import { initials } from "@/app/team/members";
      stands at the centre of the ring, inside the carousel.
    • role / name / dept / links crossfade beside the front panel.
 
-   Transparent stage — floats over the shared night-pond backdrop.
+   Transparent stage - floats over the shared star-field backdrop.
    ============================================================ */
 
 interface TeamCarouselProps {
@@ -34,6 +34,11 @@ function tokenColor(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
+/** Resolved JetBrains Mono family (next/font hashes the name), for canvas. */
+function monoFamily(): string {
+  return tokenColor("--font-jetbrains", "'JetBrains Mono'");
+}
+
 /** Token colour at a given alpha, e.g. ink at 28%. */
 function tokenAlpha(name: string, alpha: number, fallback: string): string {
   const hex = tokenColor(name, fallback).replace("#", "");
@@ -42,101 +47,61 @@ function tokenAlpha(name: string, alpha: number, fallback: string): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* A koi seen from above, head to the right — painted once and bent
-   in the scene so it swims. Colours come from the site tokens. */
-function drawKoiCanvas(): HTMLCanvasElement {
+/* A satellite seen from above - painted once and placed in orbit around
+   the ring. Hull, panels and hairlines come from the site tokens. */
+function drawSatelliteCanvas(): HTMLCanvasElement {
   const W = 512;
-  const H = 176;
+  const H = 256;
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const g = c.getContext("2d")!;
-  const foam = tokenColor("--foam", "#f6f1e4");
-  const red = tokenColor("--signal", "#ee5b3a");
+  const star = tokenColor("--starlight", "#f6f1e4");
+  const dim = tokenColor("--dim-300", "#a3a8b0");
+  const hull = tokenColor("--hull-900", "#17181c");
+  const lit = tokenColor("--lit", "#f0b73a");
+  const cx = W / 2;
   const cy = H / 2;
-
-  const half = (t: number) => {
-    // t: 0 at the nose → 1 at the tail base
-    const f = t < 0.16 ? Math.sqrt(t / 0.16) * 0.92 : t < 0.35 ? 0.92 - (t - 0.16) * 0.1 : 0.9 + (0.22 - 0.9) * Math.pow((t - 0.35) / 0.65, 0.9);
-    return 34 * f;
-  };
-
-  // translucent forked tail
-  g.fillStyle = "rgba(246,241,228,0.5)";
-  g.beginPath();
-  g.moveTo(128, cy - 8);
-  g.bezierCurveTo(96, cy - 30, 50, cy - 50, 6, cy - 48);
-  g.quadraticCurveTo(34, cy, 6, cy + 48);
-  g.bezierCurveTo(50, cy + 50, 96, cy + 30, 128, cy + 8);
-  g.closePath();
-  g.fill();
-  g.strokeStyle = "rgba(238,91,58,0.55)";
-  g.lineWidth = 1.5;
-  for (let i = 0; i < 9; i++) {
+  g.lineWidth = 2;
+  g.strokeStyle = dim;
+  g.fillStyle = hull;
+  // solar panels with a hairline grid
+  for (const s of [-1, 1]) {
+    const x0 = s > 0 ? cx + 70 : cx - 70 - 170;
     g.beginPath();
-    g.moveTo(126, cy);
-    g.lineTo(10, cy + (i - 4) * 11);
+    g.rect(x0, cy - 62, 170, 124);
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    for (let k = 1; k < 5; k++) {
+      g.moveTo(x0 + (170 * k) / 5, cy - 62);
+      g.lineTo(x0 + (170 * k) / 5, cy + 62);
+    }
+    for (let k = 1; k < 3; k++) {
+      g.moveTo(x0, cy - 62 + (124 * k) / 3);
+      g.lineTo(x0 + 170, cy - 62 + (124 * k) / 3);
+    }
+    g.stroke();
+    g.beginPath();
+    g.moveTo(s > 0 ? cx + 40 : cx - 40, cy);
+    g.lineTo(s > 0 ? cx + 70 : cx - 70, cy);
     g.stroke();
   }
-
-  // pectoral fins
-  g.fillStyle = "rgba(246,241,228,0.42)";
-  for (const s of [-1, 1]) {
-    g.beginPath();
-    g.moveTo(372, cy + s * 24);
-    g.quadraticCurveTo(352, cy + s * 62, 318, cy + s * 58);
-    g.quadraticCurveTo(340, cy + s * 40, 350, cy + s * 24);
-    g.closePath();
-    g.fill();
-  }
-
   // body
-  const body = new Path2D();
-  const N = 44;
-  for (let i = 0; i <= N; i++) {
-    const t = i / N;
-    const x = 488 - t * 360;
-    const y = cy - half(t);
-    if (i === 0) body.moveTo(x, y);
-    else body.lineTo(x, y);
-  }
-  for (let i = N; i >= 0; i--) {
-    const t = i / N;
-    body.lineTo(488 - t * 360, cy + half(t));
-  }
-  body.closePath();
-  g.save();
-  g.clip(body);
-  g.fillStyle = foam;
-  g.fillRect(0, 0, W, H);
-  g.fillStyle = red;
-  const patches: [number, number, number, number][] = [
-    [452, cy, 34, 24],
-    [372, cy - 6, 44, 20],
-    [300, cy + 8, 40, 22],
-    [226, cy - 4, 46, 18],
-    [164, cy + 4, 26, 12],
-  ];
-  patches.forEach(([x, y, rx, ry]) => {
-    g.beginPath();
-    g.ellipse(x, y, rx, ry, 0.15, 0, Math.PI * 2);
-    g.fill();
-  });
-  const shade = g.createLinearGradient(0, cy - 36, 0, cy + 36);
-  shade.addColorStop(0, "rgba(0,0,0,0.32)");
-  shade.addColorStop(0.5, "rgba(255,255,255,0.12)");
-  shade.addColorStop(1, "rgba(0,0,0,0.32)");
-  g.fillStyle = shade;
-  g.fillRect(0, cy - 40, W, 80);
-  g.restore();
-
-  // eyes
-  g.fillStyle = "#0a0f0f";
-  for (const s of [-1, 1]) {
-    g.beginPath();
-    g.arc(452, cy + s * 17, 4.2, 0, Math.PI * 2);
-    g.fill();
-  }
+  g.strokeStyle = star;
+  g.beginPath();
+  g.rect(cx - 44, cy - 50, 88, 100);
+  g.fill();
+  g.stroke();
+  // dish
+  g.strokeStyle = dim;
+  g.beginPath();
+  g.arc(cx, cy, 22, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = lit;
+  g.beginPath();
+  g.arc(cx + 30, cy - 34, 5, 0, Math.PI * 2);
+  g.fill();
   return c;
 }
 
@@ -151,22 +116,19 @@ function paintOrnament(
 ) {
   const W = size;
   const H = size * 1.25;
-  const foam = tokenColor("--foam", "#f6f1e4");
+  const foam = tokenColor("--starlight", "#f6f1e4");
   const signal = tokenColor("--signal", "#ee5b3a");
-  const gold = tokenColor("--marker", "#f0b73a");
+  const gold = tokenColor("--lit", "#f0b73a");
 
-  // koi-scale scallops, barely there
+  // faint survey grid
   ctx.save();
-  ctx.strokeStyle = tokenAlpha("--foam", 0.05, "#f6f1e4");
-  ctx.lineWidth = 1.4;
-  const r = size * 0.05;
-  for (let row = 0; row * r * 0.9 < H + r; row++) {
-    for (let x = -r; x < W + r; x += r * 2) {
-      ctx.beginPath();
-      ctx.arc(x + (row % 2) * r, row * r * 0.9, r, 0, Math.PI);
-      ctx.stroke();
-    }
-  }
+  ctx.strokeStyle = tokenAlpha("--starlight", 0.05, "#f6f1e4");
+  ctx.lineWidth = 1;
+  const gr = size * 0.1;
+  ctx.beginPath();
+  for (let x = gr; x < W; x += gr) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = gr; y < H; y += gr) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
   ctx.restore();
 
   // corner brackets
@@ -194,11 +156,11 @@ function paintOrnament(
   ctx.rotate(0.09);
   ctx.fillStyle = signal;
   ctx.fillRect(-sealS / 2, -sealS / 2, sealS, sealS);
-  ctx.strokeStyle = tokenAlpha("--pond-950", 0.55, "#061a1d");
+  ctx.strokeStyle = tokenAlpha("--void-950", 0.55, "#0a0a0b");
   ctx.lineWidth = 2;
   ctx.strokeRect(-sealS / 2 + 5, -sealS / 2 + 5, sealS - 10, sealS - 10);
-  ctx.fillStyle = tokenColor("--pond-950", "#061a1d");
-  ctx.font = `800 ${sealS * 0.42}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.fillStyle = tokenColor("--void-950", "#0a0a0b");
+  ctx.font = `800 ${sealS * 0.42}px ${monoFamily()}, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(initials(member.name), 0, 2);
@@ -209,11 +171,11 @@ function paintOrnament(
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = foam;
-  ctx.font = `800 ${size * 0.19}px 'Plus Jakarta Sans', sans-serif`;
+  ctx.font = `800 ${size * 0.19}px ${monoFamily()}, monospace`;
   ctx.fillText(num, m + size * 0.02, H - m - size * 0.06);
   ctx.fillStyle = gold;
   ctx.fillRect(m + size * 0.02, H - m - size * 0.06 - size * 0.2, size * 0.07, 3);
-  ctx.fillStyle = tokenAlpha("--foam", 0.6, "#f6f1e4");
+  ctx.fillStyle = tokenAlpha("--starlight", 0.6, "#f6f1e4");
   ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
   ctx.fillText(`/ ${String(total).padStart(2, "0")}`, m + size * 0.02 + size * 0.27, H - m - size * 0.06);
 
@@ -221,7 +183,7 @@ function paintOrnament(
   ctx.save();
   ctx.translate(W - m - size * 0.02, H - m - size * 0.08);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = tokenAlpha("--foam", 0.78, "#f6f1e4");
+  ctx.fillStyle = tokenAlpha("--starlight", 0.78, "#f6f1e4");
   ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
   ctx.textAlign = "left";
   const role = member.role.toUpperCase().split("").join("\u200A");
@@ -237,9 +199,9 @@ function portraitDataURL(member: TeamMember, index: number, total: number, size 
     const ctx = canvas.getContext("2d");
     if (!ctx) return resolve("");
 
-    /* hairline foam frame so the panel reads against dark water */
+    /* hairline starlight frame so the panel reads against the void */
     const paintFrame = () => {
-      ctx.strokeStyle = tokenAlpha("--foam", 0.35, "#f6f1e4");
+      ctx.strokeStyle = tokenAlpha("--starlight", 0.35, "#f6f1e4");
       ctx.lineWidth = 3;
       ctx.strokeRect(1.5, 1.5, size - 3, size * 1.25 - 3);
     };
@@ -251,12 +213,12 @@ function portraitDataURL(member: TeamMember, index: number, total: number, size 
 
     const paintFallback = () => {
       const g = ctx.createLinearGradient(0, 0, size, size * 1.25);
-      g.addColorStop(0, tokenColor("--surface-container-high", "#0f3236"));
-      g.addColorStop(1, tokenColor("--pond-900", "#0b2b2e"));
+      g.addColorStop(0, tokenColor("--surface-container-high", "#1c1d21"));
+      g.addColorStop(1, tokenColor("--hull-900", "#17181c"));
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, size, size * 1.25);
-      ctx.fillStyle = tokenAlpha("--foam", 0.7, "#f6f1e4");
-      ctx.font = `700 ${size * 0.24}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.fillStyle = tokenAlpha("--starlight", 0.7, "#f6f1e4");
+      ctx.font = `700 ${size * 0.24}px ${monoFamily()}, monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(initials(member.name), size / 2, size * 0.5);
@@ -270,20 +232,20 @@ function portraitDataURL(member: TeamMember, index: number, total: number, size 
         const s = Math.min(img.width, img.height);
         const sx = (img.width - s) / 2;
         const sy = (img.height - s) / 2;
-        ctx.fillStyle = tokenColor("--pond-950", "#061a1d");
+        ctx.fillStyle = tokenColor("--void-950", "#0a0a0b");
         ctx.fillRect(0, 0, size, size * 1.25);
         ctx.filter = "grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04)";
         ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
         ctx.filter = "none";
-        // pond tint so the photo sits in the water, then a fade into the panel base
+        // void tint so the photo sits in the dark, then a fade into the panel base
         ctx.globalCompositeOperation = "multiply";
-        ctx.fillStyle = tokenAlpha("--pond-300", 0.55, "#7fb5ad");
+        ctx.fillStyle = tokenAlpha("--dim-300", 0.55, "#a3a8b0");
         ctx.fillRect(0, 0, size, size);
         ctx.globalCompositeOperation = "source-over";
         const fade = ctx.createLinearGradient(0, size * 0.62, 0, size * 1.25);
-        fade.addColorStop(0, tokenAlpha("--pond-950", 0, "#061a1d"));
-        fade.addColorStop(0.55, tokenAlpha("--pond-950", 0.85, "#061a1d"));
-        fade.addColorStop(1, tokenAlpha("--pond-950", 0.96, "#061a1d"));
+        fade.addColorStop(0, tokenAlpha("--void-950", 0, "#0a0a0b"));
+        fade.addColorStop(0.55, tokenAlpha("--void-950", 0.85, "#0a0a0b"));
+        fade.addColorStop(1, tokenAlpha("--void-950", 0.96, "#0a0a0b"));
         ctx.fillStyle = fade;
         ctx.fillRect(0, size * 0.62, size, size * 0.63);
         finish();
@@ -313,15 +275,15 @@ function totemDataURL(size = 384): Promise<string> {
       const startY = (canvas.height - letters.length * lh) / 2 + lh * 0.78;
       ctx.textAlign = "center";
       ctx.textBaseline = "alphabetic";
-      ctx.font = `900 ${lh * 0.86}px 'Ethnocentric', 'Sector034', 'Plus Jakarta Sans', sans-serif`;
+      ctx.font = `900 ${lh * 0.86}px 'Ethnocentric', ${monoFamily()}, monospace`;
       letters.forEach((ch, i) => {
         const y = startY + i * lh;
         ctx.save();
-        // Outline-only wordmark — no glow, no shadow bloom.
+        // Outline-only wordmark - no glow, no shadow bloom.
         ctx.lineWidth = Math.max(3, size * 0.022);
         ctx.strokeStyle = tokenAlpha("--signal", 0.95, "#c72f16");
         ctx.strokeText(ch, canvas.width / 2, y);
-        ctx.fillStyle = tokenAlpha("--marker", 0.16, "#f0b73a");
+        ctx.fillStyle = tokenAlpha("--lit", 0.16, "#f0b73a");
         ctx.fillText(ch, canvas.width / 2, y);
         ctx.restore();
       });
@@ -362,7 +324,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
   const sceneReady = textureUrls.length === N && N > 0;
 
-  /* Three.js scene — once textures are ready */
+  /* Three.js scene - once textures are ready */
   useEffect(() => {
     if (!sceneReady) return;
     const stage = stageRef.current;
@@ -391,7 +353,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
       /* ── Geometry ────────────────────────────────────────────
          FULL CIRCLE: N members at the SAME height, evenly spaced
-         around the axis — member i sits at i · (2π/N). With an
+         around the axis - member i sits at i · (2π/N). With an
          even N the card behind the front card is exactly 180°
          opposite it.                                            */
       const RADIUS = 4.6; // ring already spans ~95% of the stage width
@@ -399,7 +361,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       const ARC = STEP_ANG * 0.88; // cards wrap wide, nearly touching
       const PANEL_H = 4.9; // front card fills ~90% of the visible height
 
-      /* Ring group — rotates around Y; no vertical travel */
+      /* Ring group - rotates around Y; no vertical travel */
       const carousel = new THREE.Group();
       scene.add(carousel);
 
@@ -445,12 +407,12 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         panels.push(panel);
       });
 
-      /* ── Pond floor: breathing ripple rings, a pulse on every name
-         change, and two koi circling the ring ────────────────── */
+      /* ── Orbit floor: breathing range rings, a ping on every name
+         change, and two satellites circling the ring ─────────── */
       const floorY = -PANEL_H / 2 - 0.4;
       const ringGeo = new THREE.RingGeometry(0.985, 1, 160);
       const floorRings: THREE.Mesh[] = [];
-      const ringColor = new THREE.Color(tokenColor("--pond-300", "#7fb5ad"));
+      const ringColor = new THREE.Color(tokenColor("--dim-300", "#a3a8b0"));
       [RADIUS + 0.5, RADIUS + 1.5, RADIUS + 2.8, RADIUS + 4.2].forEach((r) => {
         const m = new THREE.Mesh(
           ringGeo,
@@ -471,24 +433,23 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       pulse.position.y = floorY;
       pulse.visible = false;
       scene.add(pulse);
-      let rippleStart = -1e9;
+      let pingStart = -1e9;
 
-      const koiTex = new THREE.CanvasTexture(drawKoiCanvas());
-      koiTex.colorSpace = THREE.SRGBColorSpace;
-      const koiMat = new THREE.MeshBasicMaterial({ map: koiTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-      const koiFish = [
+      const satTex = new THREE.CanvasTexture(drawSatelliteCanvas());
+      satTex.colorSpace = THREE.SRGBColorSpace;
+      const satMat = new THREE.MeshBasicMaterial({ map: satTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+      const satellites = [
         { r: RADIUS + 0.9, speed: 0.12, dir: 1, ph: 0.6, sc: 1 },
         { r: RADIUS + 2.2, speed: 0.08, dir: -1, ph: 3.4, sc: 0.78 },
       ].map((cfg) => {
-        const geo = new THREE.PlaneGeometry(3.4, 1.15, 30, 4);
-        const base = Float32Array.from(geo.attributes.position.array as ArrayLike<number>);
-        const group = new THREE.Group();
-        const mesh = new THREE.Mesh(geo, koiMat);
+        const geo = new THREE.PlaneGeometry(2.2, 1.1, 1, 1);
+                const group = new THREE.Group();
+        const mesh = new THREE.Mesh(geo, satMat);
         mesh.rotation.x = -Math.PI / 2;
         group.add(mesh);
         group.scale.setScalar(cfg.sc);
         scene.add(group);
-        return { ...cfg, geo, base, group };
+        return { ...cfg, geo, group };
       });
 
       const updateFloor = (t: number, calm: boolean) => {
@@ -497,7 +458,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           m.scale.setScalar((m.userData.r as number) * (1 + breathe));
           (m.material as THREE.MeshBasicMaterial).opacity = 0.24 - i * 0.045;
         });
-        const age = t - rippleStart;
+        const age = t - pingStart;
         const pm = pulse.material as THREE.MeshBasicMaterial;
         if (age >= 0 && age < 2.2) {
           pulse.visible = true;
@@ -505,20 +466,12 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           pm.opacity = (1 - age / 2.2) * 0.5;
         } else pulse.visible = false;
 
-        koiFish.forEach((f) => {
+        satellites.forEach((f) => {
           const th = f.ph + (calm ? 0 : t) * f.speed * f.dir;
           const dx = -Math.sin(th) * f.dir;
           const dz = Math.cos(th) * f.dir;
           f.group.position.set(Math.cos(th) * f.r, floorY + 0.03, Math.sin(th) * f.r);
           f.group.rotation.y = Math.atan2(-dz, dx);
-          const pos = f.geo.attributes.position as THREE.BufferAttribute;
-          for (let i = 0; i < pos.count; i++) {
-            const x = f.base[i * 3];
-            const u = (x + 1.7) / 3.4; // 0 tail → 1 head
-            const bend = calm ? 0 : Math.sin(t * 3.4 - x * 2.2 + f.ph) * 0.22 * Math.pow(Math.max(0, 1 - u), 1.3);
-            pos.setY(i, f.base[i * 3 + 1] + bend);
-          }
-          pos.needsUpdate = true;
         });
       };
 
@@ -571,7 +524,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
         /* stop auto-rotate and re-arm the idle timer */
         autoRotate = false;
-        holdUntil = 0; // user takes over — cancel any name-change freeze
+        holdUntil = 0; // user takes over - cancel any name-change freeze
         if (idleTimer) clearTimeout(idleTimer);
         if (!reducedMotion) {
           idleTimer = setTimeout(() => {
@@ -599,7 +552,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         stage.addEventListener("pointerleave", onPointerLeave);
       }
 
-      /* Pointer parallax — subtle, adds depth while scrolling */
+      /* Pointer parallax - subtle, adds depth while scrolling */
       let px = 0;
       let py = 0;
       let tx = 0;
@@ -610,10 +563,17 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       };
       window.addEventListener("pointermove", onPointer, { passive: true });
 
+      // Portrait screens pull the camera back so the front panel and its neighbours fit,
+      // and lift the ring so the text block has the lower part of the screen.
+      let camZ = 12.5;
+      let lookY = 0;
       const resize = () => {
         const rect = stage.getBoundingClientRect();
         const w = Math.max(1, Math.round(rect.width));
         const h = Math.max(1, Math.round(rect.height));
+        const a = w / h;
+        camZ = 12.5 + Math.min(1, Math.max(0, (1.15 - a) / 0.7)) * 6.5;
+        lookY = a < 1 ? -1.9 : -0.75; // a little higher than dead centre
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
@@ -634,7 +594,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         /* auto-rotate advances the target; the speed factor ramps
            smoothly down to 0 before the freeze and back up after,
            so the card decelerates into the front position and
-           accelerates away — no sudden changes in motion */
+           accelerates away - no sudden changes in motion */
         let speed = 1;
         if (now < holdUntil) {
           const rampIn = Math.min(1, (now - holdStart) / HOLD_RAMP);
@@ -662,7 +622,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
            and the dust fade have time to breathe */
         if (idx !== prevIdx) {
           prevIdx = idx;
-          rippleStart = now / 1000;
+          pingStart = now / 1000;
           if (autoRotate) {
             targetS = idx;
             holdStart = now;
@@ -678,14 +638,14 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         py += (ty - py) * 0.04;
         camera.position.x = px * 0.7;
         camera.position.y = 2.1 + py * 0.5;
-        camera.position.z = 12.5;
-        camera.lookAt(0, 0, 0);
+        camera.position.z = camZ;
+        camera.lookAt(0, lookY, 0);
 
         /* centre wordmark always faces the camera */
         if (totem) totem.quaternion.copy(camera.quaternion);
 
         /* per-panel focus: opacity + size follow the card's angle,
-           so cards glide in and out of the front smoothly — no
+           so cards glide in and out of the front smoothly - no
            hard switches when the active member changes */
         panels.forEach((panel, i) => {
           const mat = panel.material as THREE.MeshBasicMaterial;
@@ -726,9 +686,9 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         ringGeo.dispose();
         floorRings.forEach((m) => (m.material as THREE.Material).dispose());
         (pulse.material as THREE.Material).dispose();
-        koiFish.forEach((f) => f.geo.dispose());
-        koiMat.dispose();
-        koiTex.dispose();
+        satellites.forEach((f) => f.geo.dispose());
+        satMat.dispose();
+        satTex.dispose();
         renderer.dispose();
       };
     })();
@@ -742,7 +702,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
   const member = members[Math.min(active, N - 1)];
 
-  /* Dust motes — deterministic per member (avoids SSR/hydration
+  /* Dust motes - deterministic per member (avoids SSR/hydration
      mismatches) and re-seeded whenever the active member changes,
      so the fade pattern shifts slightly with each name change */
   const dustMotes = useMemo(() => {
@@ -772,7 +732,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         style={{
           position: "sticky",
           top: 0,
-          height: "100vh",
+          height: "100dvh",
           overflow: "hidden",
           background: "transparent",
         }}
@@ -801,7 +761,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }}
         />
 
-        {/* text overlay — desktop: role left / details right, vertically
+        {/* text overlay - desktop: role left / details right, vertically
             centred; mobile: pinned to the top corners of the photo */}
         <div className="tc-stage-overlay">
           {/* Left: role (designation) */}
@@ -809,7 +769,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             <div
               data-wall-counter
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: ".3em",
                 color: "var(--signal)",
@@ -822,8 +782,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             <div
               key={member.name + "-role"}
               style={{
-                fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
-                fontWeight: 900,
+                fontFamily: "var(--font-display)",
+                fontWeight: 400,
                 fontSize: "clamp(15px, 2vw, 24px)",
                 letterSpacing: ".06em",
                 lineHeight: 1.2,
@@ -840,8 +800,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             <div
               key={member.name + "-name"}
               style={{
-                fontFamily: "'CremeEspana', 'Syne', sans-serif",
-                fontSize: "clamp(30px, 4.4vw, 58px)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(24px, 3.2vw, 44px)",
                 lineHeight: 1.05,
                 color: "var(--on-surface)",
                 animation: "tw-fade-in .6s ease .05s both",
@@ -855,12 +815,12 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               viewBox="0 0 160 14"
               aria-hidden
             >
-              <path d="M0 7 Q10 0 20 7 T40 7 T60 7 T80 7 T100 7 T120 7 T140 7 T160 7" />
+              <path d="M0 7 H160" />
             </svg>
             <div
               key={member.name + "-dept"}
               style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 fontWeight: 500,
                 letterSpacing: ".18em",
@@ -894,7 +854,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           </div>
         </div>
 
-        {/* dust motes — re-triggered on every member change */}
+        {/* dust motes - re-triggered on every member change */}
         <div key={`dust-${active}`} className="tc-dust" aria-hidden>
           {dustMotes.map((m, i) => (
             <span
@@ -932,7 +892,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               transition: "width .5s ease",
             }}
           />
-          {/* a small koi rides the head of the bar */}
+          {/* a small probe rides the head of the bar */}
           <svg
             aria-hidden
             viewBox="0 0 34 14"
@@ -946,12 +906,10 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               transition: "left .5s ease",
             }}
           >
-            <path d="M0 7 L9 2 L9 12 Z" fill="var(--foam)" opacity=".55" />
-            <ellipse cx="21" cy="7" rx="12" ry="4.6" fill="var(--foam)" />
-            <ellipse cx="22" cy="6.6" rx="4.6" ry="2.6" fill="var(--signal)" />
-            <ellipse cx="29" cy="7" rx="3" ry="2.6" fill="var(--signal)" />
-            <circle cx="30.4" cy="5.4" r=".8" fill="#0a0f0f" />
-            <circle cx="30.4" cy="8.6" r=".8" fill="#0a0f0f" />
+            <rect x="2" y="0.5" width="12" height="4.5" fill="var(--hull-900)" stroke="var(--dim-300)" strokeWidth=".7" />
+            <rect x="2" y="9" width="12" height="4.5" fill="var(--hull-900)" stroke="var(--dim-300)" strokeWidth=".7" />
+            <path d="M33 7 L8 2.5 L8 11.5 Z" fill="var(--hull-900)" stroke="var(--starlight)" strokeWidth=".9" strokeLinejoin="round" />
+            <circle cx="16" cy="7" r="1.5" fill="var(--lit)" />
           </svg>
         </div>
 
@@ -971,8 +929,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             gap: 20px;
           }
           .tc-role-block, .tc-detail-block {
-            text-shadow: 0 1px 2px color-mix(in srgb, var(--pond-950) 90%, transparent),
-                         0 0 12px color-mix(in srgb, var(--pond-950) 75%, transparent);
+            text-shadow: 0 1px 2px color-mix(in srgb, var(--void-950) 90%, transparent),
+                         0 0 12px color-mix(in srgb, var(--void-950) 75%, transparent);
           }
           .tc-role-block { width: 24%; min-width: 150px; }
           .tc-detail-block { width: 30%; min-width: 220px; text-align: right; }
@@ -989,7 +947,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }
           .tc-wave path {
             fill: none;
-            stroke: var(--marker);
+            stroke: var(--lit);
             stroke-width: 1.6;
             stroke-linecap: round;
             stroke-dasharray: 190;
@@ -1006,28 +964,24 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             margin-top: 18px;
             justify-content: flex-end;
           }
-          /* Mobile — the front card fills the screen, so pin the
+          /* Mobile - the front card fills the screen, so pin the
              designation to the top-left of the photo and the
              details to the top-right of the photo */
           @media (max-width: 640px) {
-            .tc-stage-overlay { padding: 0; display: block; }
-            .tc-role-block {
-              position: absolute;
-              top: max(7vh, 84px);
-              left: 4vw;
-              width: auto;
-              min-width: 0;
+            .tc-stage-overlay {
+              padding: 0 20px 76px;
+              display: flex;
+              flex-direction: column;
+              align-items: flex-start;
+              justify-content: flex-end;
+              gap: 14px;
             }
-            .tc-detail-block {
-              position: absolute;
-              top: max(7vh, 84px);
-              right: 4vw;
-              width: auto;
-              min-width: 0;
-            }
-            .tc-links-row { flex-wrap: wrap; }
+            .tc-role-block, .tc-detail-block { width: 100%; min-width: 0; text-align: left; }
+            .tc-wave { margin-left: 0; }
+            .tc-links-row { flex-wrap: wrap; justify-content: flex-start; margin-top: 14px; }
           }
-          /* Dust motes — drift upward and fade in/out on member change */
+          .tc-links-row a, .tc-links-row span { min-height: 44px; display: inline-flex; align-items: center; }
+          /* Dust motes - drift upward and fade in/out on member change */
           .tc-dust {
             position: absolute;
             inset: 0;
@@ -1036,7 +990,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }
           .tc-dust-mote {
             position: absolute;
-            background: var(--marker);
+            background: var(--lit);
             opacity: 0;
             animation: tc-dust-float 1.2s ease-out forwards;
           }

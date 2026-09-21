@@ -1,354 +1,258 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { UplinkLoader } from "./UplinkLoader";
-import {
-  drawKoi,
-  drawRipples,
-  prefersReducedMotion,
-  readPalette,
-  spineFromPath,
-  startCanvasLoop,
-  type KoiPalette,
-  type Ripple,
-} from "./koi/koi";
+import AstronautScene from "./AstronautScene";
 
 /* ============================================================
-   BOOT PRELOADER — koi pond at night
+   BOOT PRELOADER - the pre-flight checklist
 
-   1. A dorsal-view koi swims across dark water, leaving widening
-      ripple rings behind its head.
-   2. As it passes under each letter of CSAU the letter surfaces
-      out of the water (rise + fade) and drops its own ripple.
-   3. A koi-swim progress cue (UplinkLoader) is driven by the
-      swim AND real page loading (whichever is ahead wins).
-   4. The stage fades to the landing only when BOTH the swim and
-      the real load are done — onComplete contract unchanged.
+   Plays once per session, before the start page. No animation
+   tricks: a big counter and a ruled checklist of six systems that
+   flip from WAIT to OK one after another as the count climbs, then
+   "Cleared for launch" and a fade.
 
-   Reduced motion: still pond, word visible, short hold.
+   The count is driven by time (so it always reads, ~3.4s) but is
+   held at 92 until the page has really finished loading, so it can
+   never claim to be done early. onComplete fires once, after the
+   fade. Reduced motion: the same checklist, in about a second.
    ============================================================ */
 
 interface CursorBootPreloaderProps {
   onComplete?: () => void;
 }
 
-const START_DELAY = 0.35; // s before the koi enters
-const SWIM_SECONDS = 4.0; // s to cross the screen
+/* the constellation that draws itself as the signal is acquired */
+const NODES: [number, number][] = [[20, 128], [62, 84], [112, 104], [150, 52], [204, 74], [246, 30], [268, 96], [214, 128], [150, 118]];
+const EDGES: [number, number][] = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [4, 6], [6, 7], [7, 8], [8, 2]];
+const CALLS = ["Searching for signal", "Locking star tracker", "Aligning the dish", "Drawing the constellation", "Link established"];
+const MIN_MS = 3400;
+const MIN_MS_REDUCED = 1100;
+const HELD_AT = 92; // the count waits here until the page has really loaded
 
 export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderProps) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const colRef = useRef<HTMLDivElement>(null);
-  const wordRef = useRef<HTMLDivElement>(null);
-  const capRef = useRef<HTMLDivElement>(null);
+  const [pct, setPct] = useState(0);
+  const [leaving, setLeaving] = useState(false);
   const [visible, setVisible] = useState(true);
-  const cancelledRef = useRef(false);
-
-  // Combined progress (0-100) — max of swim + real loading
-  const [displayProgress, setDisplayProgress] = useState(0);
-  const animProgressRef = useRef(0);
-  const loadProgressRef = useRef(0);
-  const loadDoneRef = useRef(false);
-
-  const pushProgress = () => {
-    setDisplayProgress(Math.max(animProgressRef.current, loadProgressRef.current));
-  };
-
-  // ── Real loading tracker ──
+  const completeRef = useRef(onComplete);
   useEffect(() => {
-    if (!visible) return;
+    completeRef.current = onComplete;
+  }, [onComplete]);
 
-    if (document.readyState === "complete") {
-      loadProgressRef.current = 100;
-      loadDoneRef.current = true;
-      const id = requestAnimationFrame(() => setDisplayProgress(100));
-      return () => cancelAnimationFrame(id);
-    }
-
-    let raf: number;
-
-    const tick = () => {
-      if (cancelledRef.current) return;
-
-      if ((document.readyState as string) === "complete") {
-        loadProgressRef.current = 100;
-        loadDoneRef.current = true;
-        pushProgress();
-        return;
-      }
-
-      let loaded = 0;
-      let total = 0;
-
-      if (document.fonts) {
-        const fonts = [...document.fonts];
-        total += fonts.length;
-        loaded += fonts.filter((f) => f.status === "loaded").length;
-      }
-
-      const imgs = document.querySelectorAll<HTMLImageElement>("img");
-      total += imgs.length;
-      loaded += [...imgs].filter((img) => img.complete && img.naturalWidth > 0).length;
-
-      const docReady = document.readyState === "interactive" ? 15 : 0;
-      const resourcePct = total > 0 ? (loaded / total) * 70 : 70;
-      const pct = Math.min(100, Math.round(docReady + resourcePct));
-
-      loadProgressRef.current = Math.max(loadProgressRef.current, pct);
-      pushProgress();
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const min = reduced ? MIN_MS_REDUCED : MIN_MS;
+    const t0 = performance.now();
+    let loaded = document.readyState === "complete";
     const onLoad = () => {
-      loadProgressRef.current = 100;
-      loadDoneRef.current = true;
-      pushProgress();
+      loaded = true;
     };
     window.addEventListener("load", onLoad);
+
+    let raf = 0;
+    let last = -1;
+    let finished = false;
+    const timers: number[] = [];
+
+    const tick = (now: number) => {
+      const sim = Math.min(100, ((now - t0) / min) * 100);
+      const p = Math.floor(Math.min(sim, loaded ? 100 : HELD_AT));
+      if (p !== last) {
+        last = p;
+        setPct(p);
+      }
+      if (p >= 100 && !finished) {
+        finished = true;
+        timers.push(window.setTimeout(() => setLeaving(true), reduced ? 250 : 650));
+        timers.push(
+          window.setTimeout(() => {
+            setVisible(false);
+            completeRef.current?.();
+          }, reduced ? 650 : 1250)
+        );
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("load", onLoad);
+      timers.forEach((id) => clearTimeout(id));
     };
-  }, [visible]);
-
-  // ── The swim ──
-  useEffect(() => {
-    if (!visible) return;
-    const canvas = canvasRef.current;
-    const stage = stageRef.current;
-    if (!canvas || !stage) return;
-    cancelledRef.current = false;
-
-    const reduced = prefersReducedMotion();
-    const pal: KoiPalette = readPalette();
-    const letters = Array.from(wordRef.current?.querySelectorAll<HTMLElement>(".boot-char") ?? []);
-    const revealed = letters.map(() => false);
-    const ripples: Ripple[] = [];
-    let nextWake = 0;
-    let nextAmbient = 0.6;
-    let finishing = false;
-    let seed = 7;
-    const rnd = () => {
-      seed = (seed * 16807) % 2147483647;
-      return seed / 2147483647;
-    };
-
-    const reveal = (i: number, now: number, x: number, y: number, L: number) => {
-      if (revealed[i]) return;
-      revealed[i] = true;
-      letters[i].classList.add("boot-char-in");
-      ripples.push({ x, y, born: now, max: L * 1.1, life: 2.6, strength: 1 });
-      if (revealed.every(Boolean) && capRef.current) capRef.current.style.opacity = "1";
-    };
-
-    const finish = async () => {
-      if (finishing) return;
-      finishing = true;
-      await new Promise<void>((resolve) => {
-        const poll = setInterval(() => {
-          if (cancelledRef.current || loadDoneRef.current) {
-            clearInterval(poll);
-            resolve();
-          }
-        }, 100);
-      });
-      if (cancelledRef.current) return;
-      if (reduced) await new Promise((r) => setTimeout(r, 500));
-      stage.style.transition = "opacity .6s ease";
-      stage.style.opacity = "0";
-      await new Promise((r) => setTimeout(r, 600));
-      if (!cancelledRef.current) {
-        setVisible(false);
-        onComplete?.();
-      }
-    };
-
-    const draw = (ctx: CanvasRenderingContext2D, W: number, H: number, t: number) => {
-      // pond
-      ctx.fillStyle = pal.water;
-      ctx.fillRect(0, 0, W, H);
-      const g = ctx.createRadialGradient(W / 2, H * 0.5, 0, W / 2, H * 0.5, Math.max(W, H) * 0.7);
-      g.addColorStop(0, "rgba(11,43,46,0.9)");
-      g.addColorStop(1, "rgba(11,43,46,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-
-      const L = Math.max(120, Math.min(230, W * 0.16));
-      const col = colRef.current?.getBoundingClientRect();
-      const wordRect = wordRef.current?.getBoundingClientRect();
-      const baseY = (col ? col.bottom : H * 0.6) + L * 0.32;
-      const amp = wordRect ? wordRect.height * 0.14 : 24;
-      const total = W + L * 2.4;
-      const speed = total / SWIM_SECONDS;
-      const path = (s: number) => ({
-        x: -L * 1.1 + s,
-        y: baseY + amp * Math.sin((s / (W * 0.85)) * Math.PI * 2 + 0.6),
-      });
-
-      const s = reduced ? total * 0.72 : (t - START_DELAY) * speed;
-      const head = path(s);
-
-      if (!reduced && s > 0 && s < total) {
-        if (t >= nextWake) {
-          nextWake = t + 0.26;
-          ripples.push({ x: head.x, y: head.y, born: t, max: L * 0.85, life: 2.1, strength: 0.7 });
-        }
-      }
-      if (!reduced && t >= nextAmbient) {
-        nextAmbient = t + 0.9 + rnd() * 1.4;
-        ripples.push({ x: rnd() * W, y: rnd() * H, born: t, max: 40 + rnd() * 70, life: 2.8, strength: 0.35 });
-      }
-
-      // letters surface as the koi passes beneath
-      letters.forEach((el, i) => {
-        if (revealed[i]) return;
-        const r = el.getBoundingClientRect();
-        if (reduced || head.x > r.left + r.width / 2) {
-          reveal(i, t, r.left + r.width / 2, r.top + r.height * 0.75, L);
-        }
-      });
-
-      drawRipples(ctx, ripples, t, pal.ripple, 0.55);
-
-      if (s > -L * 1.2 && s < total + L * 0.2) {
-        drawKoi(ctx, spineFromPath(path, s, L), L, t, pal, { beat: 6.2, sway: 1 });
-      }
-
-      // progress from the swim
-      const swim = reduced ? 1 : Math.max(0, Math.min(1, (t - START_DELAY) / SWIM_SECONDS));
-      const next = Math.round(swim * 96);
-      if (next !== animProgressRef.current) {
-        animProgressRef.current = next;
-        pushProgress();
-      }
-      if (swim >= 1 && !finishing && (reduced || t > START_DELAY + SWIM_SECONDS + 0.15)) {
-        animProgressRef.current = 100;
-        pushProgress();
-        finish();
-      }
-    };
-
-    const stop = startCanvasLoop(canvas, draw, { still: reduced });
-    if (reduced) {
-      // still mode draws once on resize; make sure letters/progress settle
-      setTimeout(() => {
-        if (!cancelledRef.current) {
-          animProgressRef.current = 100;
-          pushProgress();
-          finish();
-        }
-      }, 900);
-    }
-    return () => {
-      cancelledRef.current = true;
-      stop();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;
 
+  const cleared = pct >= 100;
+  const drawn = (i: number) => pct >= 8 + i * 10; // edge i starts drawing
+  const call = CALLS[Math.min(CALLS.length - 1, Math.floor(pct / 22))];
+
   return (
     <>
       <style>{`
-        @font-face {
-          font-family: 'Sector034';
-          src: url('/fonts/sector-034/sector_034.ttf') format('truetype');
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
+        .bp-root {
+          position: fixed;
+          inset: 0;
+          z-index: var(--z-preloader);
+          background: var(--space-black);
+          color: var(--starlight);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: max(28px, env(safe-area-inset-top)) var(--pg-x) max(28px, env(safe-area-inset-bottom));
+          transition: opacity .6s ease;
         }
-        .boot-char { opacity: 0; transform: translateY(26px); }
-        .boot-char-in { animation: bootSurface 1.3s cubic-bezier(.2,.8,.2,1) forwards; }
-        @keyframes bootSurface {
-          0%   { opacity: 0; transform: translateY(26px) scaleY(1.12); }
-          55%  { opacity: .75; transform: translateY(-3px) scaleY(1); }
-          100% { opacity: 1; transform: translateY(0) scaleY(1); }
+        .bp-root[data-leaving="true"] { opacity: 0; }
+        .bp-in { width: 100%; max-width: 720px; margin: 0 auto; }
+        .bp-head {
+          display: flex; justify-content: space-between; gap: 16px;
+          font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim-300);
         }
-        .uplink-bar-wrap {
-          position: absolute;
-          bottom: max(5%, 28px);
-          left: 50%;
-          transform: translateX(-50%);
-          width: min(86vw, 520px);
-          z-index: 5;
-          pointer-events: none;
-          opacity: 0;
-          animation: uplinkBarFadeIn 0.6s ease 0.3s forwards;
+        .bp-hero { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 28px 0 8px; }
+        .bp-globe { flex: none; width: clamp(84px, 24vw, 190px); aspect-ratio: 1; }
+        .bp-globe svg { width: 100%; height: 100%; overflow: visible; }
+        .bp-mer { transform-box: fill-box; transform-origin: center; animation: bp-mer 3.6s linear infinite; }
+        .bp-mer.b { animation-delay: -1.2s; }
+        .bp-mer.c { animation-delay: -2.4s; }
+        @keyframes bp-mer { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.03); } 100% { transform: scaleX(1); } }
+        .bp-orbit { transform-origin: 50px 50px; transform: rotate(-24deg) scaleY(0.34); }
+        .bp-sat { transform-origin: 50px 50px; animation: bp-turn 5.5s linear infinite; }
+        @keyframes bp-turn { to { transform: rotate(360deg); } }
+        .bp-count {
+          margin: 0;
+          font-family: var(--font-display);
+          font-size: clamp(56px, 18vw, 200px);
+          line-height: .95;
+          letter-spacing: -.02em;
+          font-variant-numeric: tabular-nums;
+          color: var(--starlight);
         }
-        @keyframes uplinkBarFadeIn { to { opacity: 1; } }
+        .bp-count span { font-size: .28em; letter-spacing: 0; margin-left: .15em; color: var(--dim-300); }
+        .bp-sky { margin-top: 22px; width: 100%; }
+        .bp-sky svg { width: 100%; height: auto; display: block; overflow: visible; }
+        .bp-sweep { animation: bp-turn 3.2s linear infinite; }
+        .bp-ping { transform-box: fill-box; transform-origin: center; animation: bp-ping 1.8s ease-out infinite; }
+        @keyframes bp-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(3.4); opacity: 0; } }
+        .bp-in { position: relative; z-index: 1; }
+        .bp-scene.as-root { inset: auto 0 0 0; height: 26%; }
+        .bp-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; }
+        .bp-row {
+          display: flex; align-items: baseline; gap: 12px;
+          min-height: 44px; padding: 10px 0;
+          border-top: 1px solid var(--outline-variant);
+          font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim-300);
+          transition: color .25s ease;
+        }
+        .bp-row:last-child { border-bottom: 1px solid var(--outline-variant); }
+        .bp-row[data-on="true"] { color: var(--starlight); }
+        .bp-lead { flex: 1; border-bottom: 1px dotted var(--outline-variant); transform: translateY(-4px); }
+        .bp-state { min-width: 4ch; text-align: right; font-weight: 500; }
+        .bp-row[data-on="true"] .bp-state { color: var(--lit); }
+        .bp-row[data-now="true"] .bp-state { animation: bp-blink 0.9s steps(2, end) infinite; }
+        @keyframes bp-blink { 50% { opacity: .25; } }
+        .bp-foot { margin-top: 24px; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--dim-300); min-height: 1.4em; }
+        .bp-foot[data-on="true"] { color: var(--lit); }
+        .bp-ticker { position: fixed; left: 0; right: 0; bottom: 3px; overflow: hidden; border-top: 1px solid var(--outline-variant);
+          padding: 10px 0; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim-300); white-space: nowrap; }
+        .bp-ticker-track { display: inline-flex; gap: 48px; padding-left: 48px; animation: bp-tick 22s linear infinite; }
+        @keyframes bp-tick { to { transform: translateX(-50%); } }
+        .bp-ticker-track b { font-weight: 500; color: var(--starlight); }
+        .bp-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 3px; background: var(--hull-900); }
+        .bp-bar > div { height: 100%; background: var(--lit); transition: width .12s linear; }
         @media (prefers-reduced-motion: reduce) {
-          .boot-char { opacity: 1; transform: none; }
-          .boot-char-in { animation: none; }
+          .bp-root, .bp-row, .bp-bar > div { transition: none; }
+          .bp-row[data-now="true"] .bp-state { animation: none; }
+          .bp-mer, .bp-sat, .bp-ticker-track, .bp-sweep, .bp-ping { animation: none; }
         }
       `}</style>
-      <div
-        ref={stageRef}
-        className="fixed inset-0 overflow-hidden"
-        style={{
-          zIndex: 9999,
-          background: "var(--pond-950)",
-          ["--on-surface" as string]: "var(--foam)",
-          ["--on-surface-variant" as string]: "var(--pond-300)",
-          ["--outline" as string]: "var(--pond-300)",
-          ["--outline-variant" as string]: "var(--pond-700)",
-        }}
-        role="dialog"
-        aria-label="Loading CSAU"
-        aria-modal="true"
-      >
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-hidden />
 
-        {/* CSAU word — surfaces as the koi passes */}
-        <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{ zIndex: 3, paddingBottom: "6vh" }}
-        >
-          <div ref={colRef} className="flex flex-col items-center" style={{ gap: 14 }}>
-            <div
-              ref={wordRef}
-              className="flex"
-              style={{
-                fontFamily: "'Ethnocentric', 'Sector034', sans-serif",
-                fontWeight: 900,
-                fontSize: "clamp(56px,14vw,200px)",
-                letterSpacing: ".08em",
-                lineHeight: 1,
-                color: "var(--foam)",
-              }}
-            >
-              {"CSAU".split("").map((ch, i) => (
-                <span key={i} className="boot-char inline-block">
-                  {ch}
-                </span>
+      <div
+        className="bp-root"
+        data-leaving={leaving}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Loading CSAU"
+      >
+        <AstronautScene className="bp-scene" />
+        <div className="bp-in">
+          <div className="bp-head">
+            <span>CSAU</span>
+            <span>Pre-flight &nbsp; T-{Math.max(0, Math.ceil(((100 - pct) / 100) * (MIN_MS / 1000)))}s</span>
+          </div>
+
+          <div className="bp-hero">
+            <div className="bp-count" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Loading">
+              {String(pct).padStart(3, "0")}
+              <span>%</span>
+            </div>
+            <div className="bp-globe" aria-hidden>
+              <svg viewBox="0 0 100 100" fill="none" stroke="var(--dim-300)" strokeWidth="0.8">
+                <circle cx="50" cy="50" r="32" stroke="var(--starlight)" strokeWidth="1" />
+                <ellipse className="bp-mer" cx="50" cy="50" rx="32" ry="32" />
+                <ellipse className="bp-mer b" cx="50" cy="50" rx="32" ry="32" />
+                <ellipse className="bp-mer c" cx="50" cy="50" rx="32" ry="32" />
+                <path d="M18 50 h64 M22 34 h56 M22 66 h56" opacity=".55" />
+                <g className="bp-orbit">
+                  <circle cx="50" cy="50" r="46" strokeDasharray="2 3" opacity=".8" />
+                  <g className="bp-sat">
+                    <circle cx="96" cy="50" r="3.2" fill="var(--lit)" stroke="none" />
+                  </g>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div className="bp-sky" aria-hidden>
+            <svg viewBox="0 0 290 160" preserveAspectRatio="xMidYMid meet">
+              <g fill="none" stroke="var(--hull-700)" strokeWidth="0.8">
+                <circle cx="145" cy="80" r="70" />
+                <circle cx="145" cy="80" r="46" />
+                <circle cx="145" cy="80" r="22" />
+                <path d="M145 8v144M73 80h144" opacity=".5" />
+                <g className="bp-sweep" style={{ transformOrigin: "145px 80px" }}>
+                  <path d="M145 80L145 10" stroke="var(--lit)" strokeWidth="1.2" />
+                  <path d="M145 80L145 10A70 70 0 0 1 182 20Z" fill="var(--lit)" stroke="none" opacity=".12" />
+                </g>
+              </g>
+              {EDGES.map(([p, q], i) => (
+                <line key={i} x1={NODES[p][0]} y1={NODES[p][1]} x2={NODES[q][0]} y2={NODES[q][1]} pathLength={1}
+                  stroke="var(--starlight)" strokeWidth="1" strokeDasharray="1" strokeDashoffset={drawn(i) ? 0 : 1} opacity=".75"
+                  style={{ transition: "stroke-dashoffset .5s ease" }} />
               ))}
-            </div>
-            <div
-              ref={capRef}
-              className="text-center"
-              style={{
-                maxWidth: "min(86vw, 560px)",
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11,
-                lineHeight: 1.6,
-                letterSpacing: ".2em",
-                color: "var(--pond-300)",
-                opacity: 0,
-                transition: "opacity .8s ease .3s",
-              }}
-            >
-              COMPUTER SOCIETY OF ANNA UNIVERSITY // CEG
-            </div>
+              {NODES.map(([x, y], i) => {
+                const on = i === 0 ? pct >= 4 : drawn(i - 1) || cleared;
+                return (
+                  <g key={i}>
+                    <circle cx={x} cy={y} r={on ? 3 : 1.4} fill={on ? "var(--lit)" : "var(--hull-700)"} style={{ transition: "all .3s ease" }} />
+                    {on && <circle className="bp-ping" cx={x} cy={y} r="3" fill="none" stroke="var(--lit)" strokeWidth="0.8" />}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          <div className="bp-foot" data-on={cleared} aria-live="polite">
+            {cleared ? "Link established / cleared for launch" : call}
           </div>
         </div>
 
-        {/* Progress cue — koi swims along the waterline */}
-        <div className="uplink-bar-wrap">
-          <UplinkLoader progress={displayProgress} />
+        <div className="bp-ticker" aria-hidden>
+          <div className="bp-ticker-track">
+            {[0, 1].map((n) => (
+              <span key={n} style={{ display: "inline-flex", gap: 48 }}>
+                <span>Signal <b>searching</b></span>
+                <span>Star tracker <b>locking</b></span>
+                <span>Dish <b>aligning</b></span>
+                <span>Constellation <b>plotted</b></span>
+                <span>Link <b>open</b></span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="bp-bar" aria-hidden>
+          <div style={{ width: `${pct}%` }} />
         </div>
       </div>
     </>

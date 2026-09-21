@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 /* ============================================================
-   ABOUT SECTION — Revealed on scroll after hero
+   ABOUT SECTION - Revealed on scroll after hero
    
    IntersectionObserver-driven staggered reveal.
    Typewriter-style text, editorial layout.
    ============================================================ */
 
 const PARAGRAPH =
-  "CSAU is the Computer Society of Anna University, CEG — a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where CEG's computer science community writes, breaks, and ships things together.";
+  "CSAU is the Computer Society of Anna University, CEG - a student-run collective for people who'd rather build than wait. We run hands-on workshops, hackathons, and speaker sessions that turn curiosity into working code. From first-year beginners to final-year builders, CSAU is where CEG's computer science community writes, breaks, and ships things together.";
 
 export default function AboutSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -63,7 +63,7 @@ export default function AboutSection() {
       style={{
         position: "relative",
         width: "100%",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -71,7 +71,7 @@ export default function AboutSection() {
         background: "var(--background)",
       }}
     >
-      {/* Halftone field — replaces the old radial glow */}
+      {/* Halftone field - replaces the old radial glow */}
       <div
         className="absolute inset-0 pointer-events-none halftone"
         style={{ opacity: 0.35 }}
@@ -97,7 +97,7 @@ export default function AboutSection() {
         {/* Eyebrow */}
         <div
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: ".35em",
             color: "var(--on-surface-variant)",
@@ -113,7 +113,7 @@ export default function AboutSection() {
         {/* Title */}
         <h2
           style={{
-            fontFamily: "'Kenfolg', 'Syne', sans-serif",
+            fontFamily: "var(--font-display)",
             fontSize: "clamp(28px, 5vw, 52px)",
             fontWeight: 400,
             letterSpacing: ".02em",
@@ -140,12 +140,12 @@ export default function AboutSection() {
           }}
         />
 
-        {/* Body — typewriter. Measure is capped in `ch` so the line
+        {/* Body - typewriter. Measure is capped in `ch` so the line
             length stays readable at every viewport width. */}
         <div
           className="measure"
           style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "var(--font-mono)",
             fontSize: "clamp(15px, 1.6vw, 19px)",
             lineHeight: 1.75,
             color: "var(--on-surface-variant)",
@@ -164,7 +164,7 @@ export default function AboutSection() {
           )}
         </div>
 
-        {/* Buttons — reveal after typewriter completes */}
+        {/* Buttons - reveal after typewriter completes */}
         <div
           className="flex flex-wrap gap-3"
           style={{

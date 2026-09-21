@@ -1,0 +1,10 @@
+import puppeteer from "puppeteer-core";
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+const b=await puppeteer.launch({executablePath:"C:/Program Files/Google/Chrome/Application/chrome.exe",headless:"new",args:["--no-sandbox"]});
+const p=await b.newPage();
+await p.setViewport({width:390,height:844,isMobile:true,hasTouch:true});
+await p.evaluateOnNewDocument(()=>sessionStorage.setItem("csau-gate-seen","true"));
+await p.goto("http://localhost:3000/events",{waitUntil:"load"});await sleep(2000);
+await p.click('button[aria-label="Open navigation"]');await sleep(900);
+await p.screenshot({path:process.argv[2]+"/a-nav.png"});
+await b.close();

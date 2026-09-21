@@ -1,7 +1,7 @@
 import { PAST_EVENTS, UPCOMING_EVENTS } from "@/data/events";
 
 /* ============================================================
-   STORY STOPS — every place the koi swims to, in order.
+   STORY STOPS - every place the signal travels to, in order.
 
    intro → each past event → each upcoming event → what we do
    → the invitation. `weight` is how much scroll a stop gets.
@@ -29,7 +29,7 @@ export interface Stop {
 }
 
 export const SECTIONS: { id: StopKind; label: string }[] = [
-  { id: "intro", label: "THE POND" },
+  { id: "intro", label: "SIGNAL" },
   { id: "past", label: "ARCHIVE" },
   { id: "upcoming", label: "UPCOMING" },
   { id: "do", label: "WHAT WE DO" },
@@ -58,11 +58,11 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export const STOPS: Stop[] = [
   {
     kind: "intro",
-    section: "THE POND",
+    section: "SIGNAL",
     eyebrow: "CSAU / CEG",
-    lines: ["Follow", "the koi."],
-    mark: "koi.",
-    body: "We are the Computer Society of Anna University, a student-run collective for people who would rather build than wait. Scroll, and the koi will swim you past everything we run.",
+    lines: ["Follow", "the signal."],
+    mark: "signal.",
+    body: "We are the Computer Society of Anna University, a student-run collective for people who would rather build than wait. Scroll, and the signal will carry you past everything we run.",
     weight: 1.1,
   },
   ...PAST_EVENTS.map<Stop>((e, i) => ({
@@ -118,9 +118,9 @@ export const STOPS: Stop[] = [
     kind: "invite",
     section: "JOIN US",
     eyebrow: "AN INVITATION",
-    lines: ["Come swim", "with us."],
-    mark: "swim",
-    body: "First-years to final-years, CEG's computer science community writes, breaks and ships together. There is room in the pond.",
+    lines: ["Join", "the crew."],
+    mark: "crew.",
+    body: "First-years to final-years, CEG's computer science community writes, breaks and ships together. There is a place on the crew.",
     cta: [
       { label: "MEET THE TEAM →", href: "/team" },
       { label: "ALL EVENTS", href: "/events", ghost: true },

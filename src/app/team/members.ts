@@ -1,5 +1,5 @@
 /* ============================================================
-   TEAM DATA — shared by the Team page.
+   TEAM DATA - shared by the Team page.
    photo: pravatar stand-ins (mirrors the old page's placeholders)
    ============================================================ */
 

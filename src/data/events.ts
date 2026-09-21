@@ -1,6 +1,6 @@
 /* ============================================================
-   EVENTS DATA — single source for the /events archive and the
-   home-page koi story (which swims to every event in turn).
+   EVENTS DATA - single source for the /events archive and the
+   home-page signal story (which visits every event in turn).
    ============================================================ */
 
 export interface PastEvent {
@@ -29,7 +29,7 @@ export const PAST_EVENTS: PastEvent[] = [
     tag: "HACKATHON",
     date: "21–22 FEB 2026",
     blurb:
-      "36-hour build sprint across AI, web and systems — 400+ hackers, 60 teams shipped working products.",
+      "36-hour build sprint across AI, web and systems - 400+ hackers, 60 teams shipped working products.",
     stat: "412 HACKERS",
   },
   {
@@ -47,7 +47,7 @@ export const PAST_EVENTS: PastEvent[] = [
     tag: "WORKSHOP",
     date: "OCT–DEC 2025",
     blurb:
-      "Six-week embedded series — students went from blinking an LED to driving a full sensor mesh.",
+      "Six-week embedded series - students went from blinking an LED to driving a full sensor mesh.",
     stat: "150 SEATS",
   },
   {
@@ -65,7 +65,7 @@ export const PAST_EVENTS: PastEvent[] = [
     tag: "COMPETITION",
     date: "23 AUG 2025",
     blurb:
-      "Real-time multiplayer coding duel — the arena throws two coders into one shared socket.",
+      "Real-time multiplayer coding duel - the arena throws two coders into one shared socket.",
     stat: "128 PLAYERS",
   },
   {
@@ -83,7 +83,7 @@ export const PAST_EVENTS: PastEvent[] = [
     tag: "HACKATHON",
     date: "16–17 NOV 2024",
     blurb:
-      "Flagship 36-hour hackathon — 350 participants built for healthcare, civic and climate themes.",
+      "Flagship 36-hour hackathon - 350 participants built for healthcare, civic and climate themes.",
     stat: "350 HACKERS",
   },
   {
@@ -92,13 +92,13 @@ export const PAST_EVENTS: PastEvent[] = [
     tag: "TALK",
     date: "09 NOV 2024",
     blurb:
-      "A walk through lexers, parsers and codegen — ending with everyone compiling a tiny language.",
+      "A walk through lexers, parsers and codegen - ending with everyone compiling a tiny language.",
     stat: "210 SEATS",
   },
 ];
 
 /* Logic Lift-Off and Quick Code are live pages on this site.
-   HackCEG 7.0 is a PLACEHOLDER (no dates announced yet) — replace
+   HackCEG 7.0 is a PLACEHOLDER (no dates announced yet) - replace
    or remove it once the real details are confirmed. */
 export const UPCOMING_EVENTS: UpcomingEvent[] = [
   {
@@ -127,7 +127,7 @@ export const UPCOMING_EVENTS: UpcomingEvent[] = [
     date: "DATES TO BE ANNOUNCED",
     status: "SOON",
     blurb:
-      "The flagship build sprint returns. Start finding your team — the theme drops with the dates.",
+      "The flagship build sprint returns. Start finding your team - the theme drops with the dates.",
     href: "/events",
     cta: "SEE PAST EDITIONS",
   },
