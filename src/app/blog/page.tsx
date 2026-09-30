@@ -1,156 +1,78 @@
-"use client";
-
-import { useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { getBlogPosts } from "@/lib/blog";
+import BlogList from "./BlogList";
 
 /* ============================================================
-   BLOG - blogs, articles and posts.
-   The newest piece leads as a feature; the rest are ruled rows
-   (kind and date, then title and blurb, then author).
+   BLOG - the club's real writing, pulled live from the CSAU
+   Medium feed (@cegcsau) via the same Sanity + rss2json path
+   the main csau.in site uses. See src/lib/blog.ts.
+
+   This is a Server Component: the feed is fetched on the server
+   (revalidated hourly) and streamed in. `loading.tsx` provides
+   the loading state; the empty and error/notice states are
+   handled inline below.
    Route: /blog
    ============================================================ */
 
-type Kind = "BLOG" | "ARTICLE" | "POST";
+export const metadata: Metadata = {
+  title: "Blog // CSAU - Computer Society of Anna University",
+  description:
+    "Technical articles and writing from the Computer Society of Anna University, CEG - published on Medium by the members.",
+};
 
-interface Post {
-  kind: Kind;
-  title: string;
-  author: string;
-  date: string;
-  read: string;
-  blurb: string;
-}
+// Let the page re-fetch on the server at most once an hour.
+export const revalidate = 3600;
 
-const POSTS: Post[] = [
-  {
-    kind: "BLOG",
-    title: "Life inside CSAU: a week of builds",
-    author: "Aarav Sharma",
-    date: "28 AUG 2026",
-    read: "6 MIN",
-    blurb: "From the Wednesday code-battle to a surprise design sprint - what a normal week looks like for the society.",
-  },
-  {
-    kind: "ARTICLE",
-    title: "Binary search, explained without the maths",
-    author: "Meera Iyer",
-    date: "21 AUG 2026",
-    read: "8 MIN",
-    blurb: "Halve, compare, repeat. A practical walkthrough of binary search with real interview twists and edge cases.",
-  },
-  {
-    kind: "POST",
-    title: "Quick Code Week 12 results are live",
-    author: "CSAU Core",
-    date: "19 AUG 2026",
-    read: "1 MIN",
-    blurb: "Arjun takes the crown with a perfect 500 in 02:18. Full leaderboard and question review on the Quick Code hub.",
-  },
-  {
-    kind: "BLOG",
-    title: "What HackCEG 6.0 taught our organising team",
-    author: "Rohan Patel",
-    date: "12 AUG 2026",
-    read: "7 MIN",
-    blurb: "Sleep is overrated, backups are not - lessons from shipping a 36-hour hackathon for 400+ hackers.",
-  },
-  {
-    kind: "ARTICLE",
-    title: "Your first shader: a gentle WebGL intro",
-    author: "Sanjana Nair",
-    date: "05 AUG 2026",
-    read: "10 MIN",
-    blurb: "GLSL for beginners - vertex and fragment stages, uniforms, and how the laser fields on this site actually work.",
-  },
-  {
-    kind: "POST",
-    title: "CRACKIT Round 24 · Binary Blast results",
-    author: "CSAU Core",
-    date: "01 AUG 2026",
-    read: "1 MIN",
-    blurb: "Akil tops the board with a clean 500. The question archive is updated - go sharpen yourself for Round 25.",
-  },
-  {
-    kind: "ARTICLE",
-    title: "Queues are everywhere",
-    author: "Priya Verma",
-    date: "26 JUL 2026",
-    read: "6 MIN",
-    blurb: "Printers, message brokers, CPU scheduling - once you learn to spot FIFO, you never unsee it.",
-  },
-  {
-    kind: "BLOG",
-    title: "Designing for a campus of coders",
-    author: "Karthik Raj",
-    date: "18 JUL 2026",
-    read: "5 MIN",
-    blurb:
-      "Why the site now reads like a printed index - the paper palette, the hairline grid and the type system behind every page.",
-  },
-];
-
-const TABS: ("ALL" | Kind)[] = ["ALL", "BLOG", "ARTICLE", "POST"];
-
-export default function BlogPage() {
-  const [kind, setKind] = useState<"ALL" | Kind>("ALL");
-  const shown = kind === "ALL" ? POSTS : POSTS.filter((p) => p.kind === kind);
-  const [lead, ...rest] = shown;
+export default async function BlogPage() {
+  const { posts, state, notice } = await getBlogPosts();
 
   return (
-    <main className="pg">
+    <main id="content" className="pg">
       <div className="pg-in">
-        <header>
+        <header className="bl-head">
           <div className="eyebrow">Writing</div>
           <h1 className="pg-title">Blog</h1>
-          <p className="pg-lede">Long-form blogs, technical articles and quick posts, written by the members for everyone who codes.</p>
+          <p className="pg-lede">
+            Technical articles and deep-dives written by the members and published on{" "}
+            <a
+              className="bl-lede-link"
+              href="https://medium.com/@cegcsau"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Medium
+            </a>
+            . Signals from across the network, straight from the crew.
+          </p>
         </header>
 
-        <nav aria-label="Article kinds" className="bl-tabs">
-          {TABS.map((k) => (
-            <button key={k} type="button" className="bl-tab" onClick={() => setKind(k)} aria-pressed={kind === k}>
-              {k}
-            </button>
-          ))}
-          <span className="bl-count tabular" aria-live="polite">
-            {shown.length} {shown.length === 1 ? "piece" : "pieces"}
-          </span>
-        </nav>
-
-        {lead && (
-          <article className="bl-lead">
-            <div className="bl-meta">
-              <span className="bl-kind" data-kind={lead.kind}>
-                {lead.kind}
-              </span>
-              <span>{lead.date}</span>
-              <span>{lead.read} read</span>
-            </div>
-            <h2 className="bl-lead-title">{lead.title}</h2>
-            <p className="bl-blurb">{lead.blurb}</p>
-            <div className="bl-author">{lead.author}</div>
-          </article>
+        {state === "fallback" && (
+          <p className="bl-notice" role="status">
+            <span className="bl-notice-dot" aria-hidden />
+            Showing the latest cached posts.{notice ? ` ${notice}` : ""}
+          </p>
         )}
 
-        <div className="bl-list">
-          {rest.map((post) => (
-            <article key={post.title} className="bl-row">
-              <div className="bl-meta">
-                <span className="bl-kind" data-kind={post.kind}>
-                  {post.kind}
-                </span>
-                <span>{post.date}</span>
-              </div>
-              <div>
-                <h2 className="bl-title">{post.title}</h2>
-                <p className="bl-blurb">{post.blurb}</p>
-              </div>
-              <div className="bl-author">
-                {post.author}
-                <span>{post.read} read</span>
-              </div>
-            </article>
-          ))}
-        </div>
+        {posts.length === 0 ? (
+          <section className="bl-empty" aria-live="polite">
+            <p className="bl-empty-title">No posts in orbit yet</p>
+            <p className="bl-empty-body">
+              Nothing has been published to the feed so far. Check back soon - or follow the crew on
+              Medium for the first drop.
+            </p>
+            <a
+              href="https://medium.com/@cegcsau"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Follow on Medium →
+            </a>
+          </section>
+        ) : (
+          <BlogList posts={posts} />
+        )}
 
         <p className="pg-next">
           <Link href="/crackit" data-route-load className="btn btn-primary">

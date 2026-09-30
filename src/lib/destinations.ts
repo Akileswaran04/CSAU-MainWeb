@@ -1,7 +1,7 @@
 /* Each page is a place in the deep space network. The nav menu and the
    travel loader use these: a glyph, a name and a one-line sector call. */
 
-export type GlyphKind = "earth" | "station" | "comet" | "hole" | "constellation" | "pulsar";
+export type GlyphKind = "earth" | "station" | "comet" | "hole" | "constellation" | "pulsar" | "rings";
 
 export interface Destination {
   href: string;
@@ -14,6 +14,7 @@ export const DESTINATIONS: Destination[] = [
   { href: "/", label: "HOME", glyph: "earth", sector: "Home orbit" },
   { href: "/events", label: "EVENTS", glyph: "station", sector: "Docking ring" },
   { href: "/blog", label: "BLOG", glyph: "comet", sector: "Comet trail" },
+  { href: "/domains", label: "DOMAINS", glyph: "rings", sector: "Ringed world" },
   { href: "/crackit", label: "CRACKIT", glyph: "hole", sector: "Event horizon" },
   { href: "/team", label: "TEAM", glyph: "constellation", sector: "Crew constellation" },
   { href: "/quick-code", label: "QUICK CODE", glyph: "pulsar", sector: "Pulsar beam" },

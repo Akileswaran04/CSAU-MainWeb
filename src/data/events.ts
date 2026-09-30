@@ -10,6 +10,10 @@ export interface PastEvent {
   date: string;
   blurb: string;
   stat: string;
+  /** Optional real poster (path under /public or absolute URL). When
+   *  absent, the UI renders a generated space-themed plate instead —
+   *  we never invent a fake poster URL. */
+  poster?: string;
 }
 
 export interface UpcomingEvent {
@@ -20,6 +24,8 @@ export interface UpcomingEvent {
   blurb: string;
   href: string;
   cta: string;
+  /** Optional real poster; see PastEvent.poster. */
+  poster?: string;
 }
 
 export const PAST_EVENTS: PastEvent[] = [
@@ -132,3 +138,24 @@ export const UPCOMING_EVENTS: UpcomingEvent[] = [
     cta: "SEE PAST EDITIONS",
   },
 ];
+
+/* ============================================================
+   DERIVED HELPERS - keep the UI data-driven and reusable.
+   ============================================================ */
+
+/** Distinct years present in the archive, newest first. */
+export function archiveYears(events: PastEvent[] = PAST_EVENTS): string[] {
+  return Array.from(new Set(events.map((e) => e.year))).sort(
+    (a, b) => Number(b) - Number(a),
+  );
+}
+
+/** Past events for one year, in the order they appear in the source. */
+export function eventsInYear(year: string, events: PastEvent[] = PAST_EVENTS): PastEvent[] {
+  return events.filter((e) => e.year === year);
+}
+
+/** Total count of archived events. */
+export function archiveCount(events: PastEvent[] = PAST_EVENTS): number {
+  return events.length;
+}

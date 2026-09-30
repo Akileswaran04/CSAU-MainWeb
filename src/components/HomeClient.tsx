@@ -7,6 +7,7 @@ import HeroSection from "./HeroSection";
 import Lenis from "lenis";
 import { lockScroll } from "@/lib/scrollLock";
 import StorySection from "./story/StorySection";
+import EventsPreview from "./EventsPreview";
 import { setLenis } from "./story/lenis";
 
 /* ============================================================
@@ -115,6 +116,7 @@ export default function HomeClient() {
         <div style={{ background: "transparent" }}>
           <HeroSection />
           <StorySection />
+          <EventsPreview />
         </div>
       )}
     </>

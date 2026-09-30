@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type * as THREE from "three";
-import type { TeamMember } from "@/app/team/members";
-import { initials } from "@/app/team/members";
+import type { TeamMember } from "@/lib/team";
+import { initials, memberMeta, photoUrl } from "@/lib/team";
 
 /* ============================================================
    TEAM CAROUSEL - Full-circle 3D ring of featured members.
@@ -16,14 +16,35 @@ import { initials } from "@/app/team/members";
      to the front where it faces the camera dead-centre.
    • A vertical "CSAU" wordmark (Ethnocentric brand font)
      stands at the centre of the ring, inside the carousel.
-   • role / name / dept / links crossfade beside the front panel.
+   • role / name / dept / links crossfade beside the front panel;
+     the front card (or "View profile") opens the member profile.
+   • The ring is sized from the member count: past ten members it
+     grows so every card keeps the same width, and is pushed back
+     so the front card stays where it was.
 
    Transparent stage - floats over the shared star-field backdrop.
    ============================================================ */
 
 interface TeamCarouselProps {
   members: TeamMember[];
+  /** Open the detailed profile for a member. */
+  onOpen?: (id: string) => void;
 }
+
+/* Ring geometry shared by the scene and the portrait canvases. The ring
+   was drawn for ten members: a card is one tenth of that circle wide. */
+const BASE_N = 10;
+const BASE_RADIUS = 4.6;
+const PANEL_H = 4.9; // front card fills ~90% of the visible height
+const PANEL_ARC = ((2 * Math.PI) / BASE_N) * 0.88; // cards wrap wide, nearly touching
+const PANEL_W = BASE_RADIUS * PANEL_ARC;
+/* Portrait canvas: same proportions as the panel, so photos are never stretched. */
+const CARD_W = 512;
+const CARD_H = Math.round((CARD_W * PANEL_H) / PANEL_W);
+/* The circular portrait on the card */
+const PHOTO_D = CARD_W * 0.84;
+const PHOTO_CX = CARD_W / 2;
+const PHOTO_CY = CARD_H * 0.37;
 
 /* Draw a member portrait (photo or initials card) onto a canvas →
    dataURL texture. Keeps photos crisp, avoids WebGL/CORS tainting. */
@@ -109,13 +130,13 @@ function drawSatelliteCanvas(): HTMLCanvasElement {
    brackets, a vermilion seal, the running number and a vertical role. */
 function paintOrnament(
   ctx: CanvasRenderingContext2D,
-  size: number,
   member: TeamMember,
   index: number,
   total: number
 ) {
-  const W = size;
-  const H = size * 1.25;
+  const size = CARD_W;
+  const W = CARD_W;
+  const H = CARD_H;
   const foam = tokenColor("--starlight", "#f6f1e4");
   const signal = tokenColor("--signal", "#ee5b3a");
   const gold = tokenColor("--lit", "#f0b73a");
@@ -152,7 +173,8 @@ function paintOrnament(
   // vermilion seal (hanko) with initials
   const sealS = size * 0.17;
   ctx.save();
-  ctx.translate(W - m - sealS * 0.75, H * 0.31);
+  // stamped over the lower-right rim of the portrait disc
+  ctx.translate(PHOTO_CX + PHOTO_D * 0.36, PHOTO_CY + PHOTO_D * 0.36);
   ctx.rotate(0.09);
   ctx.fillStyle = signal;
   ctx.fillRect(-sealS / 2, -sealS / 2, sealS, sealS);
@@ -165,6 +187,22 @@ function paintOrnament(
   ctx.textBaseline = "middle";
   ctx.fillText(initials(member.name), 0, 2);
   ctx.restore();
+
+  // name under the disc, so the cards either side of the front one can be read too
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = foam;
+  ctx.font = `500 ${size * 0.062}px ${monoFamily()}, monospace`;
+  const words = member.name.toUpperCase().split(/\s+/);
+  let lines = [words.join(" ")];
+  if (words.length > 1 && ctx.measureText(lines[0]).width > W * 0.8) {
+    const half = Math.ceil(words.length / 2);
+    lines = [words.slice(0, half).join(" "), words.slice(half).join(" ")];
+  }
+  const nameY = PHOTO_CY + PHOTO_D / 2 + size * 0.2;
+  lines.forEach((line, i) => ctx.fillText(line, PHOTO_CX, nameY + i * size * 0.085, W * 0.84));
+  ctx.fillStyle = gold;
+  ctx.fillRect(PHOTO_CX - size * 0.04, nameY - size * 0.12, size * 0.08, 3);
 
   // running number, bottom-left
   const num = String(index + 1).padStart(2, "0");
@@ -191,71 +229,114 @@ function paintOrnament(
   ctx.restore();
 }
 
-function portraitDataURL(member: TeamMember, index: number, total: number, size = 512): Promise<string> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size * 1.25; // portrait 4:5
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return resolve("");
-
-    /* hairline starlight frame so the panel reads against the void */
-    const paintFrame = () => {
-      ctx.strokeStyle = tokenAlpha("--starlight", 0.35, "#f6f1e4");
-      ctx.lineWidth = 3;
-      ctx.strokeRect(1.5, 1.5, size - 3, size * 1.25 - 3);
-    };
-    const finish = () => {
-      paintOrnament(ctx, size, member, index, total);
-      paintFrame();
-      resolve(canvas.toDataURL("image/png"));
-    };
-
-    const paintFallback = () => {
-      const g = ctx.createLinearGradient(0, 0, size, size * 1.25);
-      g.addColorStop(0, tokenColor("--surface-container-high", "#1c1d21"));
-      g.addColorStop(1, tokenColor("--hull-900", "#17181c"));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, size, size * 1.25);
-      ctx.fillStyle = tokenAlpha("--starlight", 0.7, "#f6f1e4");
-      ctx.font = `700 ${size * 0.24}px ${monoFamily()}, monospace`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(initials(member.name), size / 2, size * 0.5);
-      finish();
-    };
-
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const s = Math.min(img.width, img.height);
-        const sx = (img.width - s) / 2;
-        const sy = (img.height - s) / 2;
-        ctx.fillStyle = tokenColor("--void-950", "#0a0a0b");
-        ctx.fillRect(0, 0, size, size * 1.25);
-        ctx.filter = "grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04)";
-        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
-        ctx.filter = "none";
-        // void tint so the photo sits in the dark, then a fade into the panel base
-        ctx.globalCompositeOperation = "multiply";
-        ctx.fillStyle = tokenAlpha("--dim-300", 0.55, "#a3a8b0");
-        ctx.fillRect(0, 0, size, size);
-        ctx.globalCompositeOperation = "source-over";
-        const fade = ctx.createLinearGradient(0, size * 0.62, 0, size * 1.25);
-        fade.addColorStop(0, tokenAlpha("--void-950", 0, "#0a0a0b"));
-        fade.addColorStop(0.55, tokenAlpha("--void-950", 0.85, "#0a0a0b"));
-        fade.addColorStop(1, tokenAlpha("--void-950", 0.96, "#0a0a0b"));
-        ctx.fillStyle = fade;
-        ctx.fillRect(0, size * 0.62, size, size * 0.63);
-        finish();
-      } catch {
-        paintFallback();
-      }
-    };
-    img.onerror = paintFallback;
-    img.src = member.photo;
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
   });
+}
+
+/* Sanity's CDN only answers cross-origin (canvas-readable) requests from
+   the origins registered on the project. Anywhere else the same photo
+   comes through this site's own image optimiser, which is same-origin. */
+async function loadPortrait(member: TeamMember): Promise<HTMLImageElement | null> {
+  if (!member.photo) return null;
+  const sources = [
+    photoUrl(member.photo, 640),
+    `/_next/image?url=${encodeURIComponent(member.photo)}&w=640&q=75`,
+  ];
+  for (const src of sources) {
+    try {
+      return await loadImage(src);
+    } catch {
+      /* try the next source */
+    }
+  }
+  return null;
+}
+
+async function portraitDataURL(member: TeamMember, index: number, total: number): Promise<string> {
+  const W = CARD_W;
+  const H = CARD_H;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  const finish = () => {
+    paintOrnament(ctx, member, index, total);
+    /* hairline starlight frame so the panel reads against the void */
+    ctx.strokeStyle = tokenAlpha("--starlight", 0.35, "#f6f1e4");
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, W - 3, H - 3);
+    return canvas.toDataURL("image/jpeg", 0.9);
+  };
+
+  const paintFallback = () => {
+    ctx.filter = "none";
+    ctx.globalCompositeOperation = "source-over";
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, tokenColor("--surface-container-high", "#1c1d21"));
+    g.addColorStop(1, tokenColor("--hull-900", "#17181c"));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = tokenAlpha("--starlight", 0.7, "#f6f1e4");
+    ctx.font = `700 ${W * 0.24}px ${monoFamily()}, monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initials(member.name), PHOTO_CX, PHOTO_CY);
+    return finish();
+  };
+
+  const img = await loadPortrait(member);
+  if (!img) return paintFallback();
+
+  try {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, tokenColor("--hull-900", "#17181c"));
+    g.addColorStop(1, tokenColor("--void-950", "#0a0a0b"));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    /* the club's portraits are circular: clip every photo to the same
+       disc so square and pre-masked uploads read alike */
+    const r = PHOTO_D / 2;
+    const s = Math.min(img.width, img.height);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(PHOTO_CX, PHOTO_CY, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = tokenColor("--void-950", "#0a0a0b");
+    ctx.fillRect(PHOTO_CX - r, PHOTO_CY - r, PHOTO_D, PHOTO_D);
+    ctx.filter = "grayscale(1) sepia(0.4) hue-rotate(-8deg) saturate(1.1) contrast(1.04)";
+    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, PHOTO_CX - r, PHOTO_CY - r, PHOTO_D, PHOTO_D);
+    ctx.filter = "none";
+    // void tint so the photo sits in the dark
+    ctx.globalCompositeOperation = "multiply";
+    ctx.fillStyle = tokenAlpha("--dim-300", 0.4, "#a3a8b0");
+    ctx.fillRect(PHOTO_CX - r, PHOTO_CY - r, PHOTO_D, PHOTO_D);
+    ctx.restore();
+    ctx.globalCompositeOperation = "source-over";
+
+    /* orbit hairlines around the disc */
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = tokenAlpha("--starlight", 0.5, "#f6f1e4");
+    ctx.beginPath();
+    ctx.arc(PHOTO_CX, PHOTO_CY, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = tokenAlpha("--dim-300", 0.35, "#a3a8b0");
+    ctx.beginPath();
+    ctx.arc(PHOTO_CX, PHOTO_CY, r + W * 0.03, 0, Math.PI * 2);
+    ctx.stroke();
+    return finish();
+  } catch {
+    return paintFallback();
+  }
 }
 
 /* Vertical "CSAU" wordmark drawn onto a tall canvas → dataURL texture.
@@ -300,7 +381,7 @@ function totemDataURL(size = 384): Promise<string> {
   });
 }
 
-export default function TeamCarousel({ members }: TeamCarouselProps) {
+export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
   const holderRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -356,14 +437,21 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
          around the axis - member i sits at i · (2π/N). With an
          even N the card behind the front card is exactly 180°
          opposite it.                                            */
-      const RADIUS = 4.6; // ring already spans ~95% of the stage width
+      const RADIUS = BASE_RADIUS * Math.max(1, N / BASE_N); // ten cards span ~95% of the stage width
       const STEP_ANG = (2 * Math.PI) / N;
-      const ARC = STEP_ANG * 0.88; // cards wrap wide, nearly touching
-      const PANEL_H = 4.9; // front card fills ~90% of the visible height
+      const ARC = PANEL_ARC * (BASE_RADIUS / RADIUS); // same card width at any ring size
+      /* a card's focus falls off as if the ring still held ten */
+      const FOCUS_STEP = Math.max(STEP_ANG, (2 * Math.PI) / BASE_N);
+
+      /* Everything that orbits lives in one group, pushed back so the
+         front card stays at the same depth however large the ring is */
+      const ring = new THREE.Group();
+      ring.position.z = BASE_RADIUS - RADIUS;
+      scene.add(ring);
 
       /* Ring group - rotates around Y; no vertical travel */
       const carousel = new THREE.Group();
-      scene.add(carousel);
+      ring.add(carousel);
 
       /* Curved slice of the cylinder (registered Gallery look) */
       const geometry = new THREE.CylinderGeometry(
@@ -422,7 +510,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         m.position.y = floorY;
         m.scale.setScalar(r);
         m.userData.r = r;
-        scene.add(m);
+        ring.add(m);
         floorRings.push(m);
       });
       const pulse = new THREE.Mesh(
@@ -432,7 +520,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       pulse.rotation.x = -Math.PI / 2;
       pulse.position.y = floorY;
       pulse.visible = false;
-      scene.add(pulse);
+      ring.add(pulse);
       let pingStart = -1e9;
 
       const satTex = new THREE.CanvasTexture(drawSatelliteCanvas());
@@ -448,7 +536,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         mesh.rotation.x = -Math.PI / 2;
         group.add(mesh);
         group.scale.setScalar(cfg.sc);
-        scene.add(group);
+        ring.add(group);
         return { ...cfg, geo, group };
       });
 
@@ -490,7 +578,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           toneMapped: false,
         });
         totem = new THREE.Mesh(totemGeo, totemMat);
-        scene.add(totem);
+        ring.add(totem);
       }
 
       /* ── Auto-rotate ────────────────────────────────────────
@@ -649,8 +737,9 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
            hard switches when the active member changes */
         panels.forEach((panel, i) => {
           const mat = panel.material as THREE.MeshBasicMaterial;
-          const ang = (i - s) * STEP_ANG; // world angle vs camera front
-          const frontness = Math.max(0, Math.cos(ang)) ** 1.4;
+          let off = i - s; // cards away from the front, the short way round
+          off -= N * Math.round(off / N);
+          const frontness = Math.max(0, Math.cos(Math.min(Math.PI / 2, Math.abs(off) * FOCUS_STEP))) ** 1.4;
           mat.opacity = Math.pow(frontness, 1.2);
           const scl = 0.8 + 0.26 * frontness;
           panel.scale.set(scl, scl, 1);
@@ -677,7 +766,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         window.removeEventListener("pointermove", onPointer);
         ro.disconnect();
         carousel.clear();
-        if (totem) scene.remove(totem);
+        ring.clear();
+        scene.remove(ring);
         geometry.dispose();
         materials.forEach((m) => m.dispose());
         textures.forEach((t) => t.dispose());
@@ -702,6 +792,18 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
 
   const member = members[Math.min(active, N - 1)];
 
+  /* Step the ring from the arrow buttons: scroll to that member's stop,
+     since scroll position is what drives the ring. */
+  const goTo = (i: number) => {
+    const holder = holderRef.current;
+    if (!holder || N < 2) return;
+    const idx = Math.min(N - 1, Math.max(0, i));
+    const top = holder.getBoundingClientRect().top + window.scrollY;
+    const total = holder.offsetHeight - window.innerHeight;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: top + (idx / (N - 1)) * total, behavior: reduced ? "auto" : "smooth" });
+  };
+
   /* Dust motes - deterministic per member (avoids SSR/hydration
      mismatches) and re-seeded whenever the active member changes,
      so the fade pattern shifts slightly with each name change */
@@ -725,7 +827,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
     <div
       ref={holderRef}
       data-team-carousel
-      style={{ height: `${N * 70}vh`, position: "relative" }}
+      style={{ height: `${Math.min(N * 70, 840)}vh`, position: "relative" }}
     >
       <div
         ref={stageRef}
@@ -761,23 +863,45 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           }}
         />
 
+        {/* the front card itself opens the profile (pointer shortcut;
+            "View profile" below is the keyboard / screen-reader control) */}
+        {onOpen && (
+          <button
+            type="button"
+            className="tc-card-hit"
+            tabIndex={-1}
+            aria-hidden
+            onClick={() => onOpen(member.id)}
+          />
+        )}
+
         {/* text overlay - desktop: role left / details right, vertically
             centred; mobile: pinned to the top corners of the photo */}
         <div className="tc-stage-overlay">
           {/* Left: role (designation) */}
           <div className="tc-role-block">
-            <div
-              data-wall-counter
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: ".3em",
-                color: "var(--signal)",
-                textTransform: "uppercase",
-                marginBottom: 10,
-              }}
-            >
-              {String(active + 1).padStart(2, "0")} / {String(N).padStart(2, "0")}
+            <div className="tc-counter">
+              <button
+                type="button"
+                className="tm-step"
+                aria-label="Previous member"
+                disabled={active === 0}
+                onClick={() => goTo(active - 1)}
+              >
+                ←
+              </button>
+              <span data-wall-counter className="tabular">
+                {String(active + 1).padStart(2, "0")} / {String(N).padStart(2, "0")}
+              </span>
+              <button
+                type="button"
+                className="tm-step"
+                aria-label="Next member"
+                disabled={active === N - 1}
+                onClick={() => goTo(active + 1)}
+              >
+                →
+              </button>
             </div>
             <div
               key={member.name + "-role"}
@@ -830,26 +954,35 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
                 animation: "tw-fade-in .6s ease .15s both",
               }}
             >
-              {member.dept}
+              {memberMeta(member)}
             </div>
             <div
+              key={member.id + "-links"}
               className="tc-links-row"
               style={{ animation: "tw-fade-in .6s ease .25s both" }}
             >
-              {["X / TWITTER", "LINKEDIN", "GITHUB"].map((label) => (
-                <span
-                  key={label}
-                  className="chip"
-                  style={{
-                    fontSize: 8.5,
-                    letterSpacing: ".14em",
-                    pointerEvents: "auto",
-                    cursor: "pointer",
-                  }}
+              {onOpen && (
+                <button
+                  type="button"
+                  className="btn"
+                  data-team-open
+                  aria-label={`View profile: ${member.name}, ${member.role}`}
+                  onClick={() => onOpen(member.id)}
                 >
-                  {label}
-                </span>
-              ))}
+                  View profile
+                </button>
+              )}
+              {member.link && (
+                <a
+                  className="btn btn-ghost"
+                  href={member.link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${member.name} on ${member.link.label}. Opens in a new tab.`}
+                >
+                  {member.link.label} ↗
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -932,12 +1065,16 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
             text-shadow: 0 1px 2px color-mix(in srgb, var(--void-950) 90%, transparent),
                          0 0 12px color-mix(in srgb, var(--void-950) 75%, transparent);
           }
-          .tc-role-block { width: 24%; min-width: 150px; }
-          .tc-detail-block { width: 30%; min-width: 220px; text-align: right; }
-          .tc-role-block {
-            border-left: 2px solid var(--signal);
-            padding-left: 14px;
+          /* the neighbouring cards pass behind the copy: a flat void plate
+             keeps it readable over their photos */
+          .tc-role-block, .tc-detail-block {
+            width: fit-content;
+            padding: 14px 16px;
+            background: color-mix(in srgb, var(--void-950) 80%, transparent);
           }
+          .tc-role-block { max-width: 24%; min-width: 150px; }
+          .tc-detail-block { max-width: 30%; min-width: 220px; text-align: right; }
+          .tc-role-block { border-left: 2px solid var(--signal); }
           .tc-wave {
             display: block;
             width: 120px;
@@ -976,11 +1113,40 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
               justify-content: flex-end;
               gap: 14px;
             }
-            .tc-role-block, .tc-detail-block { width: 100%; min-width: 0; text-align: left; }
+            .tc-role-block, .tc-detail-block { width: 100%; max-width: none; min-width: 0; text-align: left; background: none; }
+            .tc-role-block { padding: 0 0 0 14px; }
+            .tc-detail-block { padding: 0; }
             .tc-wave { margin-left: 0; }
             .tc-links-row { flex-wrap: wrap; justify-content: flex-start; margin-top: 14px; }
           }
-          .tc-links-row a, .tc-links-row span { min-height: 44px; display: inline-flex; align-items: center; }
+          .tc-links-row .btn { pointer-events: auto; text-shadow: none; }
+          .tc-links-row .btn:not(.btn-ghost) { background: color-mix(in srgb, var(--void-950) 70%, transparent); }
+          .tc-links-row .btn:not(.btn-ghost):hover { background: var(--on-surface); }
+          .tc-counter {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin: 0 0 6px -12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: .24em;
+            color: var(--signal);
+          }
+          .tc-counter .tm-step { pointer-events: auto; }
+          .tc-card-hit {
+            position: absolute;
+            left: 50%;
+            top: 46%;
+            width: min(30vw, 440px);
+            height: 66%;
+            transform: translate(-50%, -50%);
+            border: 0;
+            background: none;
+            cursor: pointer;
+          }
+          @media (max-width: 640px) {
+            .tc-card-hit { width: 78vw; top: 38%; height: 56%; }
+          }
           /* Dust motes - drift upward and fade in/out on member change */
           .tc-dust {
             position: absolute;

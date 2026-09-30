@@ -52,6 +52,14 @@ export default function DestGlyph({ kind, size = 44, on = true, orbit = false }:
           <circle cx="24" cy="24" r="9" opacity=".5" strokeDasharray="2 3" />
         </>
       )}
+      {kind === "rings" && (
+        <>
+          <circle cx="24" cy="24" r="9" />
+          <ellipse cx="24" cy="24" rx="20" ry="7" transform="rotate(-20 24 24)" />
+          <ellipse cx="24" cy="24" rx="15" ry="5" transform="rotate(-20 24 24)" opacity=".6" stroke={hot} />
+          <circle cx="24" cy="24" r="2.2" fill={hot} stroke="none" />
+        </>
+      )}
       {orbit && (
         <g className="dg-orbit" style={{ transformOrigin: "24px 24px" }}>
           <circle cx="24" cy="-2" r="2" fill="var(--lit)" stroke="none" />
