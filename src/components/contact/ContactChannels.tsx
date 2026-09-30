@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { ContactChannel } from "@/data/contact";
 
 /* ============================================================
@@ -115,6 +116,15 @@ export default function ContactChannels({
         </p>
 
         <div className="ct-base">
+          {/* the club's logo, as on csau.in */}
+          <Image
+            src="/images/brand/csau-logo.png"
+            alt="CSAU logo: a desktop computer with keyboard and mouse beside the letters CSAU"
+            width={1600}
+            height={701}
+            sizes="220px"
+            className="ct-logo"
+          />
           <h2 className="ct-base-title">Base</h2>
           <address className="ct-base-lines">
             {base.lines.map((line) => (

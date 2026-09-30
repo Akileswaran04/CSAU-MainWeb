@@ -21,6 +21,29 @@ export interface Cta {
   ghost?: boolean;
 }
 
+/** A real photograph shown in the scene while its stop is active. */
+export interface Still {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+/* The two photographs from the old site's About section, kept with the
+   content they illustrated there: "Who we are" and "What we do". */
+const WHO_WE_ARE: Still = {
+  src: "/images/about/who-we-are.jpg",
+  alt: "Students with laptops open at a CSAU session in a classroom, a speaker presenting beside a projector screen",
+  width: 1280,
+  height: 960,
+};
+const WHAT_WE_DO: Still = {
+  src: "/images/about/what-we-do.jpg",
+  alt: "An audience at a CSAU talk in a seminar hall, two speakers seated on stage in front of a projector screen",
+  width: 1280,
+  height: 957,
+};
+
 export interface Stop {
   kind: StopKind;
   section: string;
@@ -31,6 +54,7 @@ export interface Stop {
   body: string;
   meta?: string[];
   cta?: Cta[];
+  still?: Still;
   weight: number;
 }
 
@@ -90,6 +114,7 @@ export function buildStops(pastEvents: PastEvent[], upcomingEvents: UpcomingEven
     lines: ["Follow", "the signal."],
     mark: "signal.",
     body: "We are the Computer Society of Anna University, a student-run collective for people who would rather build than wait. Scroll, and the signal will carry you past everything we run.",
+    still: WHO_WE_ARE,
     weight: 1.1,
   },
   ...past.map<Stop>((e, i) => ({
@@ -121,6 +146,7 @@ export function buildStops(pastEvents: PastEvent[], upcomingEvents: UpcomingEven
     lines: ["Learn it by", "building it."],
     mark: "building",
     body: "Hands-on workshops where you leave with something running, not just notes.",
+    still: WHAT_WE_DO,
     weight: 1,
   },
   {
@@ -130,6 +156,7 @@ export function buildStops(pastEvents: PastEvent[], upcomingEvents: UpcomingEven
     lines: ["Build it", "in a night."],
     mark: "night.",
     body: "Hackathons put small teams and long hours behind real products.",
+    still: WHAT_WE_DO,
     weight: 1,
   },
   {
@@ -139,6 +166,7 @@ export function buildStops(pastEvents: PastEvent[], upcomingEvents: UpcomingEven
     lines: ["Meet people,", "race the clock."],
     mark: "race",
     body: "Speaker sessions and coding contests keep the whole community sharp.",
+    still: WHAT_WE_DO,
     weight: 1,
   },
   {

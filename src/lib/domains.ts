@@ -23,6 +23,8 @@ export interface DomainMember {
   year: string;
   /** LinkedIn / profile URL, if present */
   url?: string;
+  /** the member's photograph (Sanity image URL without transform params), if the CMS has one */
+  photo?: string;
 }
 
 export interface Domain {
@@ -156,6 +158,7 @@ interface SanityTeamMember {
   department?: string;
   year?: string;
   lnurl?: string;
+  photo?: string;
 }
 
 function orderMembers(a: DomainMember, b: DomainMember): number {
@@ -167,7 +170,7 @@ function orderMembers(a: DomainMember, b: DomainMember): number {
 async function fetchMembersByDomain(
   signal?: AbortSignal,
 ): Promise<Map<string, DomainMember[]> | null> {
-  const query = `*[_type == "team" && defined(domain)]{name, domain, designation, department, year, lnurl}`;
+  const query = `*[_type == "team" && defined(domain)]{name, domain, designation, department, year, lnurl, "photo": image.asset->url}`;
   const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(
     query,
   )}`;
@@ -190,6 +193,7 @@ async function fetchMembersByDomain(
         department: r.department?.trim() || "",
         year: r.year?.trim() || "",
         url: r.lnurl?.trim() || undefined,
+        photo: r.photo?.trim() || undefined,
       };
       const list = byDomain.get(dom) ?? [];
       list.push(member);
@@ -294,13 +298,3 @@ const FALLBACK_MEMBERS: Record<string, DomainMember[]> = {
     { name: "Mohamed Huzaifa", designation: "Deputy Head", department: "EEE", year: "3rd" },
   ],
 };
-
-/** Initials for a member avatar fallback. */
-export function memberInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}

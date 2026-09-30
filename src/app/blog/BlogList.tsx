@@ -52,7 +52,7 @@ function Cover({ post }: { post: BlogPost }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={post.image}
-        alt=""
+        alt={`Cover image of the article: ${post.title}`}
         loading="lazy"
         decoding="async"
         className="bl-cover-img"

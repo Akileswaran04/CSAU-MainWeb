@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { isExternal, type PastEvent, type UpcomingEvent } from "@/data/events";
+import { isExternal, sanityImage, type PastEvent, type UpcomingEvent } from "@/data/events";
 import EventPoster from "./EventPoster";
 
 /* ============================================================
@@ -14,7 +14,9 @@ import EventPoster from "./EventPoster";
        description, status and a CTA (to the live page, or to
        the event's registration link when it has one).
      • PastCard: poster + date/tag + name + blurb + where it
-       was held, tuned for the year-grouped archive.
+       was held, tuned for the year-grouped archive. Events with
+       photographs in the CMS get a strip of them; each opens
+       the full photo.
    Nothing is hardcoded here - callers pass the event objects.
    ============================================================ */
 
@@ -134,6 +136,31 @@ export function PastCard({ event, index = 0 }: { event: PastEvent; index?: numbe
           </div>
           <h3 className="ev-name">{event.name}</h3>
           {event.blurb && <p className="ev-blurb">{event.blurb}</p>}
+          {event.photos && event.photos.length > 0 && (
+            <ul className="ev-photos" aria-label={`Photos from ${event.name}`}>
+              {event.photos.map((photo, i) => (
+                <li key={photo}>
+                  <a
+                    className="ev-photo"
+                    href={sanityImage(photo, 1600)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Photo ${i + 1} of ${event.photos?.length} from ${event.name}. Opens in a new tab.`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={sanityImage(photo, 192, 144)}
+                      alt=""
+                      width={96}
+                      height={72}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
           {event.stat && <div className="ev-stat">{event.stat}</div>}
         </div>
       </article>

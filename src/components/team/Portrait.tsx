@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { TeamMember } from "@/lib/team";
 import { initials, photoUrl } from "@/lib/team";
 
 /* A member's photo (resized by the Sanity CDN), or their initials if
-   there is no photo or it fails to load. Fills its parent box. */
+   there is no photo or it fails to load. Fills its parent box. Used by
+   the team views and by the domain member lists. */
 export default function Portrait({
   member,
   size,
   alt = "",
   eager = false,
 }: {
-  member: TeamMember;
+  member: { name: string; photo?: string };
   /** requested pixel size - pass about twice the displayed size */
   size: number;
   alt?: string;
@@ -20,7 +20,7 @@ export default function Portrait({
   eager?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  const src = photoUrl(member.photo, size);
+  const src = photoUrl(member.photo ?? "", size);
 
   if (!src || failed) {
     return (

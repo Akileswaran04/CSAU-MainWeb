@@ -21,6 +21,8 @@ export interface PastEvent {
   /** Real poster URL. When absent, the UI renders a generated
    *  space-themed plate instead - we never invent a poster. */
   poster?: string;
+  /** Photographs taken at this event (Sanity image URLs without transform params). */
+  photos?: string[];
 }
 
 export interface UpcomingEvent {
@@ -52,6 +54,13 @@ export function archiveYears(events: PastEvent[]): string[] {
 /** Past events for one year, in the order they appear in the source. */
 export function eventsInYear(year: string, events: PastEvent[]): PastEvent[] {
   return events.filter((e) => e.year === year);
+}
+
+/** A Sanity image at the given size; with a height it is cropped to that box around the centre. */
+export function sanityImage(url: string, width: number, height?: number): string {
+  return height
+    ? `${url}?w=${width}&h=${height}&fit=crop&auto=format&q=75`
+    : `${url}?w=${width}&fit=max&auto=format&q=80`;
 }
 
 /** True for links that leave the site. */

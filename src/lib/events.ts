@@ -16,6 +16,7 @@ import { FALLBACK_EVENT_ROWS } from "./events.fallback";
      date         -> date ("31 OCT 2025", IST) and year (archive grouping)
      description  -> blurb (plain text, emoji removed, short excerpt)
      mainImage    -> poster (resized by the Sanity CDN)
+     eventPics    -> the card's photo strip (the photos taken at that event)
      location     -> stat line, and the tag (ON CAMPUS / ONLINE / HYBRID)
      registerLink -> the upcoming card's Register button
    The CMS has no category or attendance fields, so none are shown.
@@ -36,6 +37,8 @@ export interface SanityEventRow {
   registerLink?: string;
   /** description as plain text */
   text?: string;
+  /** photos taken at the event: full Sanity URLs, or asset file names in the snapshot */
+  photos?: string[];
 }
 
 export type EventsState = "ok" | "fallback";
@@ -111,11 +114,16 @@ function modeOf(location: string): string {
   return "ON CAMPUS";
 }
 
-function posterUrl(image?: string): string | undefined {
+/** Full Sanity URL for an asset given as a URL or as a bare file name. */
+function assetUrl(image?: string | null): string | undefined {
   const value = image?.trim();
   if (!value) return undefined;
-  const base = value.startsWith("http") ? value : SANITY_IMAGE_BASE + value;
-  return `${base}?w=720&fit=max&auto=format&q=75`;
+  return value.startsWith("http") ? value : SANITY_IMAGE_BASE + value;
+}
+
+function posterUrl(image?: string): string | undefined {
+  const base = assetUrl(image);
+  return base ? `${base}?w=720&fit=max&auto=format&q=75` : undefined;
 }
 
 function httpsLink(raw?: string): string | undefined {
@@ -147,6 +155,7 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
       blurb: excerpt(clean(r.text ?? "")),
       stat: location,
       poster: posterUrl(r.image),
+      photos: (r.photos ?? []).map(assetUrl).filter((u): u is string => Boolean(u)),
     },
   };
 }
@@ -186,7 +195,7 @@ function build(rows: SanityEventRow[], now: number): { current: UpcomingEvent[];
 /* ---- live fetch from Sanity ---- */
 
 async function fetchRows(signal?: AbortSignal): Promise<SanityEventRow[] | null> {
-  const query = `*[_type == "event"]{title, "slug": slug.current, date, location, upcoming, registerLink, "image": mainImage.asset->url, "text": pt::text(description)}`;
+  const query = `*[_type == "event"]{title, "slug": slug.current, date, location, upcoming, registerLink, "image": mainImage.asset->url, "photos": eventPics[].asset->url, "text": pt::text(description)}`;
   const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(
     query,
   )}`;

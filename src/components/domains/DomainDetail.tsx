@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Domain } from "@/lib/domains";
-import { memberInitials } from "@/lib/domains";
+import Portrait from "@/components/team/Portrait";
 
 /* ============================================================
    DOMAIN DETAIL - the focused view for a single domain.
@@ -124,8 +124,8 @@ export default function DomainDetail({
                   const meta = [m.designation, m.department, m.year].filter(Boolean).join(" · ");
                   const inner = (
                     <>
-                      <span className="dm-member-avatar" aria-hidden>
-                        {memberInitials(m.name)}
+                      <span className="dm-member-avatar tm-avatar" aria-hidden>
+                        <Portrait member={m} size={96} />
                       </span>
                       <span className="dm-member-text">
                         <span className="dm-member-name">{m.name}</span>

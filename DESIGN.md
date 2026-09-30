@@ -162,3 +162,21 @@ Nothing on the public site is sample data presented as real.
 - **`/crackit`**: a practice round. The invented current event, seed leaderboard and past-round archive are removed. It keeps the working quiz (sample questions, labelled as such) and lists only the visitor's own attempts from this browser's localStorage, with the real elapsed time.
 - **`/quick-code`**: describes the format and says no round is open. The invented weekly challenge, participant counts, leaderboard and previous challenges are removed.
 - When real rounds, results or counts exist in the CMS, wire them in through a data module (as `src/lib/events.ts` does) rather than writing them into a page.
+
+## 19. Real images
+
+Every image on the site is a real CSAU image, kept with the content it belonged to on csau.in or in the CMS. No stock, generated or placeholder photographs.
+
+| Image | Source | Where it is used |
+|-------|--------|------------------|
+| "Who we are" photo | csau.in `/about1.jpeg` → `public/images/about/who-we-are.jpg` | Home story, intro stop (`story-still` in `StorySection`) |
+| "What we do" photo | csau.in `/about2.jpeg` → `public/images/about/what-we-do.jpg` | Home story, the three "What we do" stops |
+| Club logo | csau.in `/logo.png` → `public/images/brand/csau-logo.png` (trimmed, 1600px) | Contact, Base block. Its emblem is also the site icon (`src/app/icon.png`, `apple-icon.png`) |
+| Event posters | Sanity `event.mainImage` | Events archive, home preview strip (`EventPoster`) |
+| Event photographs | Sanity `event.eventPics` | The matching event's archive card, as a scrollable strip; each opens the full photo (`PastCard`) |
+| Member portraits | Sanity `team.image` | Team ring, crew cards, profile; Domains detail member list (`team/Portrait`) |
+| Article covers | Each article's own image from the Medium feed | Blog cards (`BlogList`) |
+
+- The story stills sit in the scene, not in the copy panel: bottom right on wide screens, a small frame in the scene's top corner on phones. They fade in with their stop and are hidden from assistive tech when inactive.
+- Local images go through `next/image` (sized, lazy, no layout shift). CMS images are resized by the Sanity CDN to the size each slot needs, inside boxes with a fixed aspect ratio.
+- Not used: the old site's decorative backgrounds (they are its styling, not content), its two lorem-ipsum `blog` documents, and its Instagram embeds (iframes, not image files).
