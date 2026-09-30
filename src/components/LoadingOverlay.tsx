@@ -2,7 +2,7 @@
 
 import AstronautScene from "./AstronautScene";
 import DestGlyph from "./DestGlyph";
-import { DESTINATIONS, destFor } from "@/lib/destinations";
+import { NAV_DESTINATIONS, destFor } from "@/lib/destinations";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion, readPalette, startCanvasLoop } from "./space/space2d";
 
@@ -269,7 +269,7 @@ export default function LoadingOverlay({ phase, href = "/" }: { phase: "loading"
       {/* the relay of places, settling on the destination */}
       <div className="rl-crew" aria-hidden>
         <div className="rl-relay">
-          {DESTINATIONS.map((r, i) => (
+          {NAV_DESTINATIONS.map((r, i) => (
             <span key={r.href} className="rl-hop" data-dest={r.href === dest.href} style={{ animationDelay: `${i * 0.28}s` }}>
               <DestGlyph kind={r.glyph} size={34} on={r.href === dest.href || ending} />
             </span>

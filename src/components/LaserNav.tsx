@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import DestGlyph from "./DestGlyph";
-import { DESTINATIONS } from "@/lib/destinations";
+import { NAV_DESTINATIONS } from "@/lib/destinations";
 import { lockScroll } from "@/lib/scrollLock";
 import { usePathname } from "next/navigation";
 import {
@@ -29,7 +29,7 @@ import {
    Routes, keyboard (Esc closes) and aria behaviour are unchanged.
    ============================================================ */
 
-const NAV_LINKS = DESTINATIONS;
+const NAV_LINKS = NAV_DESTINATIONS;
 
 const SATS = [
   { fx: 0.08, fy: 0.9, k: 1.0, rot: 0.8 },
