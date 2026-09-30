@@ -67,7 +67,7 @@ No model files, no textures. Everything is built in three.js. `space/bodies.tsx`
 | `/crackit`, `/quick-code` | Arena pages (`arena-css.ts`); quick-code hero uses CSS radar rings |
 | not-found | Ping rule and probe mark |
 
-Navigation is the fullscreen `LaserNav` overlay: a probe wanders the void and flies to the hovered link. Travelling by nav or `[data-route-load]` CTAs plays `RouteLoadGate` / `LoadingOverlay` (~5s, unchanged behaviour).
+Navigation is the fullscreen `LaserNav` overlay (see section 20). Travelling by nav or `[data-route-load]` CTAs plays `RouteLoadGate` / `LoadingOverlay` (~5s, unchanged behaviour).
 
 ## 7. Verification
 
@@ -169,14 +169,21 @@ Every image on the site is a real CSAU image, kept with the content it belonged 
 
 | Image | Source | Where it is used |
 |-------|--------|------------------|
-| "Who we are" photo | csau.in `/about1.jpeg` → `public/images/about/who-we-are.jpg` | Home story, intro stop (`story-still` in `StorySection`) |
-| "What we do" photo | csau.in `/about2.jpeg` → `public/images/about/what-we-do.jpg` | Home story, the three "What we do" stops |
 | Club logo | csau.in `/logo.png` → `public/images/brand/csau-logo.png` (trimmed, 1600px) | Contact, Base block. Its emblem is also the site icon (`src/app/icon.png`, `apple-icon.png`) |
 | Event posters | Sanity `event.mainImage` | Events archive, home preview strip (`EventPoster`) |
 | Event photographs | Sanity `event.eventPics` | The matching event's archive card, as a scrollable strip; each opens the full photo (`PastCard`) |
 | Member portraits | Sanity `team.image` | Team ring, crew cards, profile; Domains detail member list (`team/Portrait`) |
 | Article covers | Each article's own image from the Medium feed | Blog cards (`BlogList`) |
 
-- The story stills sit in the scene, not in the copy panel: bottom right on wide screens, a small frame in the scene's top corner on phones. They fade in with their stop and are hidden from assistive tech when inactive.
-- Local images go through `next/image` (sized, lazy, no layout shift). CMS images are resized by the Sanity CDN to the size each slot needs, inside boxes with a fixed aspect ratio.
+- The home story carries no photographs: the old site's two About photos were tried as stills over the scene and removed, because they competed with the flight.
+- The local logo goes through `next/image` (sized, lazy, no layout shift). CMS images are resized by the Sanity CDN to the size each slot needs, inside boxes with a fixed aspect ratio.
 - Not used: the old site's decorative backgrounds (they are its styling, not content), its two lorem-ipsum `blog` documents, and its Instagram embeds (iframes, not image files).
+
+## 20. Navigation overlay, decluttered
+
+The nav overlay is one quiet screen. The wandering probe, the satellites, the ambient and pointer pings and the big centred links are gone.
+
+- **Left**: the destinations as a ruled list. Each row is at least 56px: the name in the display face, its sector call in mono on the right. The current page carries a signal bar and reads "You are here"; a hovered or focused row gets an amber bar and its name nudges right.
+- **Right** (900px and wider): a single scope, two slow rings around the glyph of the destination being pointed at, or of the current page when nothing is. It is the only ambient motion, and it stops under reduced motion.
+- **Frame**: the wordmark and close button above, a hairline footer below. On phones the scope is hidden and the list uses the full width.
+- **Behaviour**: the overlay is `inert` while closed, focus moves to the close button on open and back to the NAV button on close, Esc closes. Links keep the `ln-link` class, which the route loader listens for.

@@ -1,11 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isExternal } from "@/data/events";
-import { SECTIONS, STOP_LAYOUT, type Still, type Stop } from "./stops";
+import { SECTIONS, STOP_LAYOUT, type Stop } from "./stops";
 import { scrollToY } from "./lenis";
 
 const SpaceScene = dynamic(() => import("./SpaceScene"), { ssr: false });
@@ -124,14 +123,6 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
   );
   const activeSection = sections.findIndex((s) => s.id === stops[active]?.kind);
 
-  /* the photographs some stops carry: one frame per photo, shown while a stop that owns it is active */
-  const stills = useMemo(() => {
-    const bySrc = new Map<string, Still>();
-    stops.forEach((s) => s.still && bySrc.set(s.still.src, s.still));
-    return Array.from(bySrc.values());
-  }, [stops]);
-  const activeStill = stops[active]?.still?.src;
-
   return (
     <section
       ref={sectionRef}
@@ -149,19 +140,6 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
         <div className="story-canvas" aria-hidden>
           <SpaceScene progress={progress} active={inView} reduced={reduced} />
         </div>
-
-        {stills.map((st) => (
-          <figure key={st.src} className="story-still" data-on={st.src === activeStill} aria-hidden={st.src !== activeStill}>
-            <Image
-              src={st.src}
-              alt={st.alt}
-              width={st.width}
-              height={st.height}
-              sizes="(max-width: 820px) 44vw, 320px"
-              className="story-still-img"
-            />
-          </figure>
-        ))}
 
         <div className="story-copy">
           {stops.map((c, i) => {

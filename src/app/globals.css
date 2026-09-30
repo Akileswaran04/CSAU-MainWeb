@@ -2660,61 +2660,9 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 
 /* ============================================================
-   REAL PHOTOGRAPHS - the old site's About photos in the home
-   story, the club logo on Contact, and event photo strips.
+   REAL PHOTOGRAPHS - the club logo on Contact and the event
+   photo strips.
    ============================================================ */
-
-/* a framed photograph in the story scene, shown while its stop is active */
-.story-still {
-  position: absolute;
-  z-index: 4;
-  /* low in the corner, clear of the section rail at mid-height */
-  right: 7%;
-  bottom: 7vh;
-  width: min(24vw, 320px);
-  aspect-ratio: 4 / 3;
-  margin: 0;
-  border: 1px solid var(--st-rule);
-  background: var(--void-950);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(14px);
-  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out), visibility 0s linear 0.4s;
-  pointer-events: none;
-}
-.story-still[data-on="true"] {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity 0.6s var(--ease-out) 0.25s, transform 0.6s var(--ease-out) 0.25s, visibility 0s;
-}
-/* signal-coloured corner ticks, as on the team cards */
-.story-still::before,
-.story-still::after {
-  content: "";
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border: 0 solid var(--signal);
-  pointer-events: none;
-}
-.story-still::before { left: -6px; top: -6px; border-width: 2px 0 0 2px; }
-.story-still::after { right: -6px; bottom: -6px; border-width: 0 2px 2px 0; }
-.story-still-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 40%;
-  filter: saturate(0.9) contrast(1.02);
-}
-@media (max-width: 820px) {
-  /* phones: a small frame in the scene's top corner, clear of the copy panel */
-  .story-still { right: 16px; bottom: auto; top: 84px; width: min(44vw, 200px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .story-still, .story-still[data-on="true"] { transform: none; transition: opacity 0.2s linear, visibility 0s; }
-}
 
 /* the club logo in the Contact "Base" block */
 .ct-logo { display: block; width: min(220px, 70%); height: auto; margin: 0 0 22px; }
@@ -2812,10 +2760,6 @@ p, li { text-wrap: pretty; }
   .story-tick-label { display: none; }
   .story-tick-bar { width: 12px; }
   .story[data-mobile-safe] { padding-top: env(safe-area-inset-top); }
-}
-
-@media (max-width: 480px) {
-  .ln-list { padding-left: 24px; padding-right: 24px; }
 }
 
 /* MOBILE story rail: a horizontal progress strip sitting on the copy panel edge, out of the scene */

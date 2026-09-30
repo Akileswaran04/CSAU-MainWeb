@@ -6,44 +6,33 @@ import DestGlyph from "./DestGlyph";
 import { NAV_DESTINATIONS } from "@/lib/destinations";
 import { lockScroll } from "@/lib/scrollLock";
 import { usePathname } from "next/navigation";
-import {
-  Craft,
-  drawProbe,
-  drawSatellite,
-  drawPings,
-  prefersReducedMotion,
-  readPalette,
-  startCanvasLoop,
-  type Pt,
-  type Ping,
-} from "./space/space2d";
 
 /* ============================================================
    LASER NAV - fullscreen navigation over the void.
 
-     • dark void with slow radar rings and a few drifting satellites
-     • clean typographic links, each a >=44px touch target
-     • a probe wanders the void; hovering or focusing a link sends
-       it flying over to that link, sending a ping on arrival
-     • the pointer leaves faint pings as it moves
-   Routes, keyboard (Esc closes) and aria behaviour are unchanged.
+   One quiet screen: the destinations as a ruled list on the
+   left, and a single scope on the right that shows the glyph of
+   whichever destination is hovered or focused (the current page
+   when nothing is). No drifting craft, no stray pings - the
+   scope's two slow rings are the only ambient motion.
+
+     • links are >=56px rows: name left, sector call right
+     • the current page carries a signal bar and "You are here"
+     • Esc or the close button dismisses it; focus moves in on
+       open and back to the NAV button on close; the overlay is
+       inert while closed
    ============================================================ */
 
 const NAV_LINKS = NAV_DESTINATIONS;
 
-const SATS = [
-  { fx: 0.08, fy: 0.9, k: 1.0, rot: 0.8 },
-  { fx: 0.93, fy: 0.13, k: 0.85, rot: 2.7 },
-  { fx: 0.9, fy: 0.9, k: 0.6, rot: 4.4 },
-];
-
 export default function LaserNav() {
   const [open, setOpen] = useState(false);
+  /* the destination being pointed at (hover or keyboard focus) */
+  const [pointed, setPointed] = useState<number | null>(null);
   const pathname = usePathname();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const hoverRef = useRef<number | null>(null);
-  const pingsRef = useRef<Ping[]>([]);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
   // Close on Escape
   useEffect(() => {
@@ -61,109 +50,23 @@ export default function LaserNav() {
     return lockScroll();
   }, [open]);
 
-  const handleClose = useCallback(() => setOpen(false), []);
-
-  /* ── Probe-in-the-void canvas (runs only while open) ── */
+  // Focus moves into the overlay on open, and back to the button on close
   useEffect(() => {
-    if (!open) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const reduced = prefersReducedMotion();
-    const pal = readPalette();
-    const pings = pingsRef.current;
-    pings.length = 0;
-    let probe: Craft | null = null;
-    let lastHover: number | null = null;
-    let nextWake = 0;
-    let nextAmbient = 0.5;
-    let lastPx = -999;
-    let lastPy = -999;
-    let clock = 0;
-
-    const onPointer = (e: PointerEvent) => {
-      if (Math.hypot(e.clientX - lastPx, e.clientY - lastPy) < 120) return;
-      lastPx = e.clientX;
-      lastPy = e.clientY;
-      pings.push({ x: e.clientX, y: e.clientY, born: clock, max: 70, life: 1.8, strength: 0.5 });
-    };
-    if (!reduced) window.addEventListener("pointermove", onPointer, { passive: true });
-
-    const draw = (ctx: CanvasRenderingContext2D, W: number, H: number, t: number, dt: number) => {
-      clock = t;
-      ctx.clearRect(0, 0, W, H);
-      const L = Math.max(100, Math.min(170, W * 0.12));
-
-      SATS.forEach((p, i) => {
-        drawSatellite(
-          ctx,
-          p.fx * W + Math.sin(t * 0.2 + i) * 3,
-          p.fy * H + Math.cos(t * 0.16 + i * 2) * 3,
-          Math.max(24, Math.min(54, W * 0.038)) * p.k,
-          p.rot + Math.sin(t * 0.1 + i) * 0.07,
-          pal,
-        );
-      });
-
-      if (!probe) probe = new Craft(W * 0.78, H * 0.3, Math.PI * 0.8, L, 90);
-      probe.L = L;
-
-      const hover = hoverRef.current;
-      let target: Pt;
-      let turn = 1.7;
-      const wander: Pt = {
-        x: W / 2 + W * 0.36 * Math.sin(t * 0.27),
-        y: H / 2 + H * 0.34 * Math.sin(t * 0.21 + 1.1),
-      };
-      const el = hover !== null ? linkRefs.current[hover] : null;
-      if (el) {
-        const r = el.getBoundingClientRect();
-        const room = r.left > W - r.right;
-        const tx = room ? r.left - 22 : r.right + 22;
-        target = { x: tx + Math.cos(t * 1.3) * 16, y: r.top + r.height / 2 + Math.sin(t * 1.3) * 16 };
-        turn = 2.6;
-        if (hover !== lastHover) {
-          lastHover = hover;
-          pings.push({ x: tx, y: r.top + r.height / 2, born: t, max: 110, life: 2.2, strength: 0.9 });
-        }
-      } else {
-        lastHover = null;
-        target = wander;
-      }
-
-      if (!reduced) {
-        probe.step(dt, target, turn, hover !== null ? 1.5 : 1);
-        if (t >= nextWake) {
-          nextWake = t + 0.9;
-          pings.push({ x: probe.x, y: probe.y, born: t, max: L * 0.7, life: 2.4, strength: 0.45 });
-        }
-        if (t >= nextAmbient) {
-          nextAmbient = t + 2 + Math.random() * 2.5;
-          pings.push({ x: Math.random() * W, y: Math.random() * H, born: t, max: 50 + Math.random() * 90, life: 3.2, strength: 0.35 });
-        }
-      }
-
-      drawPings(ctx, pings, t, pal.dim, 0.6);
-      drawProbe(ctx, probe.trail, L, t, pal, { beat: 5 });
-    };
-
-    const stop = startCanvasLoop(canvas, draw, { still: reduced });
-    return () => {
-      stop();
-      window.removeEventListener("pointermove", onPointer);
-    };
+    if (open) closeRef.current?.focus();
+    else if (wasOpen.current) toggleRef.current?.focus();
+    wasOpen.current = open;
   }, [open]);
 
-  const handleLinkHover = useCallback((index: number) => {
-    hoverRef.current = index;
-  }, []);
-
-  const handleLinkLeave = useCallback(() => {
-    hoverRef.current = null;
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setPointed(null);
   }, []);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const shown = NAV_LINKS[pointed ?? (activeIndex >= 0 ? activeIndex : 0)];
 
   return (
     <>
@@ -241,47 +144,33 @@ export default function LaserNav() {
           z-index: 500;
           background: var(--hull-900);
           opacity: 0;
+          visibility: hidden;
           pointer-events: none;
-          transition: opacity .28s ease;
-          overflow: hidden;
+          transition: opacity .28s ease, visibility 0s linear .28s;
+          overflow-y: auto;
         }
-        .ln-pings {
-          position: absolute;
-          left: 70%;
-          top: 42%;
-          width: min(90vmin, 760px);
-          height: min(90vmin, 760px);
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-          overflow: visible;
+        .ln-overlay.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .28s ease, visibility 0s; }
+
+        /* one frame: header, list + scope, footer */
+        .ln-frame {
+          min-height: 100%;
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          padding: max(20px, env(safe-area-inset-top)) clamp(20px, 6vw, 88px) max(20px, env(safe-area-inset-bottom));
         }
-        .ln-pings circle {
-          fill: none;
-          stroke: var(--dim-300);
-          stroke-width: 1;
-          transform-origin: 50% 50%;
-          opacity: 0;
+        .ln-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          min-height: 44px;
         }
-        .ln-overlay.open .ln-pings circle { animation: lnPing 7s cubic-bezier(.2,.6,.3,1) infinite; }
-        @keyframes lnPing {
-          0% { transform: scale(.2); opacity: 0; }
-          12% { opacity: .4; }
-          100% { transform: scale(1); opacity: 0; }
-        }
-        @media (prefers-reduced-motion: reduce) { .ln-overlay.open .ln-pings circle { animation: none; opacity: .25; } }
-        .ln-overlay.open { opacity: 1; pointer-events: auto; }
-        .ln-canvas {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          display: block;
+        .ln-mark {
+          font-family: var(--font-display);
+          font-size: 18px;
+          letter-spacing: .1em;
+          color: var(--starlight);
         }
         .ln-close {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          z-index: 2;
           width: 44px;
           height: 44px;
           touch-action: manipulation;
@@ -303,69 +192,142 @@ export default function LaserNav() {
           border-color: var(--signal-700);
           color: var(--starlight);
         }
-        .ln-list {
-          position: relative;
-          z-index: 1;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
+
+        .ln-body {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
           align-items: center;
-          justify-content: center;
-          gap: clamp(4px, 1.6vh, 16px);
-          padding: 8vh 6vw 8vh 12vw;
+          gap: clamp(32px, 7vw, 120px);
+          padding: clamp(20px, 5vh, 56px) 0;
         }
+        .ln-list { display: flex; flex-direction: column; width: 100%; max-width: 620px; padding: 0; }
+        .ln-eyebrow { margin-bottom: 14px; }
+
+        /* a destination: name on the left, sector call on the right */
         .ln-link {
           position: relative;
-          display: inline-flex;
-          align-items: center;
-          min-height: 44px;
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          flex-wrap: wrap; /* a long sector call drops under the name rather than overflowing */
+          gap: 4px 20px;
+          min-height: 56px;
+          padding: 14px 0 12px 18px;
+          border-top: 1px solid var(--hull-700);
           text-decoration: none;
           color: var(--dim-300);
-          font-family: var(--font-display);
-          font-weight: 400;
-          font-size: clamp(30px, min(6vw, 7vh), 68px);
-          letter-spacing: .06em;
-          line-height: 1.12;
-          padding: 2px 8px;
-          text-align: left;
           transition: color .16s ease;
         }
-        .ln-link { gap: 14px; }
-        .ln-txt { display: flex; flex-direction: column; align-items: flex-start; }
-        .ln-cap { font-family: var(--font-mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim-300);
-          max-height: 0; opacity: 0; overflow: hidden; transition: max-height .25s ease, opacity .25s ease; }
-        .ln-link:hover .ln-cap, .ln-link:focus-visible .ln-cap, .ln-link.is-active .ln-cap { max-height: 1.6em; opacity: 1; }
-        .ln-link .dg { transition: transform .5s ease; }
-        .ln-link:hover .dg, .ln-link:focus-visible .dg { transform: rotate(18deg) scale(1.12); }
-        .ln-link::after {
+        .ln-link:last-child { border-bottom: 1px solid var(--hull-700); }
+        .ln-label {
+          font-family: var(--font-display);
+          font-weight: 400;
+          font-size: clamp(20px, min(3.2vw, 4.6vh), 36px);
+          letter-spacing: .05em;
+          line-height: 1.1;
+          transition: transform .22s cubic-bezier(.2,.8,.2,1);
+        }
+        .ln-cap {
+          flex: none;
+          font-family: var(--font-mono);
+          font-size: 12px;
+          letter-spacing: .16em;
+          text-transform: uppercase;
+          color: var(--outline);
+          transition: color .16s ease;
+        }
+        /* the marker bar: signal on the current page, amber on the pointed one */
+        .ln-link::before {
           content: "";
           position: absolute;
-          left: 62px;
-          right: 8px;
-          bottom: 2px;
-          height: 2px;
-          background: var(--lit, #f0b73a);
-          transform: scaleX(0);
-          transform-origin: left;
+          left: 0;
+          top: 14px;
+          bottom: 12px;
+          width: 2px;
+          background: var(--lit);
+          transform: scaleY(0);
+          transform-origin: top;
           transition: transform .18s ease;
         }
-        .ln-link:hover, .ln-link:focus-visible, .ln-link.is-active { color: var(--starlight, #f6f1e4); }
+        .ln-link:hover, .ln-link:focus-visible, .ln-link.is-active { color: var(--starlight); }
+        .ln-link:hover .ln-label, .ln-link:focus-visible .ln-label { transform: translateX(6px); }
+        .ln-link:hover .ln-cap, .ln-link:focus-visible .ln-cap { color: var(--lit); }
+        .ln-link:hover::before, .ln-link:focus-visible::before, .ln-link.is-active::before { transform: scaleY(1); }
+        .ln-link.is-active::before { background: var(--signal); }
+        .ln-link.is-active .ln-cap { color: var(--signal); }
         .ln-link:focus-visible { outline: 2px solid var(--lit); outline-offset: 2px; }
-        .ln-link:hover::after, .ln-link:focus-visible::after, .ln-link.is-active::after {
-          transform: scaleX(1);
+
+        /* the scope: one glyph, two slow rings */
+        .ln-preview { display: none; }
+        .ln-scope {
+          position: relative;
+          width: min(30vw, 340px);
+          aspect-ratio: 1 / 1;
+          display: grid;
+          place-items: center;
+          border: 1px solid var(--hull-700);
+          border-radius: 50%;
         }
-        @media (max-width: 640px) {
-          .ln-list { padding: 10vh 6vw 10vh 6vw; }
-          .ln-link { font-size: clamp(28px, 8.4vw, 40px); }
+        .ln-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1px solid var(--dim-300);
+          opacity: 0;
         }
-        @media (hover: none) { .ln-cap { max-height: 1.6em; opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) {
-          .ln-overlay { transition: none; }
-          .ln-link::after { transition: none; }
+        .ln-overlay.open .ln-ring { animation: lnPing 8s cubic-bezier(.2,.6,.3,1) infinite; }
+        .ln-overlay.open .ln-ring + .ln-ring { animation-delay: 4s; }
+        @keyframes lnPing {
+          0% { transform: scale(.35); opacity: 0; }
+          14% { opacity: .35; }
+          100% { transform: scale(1); opacity: 0; }
+        }
+        .ln-glyph { animation: lnGlyphIn .32s cubic-bezier(.2,.8,.2,1); }
+        @keyframes lnGlyphIn {
+          from { opacity: 0; transform: scale(.9); }
+          to { opacity: 1; transform: none; }
+        }
+        .ln-preview-cap {
+          margin-top: 22px;
+          text-align: center;
+          font-family: var(--font-mono);
+          font-size: 12px;
+          letter-spacing: .2em;
+          text-transform: uppercase;
+          color: var(--dim-300);
+        }
+
+        .ln-foot {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          gap: 8px 24px;
+          padding-top: 14px;
+          border-top: 1px solid var(--hull-700);
+          font-family: var(--font-mono);
+          font-size: 12px;
+          letter-spacing: .16em;
+          text-transform: uppercase;
+          color: var(--outline);
+        }
+
+        @media (min-width: 900px) {
+          .ln-body { grid-template-columns: minmax(0, 1fr) auto; }
+          .ln-preview { display: block; padding-right: clamp(0px, 4vw, 64px); }
         }
         @media (max-width: 820px) {
-          .ln-list { align-items: flex-start; padding: 14vh 24px calc(8vh + env(safe-area-inset-bottom)) 24px; gap: 6px; }
-          .ln-link { font-size: clamp(30px, 9vw, 44px); min-height: 56px; }
+          .ln-mark { visibility: hidden; } /* the phone header's wordmark already sits here */
+          .ln-label { font-size: clamp(22px, 6.4vw, 30px); }
+          .ln-link { padding-left: 14px; }
+        }
+        @media (hover: none) { .ln-foot-hint { display: none; } }
+        @media (prefers-reduced-motion: reduce) {
+          .ln-overlay, .ln-overlay.open { transition: none; }
+          .ln-label, .ln-link::before { transition: none; }
+          .ln-link:hover .ln-label, .ln-link:focus-visible .ln-label { transform: none; }
+          .ln-overlay.open .ln-ring { animation: none; opacity: .2; }
+          .ln-overlay.open .ln-ring + .ln-ring { inset: 16%; }
+          .ln-glyph { animation: none; }
         }
       `}</style>
 
@@ -376,6 +338,7 @@ export default function LaserNav() {
 
       {/* Floating button */}
       <button
+        ref={toggleRef}
         type="button"
         className="ln-toggle"
         aria-label="Open navigation"
@@ -391,52 +354,76 @@ export default function LaserNav() {
       </button>
 
       {/* Fullscreen void navigation */}
-      <div className={`ln-overlay${open ? " open" : ""}`}>
-        <svg className="ln-pings" viewBox="0 0 400 400" aria-hidden>
-          <circle cx="200" cy="200" r="190" />
-          <circle cx="200" cy="200" r="190" style={{ animationDelay: "2.3s" }} />
-          <circle cx="200" cy="200" r="190" style={{ animationDelay: "4.6s" }} />
-        </svg>
-        <canvas ref={canvasRef} className="ln-canvas" aria-hidden />
-
-        <button
-          type="button"
-          className="ln-close"
-          aria-label="Close navigation"
-          onClick={handleClose}
-        >
-          ✕
-        </button>
-
-        <nav aria-label="Primary" className="ln-list">
-          {NAV_LINKS.map((link, i) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              ref={(el) => {
-                linkRefs.current[i] = el;
-              }}
-              className={`ln-link${isActive(link.href) ? " is-active" : ""}`}
-              aria-current={isActive(link.href) ? "page" : undefined}
+      <div
+        className={`ln-overlay${open ? " open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Site navigation"
+        inert={!open}
+      >
+        <div className="ln-frame">
+          <div className="ln-head">
+            <span className="ln-mark" aria-hidden>
+              CSAU
+            </span>
+            <button
+              ref={closeRef}
+              type="button"
+              className="ln-close"
+              aria-label="Close navigation"
               onClick={handleClose}
-              onMouseEnter={() => handleLinkHover(i)}
-              onMouseLeave={handleLinkLeave}
-              onFocus={() => handleLinkHover(i)}
-              onBlur={handleLinkLeave}
-              style={{
-                opacity: open ? 1 : 0,
-                transform: open ? "none" : "translateY(10px)",
-                transition: `opacity .3s ease ${0.03 * i + 0.06}s, transform .3s ease ${0.03 * i + 0.06}s, color .16s ease`,
-              }}
             >
-              <DestGlyph kind={link.glyph} size={40} on={isActive(link.href)} />
-              <span className="ln-txt">
-                <span className="ln-label">{link.label}</span>
-                <span className="ln-cap">{link.sector}</span>
-              </span>
-            </Link>
-          ))}
-        </nav>
+              ✕
+            </button>
+          </div>
+
+          <div className="ln-body">
+            <nav aria-label="Primary" className="ln-list">
+              <div className="eyebrow ln-eyebrow">Navigate</div>
+              {NAV_LINKS.map((link, i) => {
+                const active = isActive(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`ln-link${active ? " is-active" : ""}`}
+                    aria-current={active ? "page" : undefined}
+                    onClick={handleClose}
+                    onMouseEnter={() => setPointed(i)}
+                    onMouseLeave={() => setPointed(null)}
+                    onFocus={() => setPointed(i)}
+                    onBlur={() => setPointed(null)}
+                    style={{
+                      opacity: open ? 1 : 0,
+                      transform: open ? "none" : "translateY(10px)",
+                      transition: `opacity .3s ease ${0.03 * i + 0.06}s, transform .3s ease ${0.03 * i + 0.06}s, color .16s ease`,
+                    }}
+                  >
+                    <span className="ln-label">{link.label}</span>
+                    <span className="ln-cap">{active ? "You are here" : link.sector}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* the scope: the glyph of the destination being pointed at */}
+            <div className="ln-preview" aria-hidden>
+              <div className="ln-scope">
+                <span className="ln-ring" />
+                <span className="ln-ring" />
+                <span key={shown.href} className="ln-glyph">
+                  <DestGlyph kind={shown.glyph} size={132} />
+                </span>
+              </div>
+              <div className="ln-preview-cap">{shown.sector}</div>
+            </div>
+          </div>
+
+          <div className="ln-foot">
+            <span>Computer Society of Anna University</span>
+            <span className="ln-foot-hint">Esc to close</span>
+          </div>
+        </div>
       </div>
     </>
   );
