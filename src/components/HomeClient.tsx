@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
 import Lenis from "lenis";
 import { lockScroll } from "@/lib/scrollLock";
 import StorySection from "./story/StorySection";
-import EventsPreview from "./EventsPreview";
+import EventsPreview, { type PreviewEvent } from "./EventsPreview";
+import { buildStops } from "./story/stops";
+import type { PastEvent, UpcomingEvent } from "@/data/events";
+import WhatsNew from "./WhatsNew";
+import type { WhatsNewItem } from "@/lib/whatsNew";
 import { setLenis } from "./story/lenis";
 
 /* ============================================================
@@ -28,7 +32,22 @@ type Phase = "boot" | "landing" | "content";
 
 const GATE_KEY = "csau-gate-seen";
 
-export default function HomeClient() {
+export default function HomeClient({
+  whatsNew = [],
+  preview,
+  eventCount,
+  storyPast,
+  storyUpcoming,
+}: {
+  whatsNew?: WhatsNewItem[];
+  /** the events preview strip and the total number of events */
+  preview: PreviewEvent[];
+  eventCount: number;
+  /** the events the story visits (see story/stops.ts) */
+  storyPast: PastEvent[];
+  storyUpcoming: UpcomingEvent[];
+}) {
+  const stops = useMemo(() => buildStops(storyPast, storyUpcoming), [storyPast, storyUpcoming]);
   // Start with "boot" on both server and client to avoid hydration mismatch.
   // After mount, check sessionStorage to decide whether to skip the gate.
   const [phase, setPhase] = useState<Phase>("boot");
@@ -113,10 +132,12 @@ export default function HomeClient() {
       )}
 
       {phase === "content" && (
-        <div style={{ background: "transparent" }}>
+        <div style={{ background: "transparent", position: "relative" }}>
           <HeroSection />
-          <StorySection />
-          <EventsPreview />
+          {/* rocket + flag in the hero's bottom-right corner */}
+          <WhatsNew items={whatsNew} />
+          <StorySection stops={stops} />
+          <EventsPreview items={preview} total={eventCount} />
         </div>
       )}
     </>

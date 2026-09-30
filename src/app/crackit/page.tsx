@@ -1,15 +1,17 @@
 "use client";
 
-import { useSyncExternalStore, useState } from "react";
-import { ProbeMark, NodeMark } from "@/components/SpaceOrnaments";
+import { useRef, useSyncExternalStore, useState } from "react";
+import { ProbeMark } from "@/components/SpaceOrnaments";
 import { ARENA_CSS } from "../arena-css";
 
 /* ============================================================
-   CRACKIT - Coding events platform (frontend mock)
+   CRACKIT - a practice round in the browser
 
-   • Current coding event + online assessment (name + roll)
-   • Previous question archive (stored, expandable)
-   • Leaderboard with the current participant highlighted
+   • A short set of sample questions (name + roll to begin)
+   • Your own attempts, kept in this browser's localStorage
+   Nothing here is a real event, result or participant: there is
+   no shared leaderboard and no past-round archive until real
+   rounds exist in the CMS.
    Route: /crackit
    ============================================================ */
 
@@ -27,14 +29,6 @@ interface AttemptRow {
   total: number;
   timeSec: number;
 }
-
-const CURRENT_EVENT = {
-  title: "LOGIC LIFT-OFF",
-  tag: "LIVE NOW",
-  date: "SEP 2026",
-  questions: 5,
-  duration: "45 MIN",
-};
 
 const SAMPLE_QUESTIONS: Question[] = [
   {
@@ -69,70 +63,22 @@ const SAMPLE_QUESTIONS: Question[] = [
   },
 ];
 
-const SEED_LEADERBOARD: AttemptRow[] = [
-  { name: "Akil", roll: "2115010", score: 500, total: 500, timeSec: 151 },
-  { name: "Arjun", roll: "2115022", score: 480, total: 500, timeSec: 172 },
-  { name: "Priya", roll: "2115031", score: 460, total: 500, timeSec: 199 },
-  { name: "Kavin", roll: "2115044", score: 430, total: 500, timeSec: 210 },
-  { name: "Meera", roll: "2115056", score: 410, total: 500, timeSec: 233 },
-];
-
-const ARCHIVE: { round: string; date: string; event: string; questions: Question[] }[] = [
-  {
-    round: "CRACKIT · ROUND 24",
-    date: "AUG 2026",
-    event: "BINARY BLAST",
-    questions: [
-      {
-        q: "Given an array sorted in ascending order, which search is fastest?",
-        options: ["Linear", "Binary", "Exponential start from 0", "Random"],
-        answer: 1,
-        explanation: "Binary search is O(log n) on sorted arrays.",
-      },
-      {
-        q: "What does a linker do?",
-        options: ["Compiles source", "Combines object files into an executable", "Runs tests", "Manages memory"],
-        answer: 1,
-        explanation: "The linker resolves references and combines compiled objects.",
-      },
-    ],
-  },
-  {
-    round: "CRACKIT · ROUND 23",
-    date: "JUL 2026",
-    event: "LOOP WAR",
-    questions: [
-      {
-        q: "How many times does 'for(i=0;i<3;i++)' run the body?",
-        options: ["2", "3", "4", "Infinite"],
-        answer: 1,
-        explanation: "i runs for 0,1,2 → three iterations.",
-      },
-      {
-        q: "Which is not a loop in C?",
-        options: ["for", "while", "do-while", "repeat-until"],
-        answer: 3,
-        explanation: "C has for, while and do-while; repeat-until is Pascal-style.",
-      },
-    ],
-  },
-];
-
 const STORAGE_KEY = "csau-crackit-leaderboard-v1";
 
-/* ── localStorage-backed leaderboard store (external system read) ── */
+/* ── localStorage-backed store of this browser's attempts (external system read) ── */
+const NO_ATTEMPTS: AttemptRow[] = [];
+
 function loadFromStorage(): AttemptRow[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as AttemptRow[];
-    return parsed.filter((r) => !SEED_LEADERBOARD.some((s) => s.roll === r.roll));
+    if (!raw) return NO_ATTEMPTS;
+    return JSON.parse(raw) as AttemptRow[];
   } catch {
-    return [];
+    return NO_ATTEMPTS;
   }
 }
 
-let cached = SEED_LEADERBOARD;
+let cached = NO_ATTEMPTS;
 let hydrated = false;
 const listeners = new Set<() => void>();
 const emitChange = () => listeners.forEach((l) => l());
@@ -140,7 +86,7 @@ const emitChange = () => listeners.forEach((l) => l());
 function getSnapshot(): AttemptRow[] {
   if (typeof window !== "undefined" && !hydrated) {
     hydrated = true;
-    cached = [...SEED_LEADERBOARD, ...loadFromStorage()];
+    cached = loadFromStorage();
   }
   return cached;
 }
@@ -158,8 +104,9 @@ function subscribe(onChange: () => void): () => void {
 }
 
 export default function CrackItPage() {
-  // Leaderboard = seed board + persisted submissions (external-store read).
-  const rows = useSyncExternalStore(subscribe, getSnapshot, () => SEED_LEADERBOARD);
+  // This browser's own attempts (external-store read). There is no shared board.
+  const rows = useSyncExternalStore(subscribe, getSnapshot, () => NO_ATTEMPTS);
+  const startedAt = useRef(0);
   const [name, setName] = useState("");
   const [roll, setRoll] = useState("");
   const [phase, setPhase] = useState<"form" | "quiz" | "done">("form");
@@ -169,6 +116,7 @@ export default function CrackItPage() {
 
   const start = () => {
     if (!name.trim() || !roll.trim()) return;
+    startedAt.current = Date.now();
     setPhase("quiz");
     setCurrent(0);
     setPicks(Array(SAMPLE_QUESTIONS.length).fill(null));
@@ -185,7 +133,7 @@ export default function CrackItPage() {
   const score = picks.reduce<number>((acc, p, i) => acc + (p === SAMPLE_QUESTIONS[i].answer ? 100 : 0), 0);
 
   const submit = () => {
-    const timeSec = 130 + Math.floor(Math.random() * 120);
+    const timeSec = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     const attempt: AttemptRow = {
       name: name.trim(),
       roll: roll.trim(),
@@ -193,17 +141,15 @@ export default function CrackItPage() {
       total: SAMPLE_QUESTIONS.length * 100,
       timeSec,
     };
-    const next = [
-      ...rows.filter((r) => !SEED_LEADERBOARD.some((s) => s.roll === r.roll)),
-      attempt,
-    ];
+    // one row per roll number: a new attempt replaces the earlier one
+    const next = [...rows.filter((r) => r.roll !== attempt.roll), attempt];
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       /* storage unavailable - keep in-memory */
     }
-    cached = [...SEED_LEADERBOARD, ...next];
-    emitChange(); // re-render board from the external store
+    cached = next;
+    emitChange(); // re-render the list from the external store
     setLastResult(attempt);
     setPhase("done");
   };
@@ -216,31 +162,31 @@ export default function CrackItPage() {
       <style>{ARENA_CSS}</style>
       <div className="pg-in">
         {/* ── Header ── */}
-        <div className="eyebrow">Coding events</div>
+        <div className="eyebrow">Practice</div>
         <h1 className="pg-title">Crackit</h1>
         <p className="pg-lede">
-          Competitive coding rounds run by CSAU. Attempt the live event
-          with your name and roll number, revisit stored questions from
-          past rounds, and climb the leaderboard.
+          A practice round in the CrackIT format: a short set of sample
+          questions, scored as soon as you submit. Your attempts are kept
+          in this browser only.
         </p>
 
-        {/* ── Current event + assessment ── */}
+        {/* ── Practice round ── */}
         <section style={{ marginTop: 40 }}>
           <div className="pa-panel" style={{ padding: "clamp(22px, 4vw, 46px)" }}>
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 22, alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 260px" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <span className="chip chip-ink">
-                    <span className="chip-dot" data-state="live" />
-                    {CURRENT_EVENT.tag}
+                    <span className="chip-dot" data-state="open" />
+                    PRACTICE
                   </span>
                   <ProbeMark size={34} />
                 </span>
                 <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(30px, 4vw, 52px)", color: "var(--on-surface)", margin: "16px 0 6px", lineHeight: 1.05 }}>
-                  {CURRENT_EVENT.title}
+                  PRACTICE ROUND
                 </h2>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".16em", color: "var(--outline)", textTransform: "uppercase", margin: 0 }}>
-                  {CURRENT_EVENT.date} · {CURRENT_EVENT.questions} QUESTIONS · {CURRENT_EVENT.duration}
+                  {SAMPLE_QUESTIONS.length} SAMPLE QUESTIONS · UNTIMED
                 </p>
               </div>
 
@@ -248,7 +194,7 @@ export default function CrackItPage() {
                 {phase === "form" && (
                   <div style={{ display: "grid", gap: 14 }}>
                     <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--on-surface-variant)", margin: 0 }}>
-                      Enter your student identity to begin the online assessment.
+                      Enter a name and roll number to begin. They stay in this browser.
                     </p>
                     <input
                       value={name}
@@ -274,7 +220,7 @@ export default function CrackItPage() {
                       disabled={!name.trim() || !roll.trim()}
                       className="pa-btn pa-btn-primary"
                     >
-                      BEGIN ASSESSMENT →
+                      BEGIN PRACTICE →
                     </button>
                   </div>
                 )}
@@ -366,19 +312,25 @@ export default function CrackItPage() {
           </div>
         </section>
 
-        {/* ── Leaderboard ── */}
+        {/* ── Your attempts (this browser only) ── */}
         <section style={{ marginTop: 64 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
-            TOP CODEFIGHTERS
+          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 12px" }}>
+            YOUR ATTEMPTS
           </h2>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 14, lineHeight: 1.6, color: "var(--on-surface-variant)", margin: "0 0 26px" }}>
+            {sorted.length > 0
+              ? "Saved in this browser only. There is no shared leaderboard."
+              : "No attempts yet. Finish the practice round and your score appears here, saved in this browser only."}
+          </p>
           {/* A real table, not a grid of divs: column headers are exposed
               to assistive tech and the fixed sort order is declared. */}
-          <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Leaderboard">
+          {sorted.length > 0 && (
+          <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Your attempts">
             <table className="data-table">
               <thead>
                 <tr>
                   <th scope="col">Rank</th>
-                  <th scope="col">Codefighter</th>
+                  <th scope="col">Name</th>
                   <th scope="col" className="num">Points</th>
                   <th scope="col" className="num col-score" aria-sort="descending">Score</th>
                   <th scope="col" className="num">Time</th>
@@ -412,44 +364,7 @@ export default function CrackItPage() {
               </tbody>
             </table>
           </div>
-        </section>
-
-        {/* ── Previous question archive ── */}
-        <section style={{ marginTop: 64 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(28px, 4vw, 46px)", color: "var(--on-surface)", margin: "10px 0 26px" }}>
-            PAST ROUNDS
-          </h2>
-          <div style={{ display: "grid", gap: 16 }}>
-            {ARCHIVE.map((round) => (
-              <details key={round.round} className="pa-panel" style={{ padding: "16px clamp(18px, 3vw, 28px)" }}>
-                <summary className="pa-sum">
-                  <span className="pa-pad"><NodeMark size={18} /></span>
-                  <div style={{ flex: 1, display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 10 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: ".24em", color: "var(--outline)", display: "block" }}>
-                      {round.round} · {round.date}
-                    </span>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 26, color: "var(--on-surface)", textTransform: "uppercase" }}>
-                      {round.event}
-                    </span>
-                  </div>
-                </summary>
-                <div style={{ marginTop: 20, display: "grid", gap: 16 }}>
-                  {round.questions.map((q, i) => (
-                    <div key={q.q} style={{ fontFamily: "var(--font-mono)", fontSize: 13.5, lineHeight: 1.6, color: "var(--on-surface-variant)" }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--outline)", marginRight: 8 }}>
-                        Q{i + 1}
-                      </span>
-                      {q.q}
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ok)", marginTop: 6 }}>
-                        ✓ {q.options[q.answer]}
-                      </div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--outline)", marginTop: 2 }}>{q.explanation}</div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
+          )}
         </section>
       </div>
     </main>

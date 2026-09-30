@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ProbeMark, NodeMark } from "@/components/SpaceOrnaments";
+import { ProbeMark } from "@/components/SpaceOrnaments";
 import { ARENA_CSS, QUICK_CODE_CSS } from "../arena-css";
 
 /* ============================================================
@@ -11,6 +11,10 @@ import { ARENA_CSS, QUICK_CODE_CSS } from "../arena-css";
    over the shared SpaceBackdrop, so the page needs no second WebGL
    context.
 
+   The page describes the format only. There is no round data in
+   the CMS yet, so it shows no challenge, participant count or
+   leaderboard - nothing here is invented.
+
    Route: /quick-code
    ============================================================ */
 
@@ -18,18 +22,6 @@ const STATS = [
   { value: "05", label: "QUESTIONS" },
   { value: "05:00", label: "ON THE CLOCK" },
   { value: "500", label: "MAX POINTS" },
-];
-
-const LEADERS = [
-  { rank: 1, name: "Arjun", score: 500, time: "02:18" },
-  { rank: 2, name: "Akil", score: 500, time: "02:31" },
-  { rank: 3, name: "Rahul", score: 400, time: "02:04" },
-];
-
-const PAST = [
-  { week: "WEEK 11", name: "CODE TRAP", meta: "5 Questions · 5 Minutes · 982 Participants" },
-  { week: "WEEK 10", name: "LOOP WAR", meta: "5 Questions · 5 Minutes · 1,104 Participants" },
-  { week: "WEEK 09", name: "BINARY", meta: "5 Questions · 5 Minutes · 1,240 Participants" },
 ];
 
 export default function QuickCodePage() {
@@ -112,17 +104,17 @@ export default function QuickCodePage() {
               margin: "22px 0 0",
             }}
           >
-            Logic meets speed. Concepts meet challenges. A recurring
-            5-minute competitive assessment - scored instantly, archived forever.
+            Logic meets speed. A five-minute assessment format: five
+            questions, one timed run.
           </p>
 
           {/* CTA row */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, justifyContent: "flex-start" }}>
-            <Link href="#current-challenge" className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
-              START THIS WEEK →
+            <Link href="/events" data-route-load className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
+              SEE EVENTS →
             </Link>
-            <Link href="#leaderboard" className="pa-btn" style={{ padding: "14px 26px" }}>
-              VIEW LEADERBOARD
+            <Link href="#current-challenge" className="pa-btn" style={{ padding: "14px 26px" }}>
+              ROUND STATUS
             </Link>
           </div>
 
@@ -188,7 +180,7 @@ export default function QuickCodePage() {
               lineHeight: 1.1,
             }}
           >
-            THIS WEEK&apos;S CHALLENGE
+            ROUND STATUS
           </h2>
 
           <div className="pa-panel" style={{ padding: "clamp(22px, 4vw, 52px)" }}>
@@ -210,7 +202,7 @@ export default function QuickCodePage() {
                       color: "var(--outline)",
                     }}
                   >
-                    WEEK 12
+                    STATUS
                   </span>
                   <ProbeMark size={34} />
                 </div>
@@ -224,7 +216,7 @@ export default function QuickCodePage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Logic Rush
+                  No round open
                 </div>
                 <p
                   style={{
@@ -236,8 +228,8 @@ export default function QuickCodePage() {
                     margin: "14px 0 0",
                   }}
                 >
-                  Test your speed. Test your fundamentals. Five rapid
-                  questions on logic, data structures and clean reasoning.
+                  There is no Quick Code round running right now. The
+                  club&apos;s events are listed on the Events page.
                 </p>
               </div>
 
@@ -246,7 +238,6 @@ export default function QuickCodePage() {
                   {[
                     ["05 QUESTIONS", "5 × 100 pts"],
                     ["05:00 DURATION", "one timed run"],
-                    ["1,248", "QUICKCODERS PARTICIPATING"],
                   ].map(([top, sub]) => (
                     <div key={top}>
                       <div
@@ -274,157 +265,15 @@ export default function QuickCodePage() {
                   ))}
                 </div>
 
-                <button type="button" className="pa-btn pa-btn-primary" style={{ marginTop: 26 }}>
-                  START CHALLENGE →
-                </button>
+                <Link href="/events" data-route-load className="pa-btn pa-btn-primary" style={{ marginTop: 26 }}>
+                  SEE EVENTS →
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── LEADERBOARD ── */}
-      <section
-        id="leaderboard"
-        style={{
-          background: "transparent",
-          padding: "9vh 6%",
-        }}
-      >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 400,
-              fontSize: "clamp(28px, 4.6vw, 54px)",
-              color: "var(--on-surface)",
-              margin: "14px 0 10px",
-              lineHeight: 1.1,
-            }}
-          >
-            TOP QUICKCODERS
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              color: "var(--on-surface-variant)",
-              margin: "0 0 34px",
-            }}
-          >
-            Who&apos;s the fastest quickcoder this week?
-          </p>
-
-          {/* A real table so the columns announce themselves. The
-              ranking is fixed, so the sort order is declared rather
-              than left implicit. */}
-          <div className="pa-table-wrap" tabIndex={0} role="region" aria-label="Leaderboard">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Rank</th>
-                  <th scope="col">Quickcoder</th>
-                  <th scope="col" className="num" aria-sort="descending">Score</th>
-                  <th scope="col" className="num">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {LEADERS.map((row) => (
-                  <tr key={row.rank} data-current={row.rank <= 3 ? "true" : undefined}>
-                    <td
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 14,
-                        color: row.rank === 1 ? "var(--lit)" : row.rank <= 3 ? "var(--on-surface)" : "var(--outline)",
-                      }}
-                    >
-                      #{row.rank}
-                    </td>
-                    <td style={{ fontWeight: 600, fontSize: 14, color: "var(--on-surface)" }}>
-                      {row.name}
-                    </td>
-                    <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--on-surface)" }}>
-                      {row.score} pts
-                    </td>
-                    <td className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                      {row.time}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* ── PREVIOUS CHALLENGES ── */}
-      <section style={{ background: "transparent", padding: "9vh 6% 12vh" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 400,
-              fontSize: "clamp(28px, 4.6vw, 54px)",
-              color: "var(--on-surface)",
-              margin: "14px 0 34px",
-              lineHeight: 1.1,
-            }}
-          >
-            PREVIOUS CHALLENGES
-          </h2>
-
-          <div style={{ display: "grid", gap: 18 }}>
-            {PAST.map((ch) => (
-              <div
-                key={ch.week}
-                className="pa-panel"
-                style={{ padding: "22px clamp(18px, 3vw, 30px)", display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center" }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                  <span style={{ paddingTop: 5 }}><NodeMark size={18} /></span>
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 11,
-                        letterSpacing: ".26em",
-                        color: "var(--outline)",
-                      }}
-                    >
-                      {ch.week}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "clamp(22px, 2.6vw, 32px)",
-                        fontWeight: 400,
-                        color: "var(--on-surface)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {ch.name}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 12.5,
-                        color: "var(--on-surface-variant)",
-                        marginTop: 4,
-                      }}
-                    >
-                      {ch.meta}
-                    </div>
-                  </div>
-                </div>
-                <button type="button" className="pa-btn">
-                  VIEW →
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   );
 }

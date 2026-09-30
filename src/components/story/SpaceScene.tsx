@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { STOPS } from "./stops";
+import { STOP_LAYOUT as STOPS } from "./stops";
 import { SatelliteModel } from "../space/models";
 import { AsteroidField, ParticlePlanet, ShipModel, UfoModel } from "../space/bodies";
 import { Bloom } from "../space/Bloom";

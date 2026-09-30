@@ -60,6 +60,15 @@ export default function DestGlyph({ kind, size = 44, on = true, orbit = false }:
           <circle cx="24" cy="24" r="2.2" fill={hot} stroke="none" />
         </>
       )}
+      {kind === "dish" && (
+        <>
+          <path d="M10 26a15 15 0 0 0 21 12" />
+          <path d="M10 26L31 38" opacity=".6" />
+          <path d="M20.5 32l7-12M18 44h14M25 36v8" />
+          <path d="M33 13a8 8 0 0 1 4 7M37 7a15 15 0 0 1 7 13" opacity=".6" stroke={hot} />
+          <circle cx="28" cy="19" r="2.2" fill={hot} stroke="none" />
+        </>
+      )}
       {orbit && (
         <g className="dg-orbit" style={{ transformOrigin: "24px 24px" }}>
           <circle cx="24" cy="-2" r="2" fill="var(--lit)" stroke="none" />

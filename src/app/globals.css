@@ -1541,6 +1541,8 @@ html.scroll-locked { overflow: hidden; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* real posters are square or taller and carry their title at the top */
+  object-position: 50% 0;
   display: block;
   filter: saturate(0.92) contrast(1.02);
   transition: transform var(--dur-base) var(--ease-out);
@@ -2350,6 +2352,312 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 
 
+
+/* ============================================================
+   CONTACT - the club's channels as ruled rows beside a beacon.
+   Rows borrow the events / blog interaction (the handle lights
+   amber and nudges); the beacon reuses the hero's ping-out
+   rings and turns to the signal colour while a row is tuned.
+   ============================================================ */
+
+.ct-head { max-width: var(--measure); }
+.ct-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 48px;
+  margin-top: clamp(40px, 7vh, 72px);
+}
+
+.ct-list { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--outline-variant); }
+.ct-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 22px 0;
+  border-top: 1px solid var(--outline-variant);
+  animation: ctRowIn 420ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
+}
+@keyframes ctRowIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.ct-label {
+  grid-column: 1 / -1;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--outline);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.ct-row.is-tuned .ct-label { color: var(--signal); }
+.ct-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ct-handle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: var(--tap-min);
+  color: var(--on-surface);
+  text-decoration: none;
+  font-size: clamp(18px, 2.4vw, 26px);
+  line-height: 1.25;
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+.ct-handle-text { overflow-wrap: anywhere; }
+.ct-arrow { flex: none; font-size: 0.7em; color: var(--outline); transition: color var(--dur-fast) var(--ease-out); }
+.ct-handle:hover,
+.ct-handle:focus-visible { color: var(--lit); transform: translateX(4px); }
+.ct-handle:hover .ct-arrow,
+.ct-handle:focus-visible .ct-arrow { color: var(--lit); }
+.ct-note { max-width: 52ch; font-size: 15px; line-height: 1.55; color: var(--on-surface-variant); }
+.ct-copy { align-self: start; min-width: 72px; }
+
+/* the beacon */
+.ct-side { display: grid; gap: 20px; align-content: start; }
+.ct-beacon {
+  position: relative;
+  width: min(100%, 300px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  --ct-ping: var(--hull-700);
+}
+.ct-beacon.is-tuned { --ct-ping: var(--signal); }
+.ct-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--ct-ping);
+  opacity: 0;
+  animation: ping-out 6s cubic-bezier(.2,.6,.3,1) infinite;
+  transition: border-color var(--dur-base) var(--ease-out);
+}
+.ct-ping:nth-child(2) { animation-delay: 2s; }
+.ct-ping:nth-child(3) { animation-delay: 4s; }
+.ct-orbit {
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  border: 1px dashed var(--outline-variant);
+  animation: ctOrbit 28s linear infinite;
+}
+.ct-orbit-dot {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--lit);
+}
+@keyframes ctOrbit { to { transform: rotate(360deg); } }
+.ct-dish { position: relative; width: 38%; height: 38%; overflow: visible; }
+.ct-dish-feed { fill: var(--lit); transition: fill var(--dur-base) var(--ease-out); }
+.ct-beacon.is-tuned .ct-dish-feed { fill: var(--signal); }
+
+.ct-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--outline-variant);
+  border-bottom: 1px solid var(--outline-variant);
+}
+.ct-readout-key {
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+.ct-readout-value { font-size: 15px; color: var(--on-surface); }
+.ct-base-title {
+  margin: 0 0 10px;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+.ct-base-lines { display: grid; gap: 2px; font-style: normal; font-size: 16px; line-height: 1.5; color: var(--on-surface); }
+.ct-base-coords {
+  display: block;
+  margin-top: 10px;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  color: var(--on-surface-variant);
+}
+
+@media (min-width: 820px) {
+  .ct-layout { grid-template-columns: minmax(0, 1fr) 300px; gap: 72px; align-items: start; }
+  .ct-row { grid-template-columns: 140px minmax(0, 1fr) auto; align-items: start; }
+  .ct-label { grid-column: auto; padding-top: 0.75em; }
+  .ct-side { position: sticky; top: 96px; }
+}
+@media (max-width: 819px) {
+  /* the beacon shrinks to a marker beside the readout on phones */
+  .ct-side { grid-template-columns: 96px minmax(0, 1fr); align-items: center; }
+  .ct-beacon { width: 96px; }
+  .ct-base { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ct-row { animation: none; }
+  .ct-handle, .ct-arrow { transition: none; }
+  .ct-handle:hover, .ct-handle:focus-visible { transform: none; }
+  .ct-ping { animation: none; opacity: 0.5; }
+  .ct-ping:nth-child(2) { inset: 12%; }
+  .ct-ping:nth-child(3) { inset: 24%; }
+  .ct-orbit { animation: none; }
+}
+
+/* ============================================================
+   WHAT'S NEW - a small rocket towing a flag, in the bottom-right
+   corner of the home hero. Absolutely placed inside the home
+   content (not fixed), so it scrolls away with the hero.
+   ============================================================ */
+
+.wn {
+  position: absolute;
+  z-index: 20;
+  top: calc(100dvh - 36px);
+  right: 8%;
+  transform: translateY(-100%);
+}
+.wn-btn {
+  display: block;
+  min-height: var(--tap-min);
+  padding: 8px 0 8px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  /* the rocket tows the flag in once the hero has settled */
+  animation: wnFlyIn 1100ms var(--ease-out) 1300ms backwards;
+}
+@keyframes wnFlyIn {
+  from { opacity: 0; transform: translateX(-64px); }
+  to { opacity: 1; transform: none; }
+}
+.wn-tow {
+  display: flex;
+  align-items: center;
+  animation: wnBob 5s ease-in-out 2400ms infinite;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+@keyframes wnBob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -3px; }
+}
+.wn-btn:hover .wn-tow,
+.wn-btn:focus-visible .wn-tow { transform: translateX(4px); }
+
+/* the flag: a swallow-tailed banner on a tether */
+.wn-flag {
+  position: relative;
+  padding: 7px 12px 7px 20px;
+  background: var(--lit-soft);
+  color: var(--on-surface);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 9px 50%);
+  transform-origin: 100% 50%;
+  animation: wnRipple 4s ease-in-out infinite;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+@keyframes wnRipple {
+  0%, 100% { transform: skewY(0deg); }
+  30% { transform: skewY(-2.5deg); }
+  70% { transform: skewY(2deg); }
+}
+.wn-btn:hover .wn-flag,
+.wn-btn:focus-visible .wn-flag,
+.wn.is-open .wn-flag { background: var(--lit); color: var(--void-950); }
+.wn-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--signal);
+}
+.wn-tether { width: 12px; height: 1px; background: var(--dim-300); }
+.wn-rocket { width: 52px; height: 24px; flex: none; overflow: visible; }
+.wn-flame {
+  fill: var(--lit);
+  stroke: none;
+  transform-origin: 12px 12px;
+  animation: wnFlame 320ms ease-in-out infinite alternate;
+}
+@keyframes wnFlame {
+  from { transform: scaleX(0.7); opacity: 0.7; }
+  to { transform: scaleX(1.1); opacity: 1; }
+}
+
+/* the list, opening above the rocket */
+.wn-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(340px, calc(100vw - 40px));
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--void-950) 60%, transparent);
+  animation: wnPanelIn var(--dur-base) var(--ease-out);
+}
+@keyframes wnPanelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.wn-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 2px 16px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.wn-close { font-size: 13px; }
+.wn-list { list-style: none; margin: 0; padding: 0; }
+.wn-list li + li { border-top: 1px solid var(--outline-variant); }
+.wn-item {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.wn-kind {
+  font: 500 11px/1.3 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.wn-title {
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--on-surface);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.wn-arrow { color: var(--outline); }
+.wn-meta { font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.06em; color: var(--on-surface-variant); }
+.wn-item:hover .wn-title,
+.wn-item:focus-visible .wn-title { color: var(--lit); }
+
+@media (max-width: 640px) {
+  .wn { right: 16px; top: calc(100dvh - 28px - env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wn-btn, .wn-tow, .wn-flag, .wn-flame, .wn-panel { animation: none; }
+  .wn-tow, .wn-flag, .wn-title { transition: none; }
+  .wn-btn:hover .wn-tow, .wn-btn:focus-visible .wn-tow { transform: none; }
+}
 
 /* ============================================================
    READABILITY + MOBILE RULES (from the .agents design audit)

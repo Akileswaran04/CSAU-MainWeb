@@ -323,7 +323,7 @@ export default function LaserNav() {
           color: var(--dim-300);
           font-family: var(--font-display);
           font-weight: 400;
-          font-size: clamp(30px, 6vw, 68px);
+          font-size: clamp(30px, min(6vw, 7vh), 68px);
           letter-spacing: .06em;
           line-height: 1.12;
           padding: 2px 8px;

@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  PAST_EVENTS,
-  UPCOMING_EVENTS,
-  archiveYears,
-  eventsInYear,
-} from "@/data/events";
+import { archiveYears, eventsInYear } from "@/data/events";
+import { getEvents } from "@/lib/events";
 import { UpcomingCard, PastCard } from "@/components/EventCards";
 
 /* ============================================================
@@ -16,8 +12,9 @@ import { UpcomingCard, PastCard } from "@/components/EventCards";
      • ARCHIVE: past events grouped by year, with a year rail on
        wide screens and posters on every card.
 
-   Data is driven entirely from src/data/events.ts (no event is
-   hardcoded into this JSX). Cards, posters and reveal animations
+   The events are the club's real records, fetched from the CMS
+   on the server and revalidated hourly (see src/lib/events.ts);
+   no event is hardcoded into this JSX. Cards, posters and reveal animations
    are the reusable pieces in EventCards / EventPoster.
    Route: /events
    ============================================================ */
@@ -28,10 +25,13 @@ export const metadata: Metadata = {
     "Hackathons, workshops, talks and coding rounds from the Computer Society of Anna University, CEG - what's coming up and the full archive.",
 };
 
-export default function EventsPage() {
-  const years = archiveYears(PAST_EVENTS);
-  const hasUpcoming = UPCOMING_EVENTS.length > 0;
-  const hasArchive = PAST_EVENTS.length > 0;
+export const revalidate = 3600;
+
+export default async function EventsPage() {
+  const { current, past, state } = await getEvents();
+  const years = archiveYears(past);
+  const hasUpcoming = current.length > 0;
+  const hasArchive = past.length > 0;
 
   return (
     <main id="content" className="pg">
@@ -45,21 +45,28 @@ export default function EventsPage() {
           </p>
         </header>
 
+        {state === "fallback" && (
+          <p className="dm-notice" role="status">
+            <span className="dm-notice-dot" aria-hidden />
+            Showing the latest saved archive.
+          </p>
+        )}
+
         {/* ── UPCOMING / CURRENT ── */}
         <section className="ev-upcoming" aria-labelledby="ev-upcoming-h">
           <div className="ev-section-head">
             <h2 id="ev-upcoming-h" className="ev-section-title">
               Upcoming &amp; Current
             </h2>
-            <span className="ev-section-count tabular">
-              {UPCOMING_EVENTS.length} live
-            </span>
+            {hasUpcoming && (
+              <span className="ev-section-count tabular">{current.length} upcoming</span>
+            )}
           </div>
 
           {hasUpcoming ? (
             <div className="ev-up-grid">
-              {UPCOMING_EVENTS.map((ev, i) => (
-                <UpcomingCard key={ev.name} event={ev} index={i} />
+              {current.map((ev, i) => (
+                <UpcomingCard key={ev.id} event={ev} index={i} />
               ))}
             </div>
           ) : (
@@ -95,8 +102,8 @@ export default function EventsPage() {
                   {year}
                 </h3>
                 <div className="ev-past-grid">
-                  {eventsInYear(year, PAST_EVENTS).map((ev, i) => (
-                    <PastCard key={ev.name} event={ev} index={i} />
+                  {eventsInYear(year, past).map((ev, i) => (
+                    <PastCard key={ev.id} event={ev} index={i} />
                   ))}
                 </div>
               </section>
@@ -105,8 +112,8 @@ export default function EventsPage() {
         )}
 
         <p className="pg-next">
-          <Link href="/crackit" data-route-load className="btn btn-primary">
-            Current coding event →
+          <Link href="/contact" data-route-load className="btn btn-primary">
+            Get in touch →
           </Link>
         </p>
       </div>

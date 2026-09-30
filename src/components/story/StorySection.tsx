@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SECTIONS, STOPS } from "./stops";
+import { isExternal } from "@/data/events";
+import { SECTIONS, STOP_LAYOUT, type Stop } from "./stops";
 import { scrollToY } from "./lenis";
 
 const SpaceScene = dynamic(() => import("./SpaceScene"), { ssr: false });
@@ -17,22 +18,22 @@ const SpaceScene = dynamic(() => import("./SpaceScene"), { ssr: false });
    scene never triggers React renders.
    ============================================================ */
 
-const N = STOPS.length;
-const TOTAL_W = STOPS.reduce((a, s) => a + s.weight, 0);
+const N = STOP_LAYOUT.length;
+const TOTAL_W = STOP_LAYOUT.reduce((a, s) => a + s.weight, 0);
 const VH_PER_WEIGHT = 78;
 
 // cumulative weight boundaries → which stop owns a given progress
 const EDGES: number[] = [];
 {
   let acc = 0;
-  STOPS.forEach((s) => {
+  STOP_LAYOUT.forEach((s) => {
     acc += s.weight;
     EDGES.push(acc / TOTAL_W);
   });
 }
-const FIRST_OF_SECTION = SECTIONS.map((sec) => STOPS.findIndex((s) => s.kind === sec.id));
 
-export default function StorySection() {
+/** `stops` comes from buildStops(), so it always matches STOP_LAYOUT. */
+export default function StorySection({ stops }: { stops: Stop[] }) {
   const sectionRef = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const [active, setActive] = useState(0);
@@ -114,7 +115,13 @@ export default function StorySection() {
     []
   );
 
-  const activeSection = SECTIONS.findIndex((s) => s.id === STOPS[active].kind);
+  /* the rail lists only the sections this story has (there may be no upcoming events) */
+  const sections = useMemo(
+    () =>
+      SECTIONS.map((sec) => ({ ...sec, first: stops.findIndex((s) => s.kind === sec.id) })).filter((sec) => sec.first >= 0),
+    [stops],
+  );
+  const activeSection = sections.findIndex((s) => s.id === stops[active]?.kind);
 
   return (
     <section
@@ -135,7 +142,7 @@ export default function StorySection() {
         </div>
 
         <div className="story-copy">
-          {STOPS.map((c, i) => {
+          {stops.map((c, i) => {
             const state = i === active ? "active" : i < active ? "past" : "next";
             return (
               <article
@@ -166,17 +173,30 @@ export default function StorySection() {
                 )}
                 {c.cta && (
                   <div className="story-cta">
-                    {c.cta.map((b) => (
-                      <Link
-                        key={b.href + b.label}
-                        href={b.href}
-                        data-route-load
-                        className={b.ghost ? "btn story-btn-ghost" : "btn story-btn"}
-                        tabIndex={state === "active" ? 0 : -1}
-                      >
-                        {b.label}
-                      </Link>
-                    ))}
+                    {c.cta.map((b) =>
+                      isExternal(b.href) ? (
+                        <a
+                          key={b.href + b.label}
+                          href={b.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={b.ghost ? "btn story-btn-ghost" : "btn story-btn"}
+                          tabIndex={state === "active" ? 0 : -1}
+                        >
+                          {b.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={b.href + b.label}
+                          href={b.href}
+                          data-route-load
+                          className={b.ghost ? "btn story-btn-ghost" : "btn story-btn"}
+                          tabIndex={state === "active" ? 0 : -1}
+                        >
+                          {b.label}
+                        </Link>
+                      ),
+                    )}
                   </div>
                 )}
               </article>
@@ -185,14 +205,14 @@ export default function StorySection() {
         </div>
 
         <nav className="story-rail" aria-label="Story sections">
-          {SECTIONS.map((sec, si) => (
+          {sections.map((sec, si) => (
             <button
               key={sec.id}
               type="button"
               className="story-tick"
               data-on={si === activeSection}
               data-done={si < activeSection}
-              onClick={() => goToStop(FIRST_OF_SECTION[si])}
+              onClick={() => goToStop(sec.first)}
               aria-label={`Go to ${sec.label}`}
               aria-current={si === activeSection}
             >

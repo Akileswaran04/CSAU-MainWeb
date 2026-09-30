@@ -75,7 +75,7 @@ const DOMAIN_DEFS: Omit<Domain, "members">[] = [
     principles: ["Sharpen problem-solving", "Practice under pressure", "Learn by contest"],
     activities: [
       "Setting and curating contest problem sets",
-      "Running CrackIT, Quick Code and practice rounds",
+      "Running CrackIT and practice rounds",
       "DSA and algorithms coaching sessions",
     ],
   },

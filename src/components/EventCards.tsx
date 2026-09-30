@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import type { PastEvent, UpcomingEvent } from "@/data/events";
+import { isExternal, type PastEvent, type UpcomingEvent } from "@/data/events";
 import EventPoster from "./EventPoster";
 
 /* ============================================================
@@ -11,9 +11,10 @@ import EventPoster from "./EventPoster";
      • Reveal: a shared IntersectionObserver wrapper fades/rises
        each item once, respecting reduced motion (handled in CSS).
      • UpcomingCard: poster + a visually prominent date, category,
-       description, status and a CTA to the live page.
-     • PastCard: poster + date/tag + name + blurb + stat, tuned
-       for the year-grouped archive.
+       description, status and a CTA (to the live page, or to
+       the event's registration link when it has one).
+     • PastCard: poster + date/tag + name + blurb + where it
+       was held, tuned for the year-grouped archive.
    Nothing is hardcoded here - callers pass the event objects.
    ============================================================ */
 
@@ -87,7 +88,7 @@ export function UpcomingCard({ event, index = 0 }: { event: UpcomingEvent; index
               <span className="ev-status-dot" aria-hidden />
               {event.status}
             </span>
-            <span className="ev-chip">{event.tag}</span>
+            {event.tag && <span className="ev-chip">{event.tag}</span>}
           </div>
 
           <h3 className="ev-up-name">{event.name}</h3>
@@ -98,9 +99,23 @@ export function UpcomingCard({ event, index = 0 }: { event: UpcomingEvent; index
 
           <p className="ev-up-blurb">{event.blurb}</p>
 
-          <Link href={event.href} data-route-load className="btn btn-signal ev-up-cta">
-            {event.cta} →
-          </Link>
+          {event.href &&
+            event.cta &&
+            (isExternal(event.href) ? (
+              <a
+                href={event.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-signal ev-up-cta"
+                aria-label={`${event.cta}: ${event.name}. Opens in a new tab.`}
+              >
+                {event.cta} ↗
+              </a>
+            ) : (
+              <Link href={event.href} data-route-load className="btn btn-signal ev-up-cta">
+                {event.cta} →
+              </Link>
+            ))}
         </div>
       </article>
     </Reveal>
@@ -115,11 +130,11 @@ export function PastCard({ event, index = 0 }: { event: PastEvent; index?: numbe
         <div className="ev-past-body">
           <div className="ev-meta">
             <span>{event.date}</span>
-            <span className="ev-tag">{event.tag}</span>
+            {event.tag && <span className="ev-tag">{event.tag}</span>}
           </div>
           <h3 className="ev-name">{event.name}</h3>
-          <p className="ev-blurb">{event.blurb}</p>
-          <div className="ev-stat">{event.stat}</div>
+          {event.blurb && <p className="ev-blurb">{event.blurb}</p>}
+          {event.stat && <div className="ev-stat">{event.stat}</div>}
         </div>
       </article>
     </Reveal>

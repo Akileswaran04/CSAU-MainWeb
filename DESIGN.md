@@ -140,3 +140,25 @@ The story looked pixelated because each planet was only tetrahedron particles, a
 - **Crew** (`team/TeamView`): deputy heads below the ring, one ruled row per domain, as photo panels with the same disc portrait. Each is a button that opens the profile.
 - **Profile** (`team/TeamProfile`): reuses the Domains detail shell. Photo, role, domain, department, year, the member's own link, what their domain does, and the rest of their wing. Left and right arrows step through the roster, Esc closes, focus is kept in the panel and restored on close, and the page is scroll-locked while it is open.
 - **Photos**: DOM images load straight from the Sanity CDN at the size needed. The ring's canvases need a CORS-readable image; the CDN only allows that for origins registered on the Sanity project, so other origins fall back to `/_next/image` (`images.remotePatterns` in `next.config.ts`).
+
+## 16. Contact and What's New
+
+- **Contact** (`/contact`, `src/data/contact.ts`, `contact/ContactChannels`): the club's channels as ruled rows (label, handle, one line on what it is for) beside a beacon. The beacon reuses the hero's `ping-out` rings and a dashed orbit; hovering or focusing a row tunes it to that channel (readout names it, ping turns to the signal colour). The email row has a Copy button with a polite live announcement. Every channel is one csau.in already publishes; the base is Ramanujan Computing Centre, CEG. On phones the beacon shrinks to a marker beside the readout. The nav gains CONTACT (`dish` glyph, "Open channel"); nav link size is now also capped by viewport height so eight links fit on short laptops.
+- **What's New** (`WhatsNew`, `src/lib/whatsNew.ts`): a small rocket towing a swallow-tailed flag in the bottom-right corner of the home hero. It is absolutely placed in the home content, not fixed, so it scrolls away with the hero. The rocket tows the flag in after the hero settles, then idles (slow bob, engine flicker, flag ripple). Pressing it opens a short list above the rocket: upcoming events and the most recent event from the CMS, plus the newest Medium article. A signal dot marks a list the visitor has not opened (localStorage). Esc or an outside click closes it and focus returns to the rocket. All motion stops under reduced motion. The home page is now a server component so the list is fetched with the page (hourly revalidation).
+
+## 17. Events from the CMS
+
+- **Source** (`src/lib/events.ts`): events are the `event` documents in the club's Sanity CMS, fetched on the server and revalidated hourly, with a real snapshot (`events.fallback.ts`) used only when the CMS is unreachable. `src/data/events.ts` now holds only the card shapes; no event is written by hand.
+- **Mapping**: title to name; date to the display date and the archive year (IST); description to a short plain-text blurb (emoji removed, cut at a sentence or word); mainImage to the poster; location to the card's last line and to the tag (ON CAMPUS, ONLINE or HYBRID). The CMS has no category or attendance fields, so none are shown. An event is upcoming while its date is today or later; an upcoming event with a `registerLink` gets a Register button.
+- **Where it shows**: `/events` (upcoming, then the archive by year with the year rail), the home preview strip (upcoming events topped up with the latest ones), the home story, and What's New.
+- **Story**: the scene is laid out for a fixed number of stops (`STOP_LAYOUT` in `story/stops.ts`). It always visits ten events: up to two upcoming ones, and the most recent past events in the remaining slots. `buildStops()` fills that shape with the real events passed in by the home page, and the section rail lists only the sections that have stops. Long titles wrap onto more lines (15 characters a line).
+- **Posters**: real posters are square or taller, so the 16:10 plate now crops from the top, where posters carry their title.
+
+## 18. No mock content
+
+Nothing on the public site is sample data presented as real.
+
+- **Events, What's New, story, preview**: CMS events only. The hand-written Logic Lift-Off and Quick Code entries are gone; with no upcoming event in the CMS the events page shows its empty state and the preview strip shows the latest events.
+- **`/crackit`**: a practice round. The invented current event, seed leaderboard and past-round archive are removed. It keeps the working quiz (sample questions, labelled as such) and lists only the visitor's own attempts from this browser's localStorage, with the real elapsed time.
+- **`/quick-code`**: describes the format and says no round is open. The invented weekly challenge, participant counts, leaderboard and previous challenges are removed.
+- When real rounds, results or counts exist in the CMS, wire them in through a data module (as `src/lib/events.ts` does) rather than writing them into a page.

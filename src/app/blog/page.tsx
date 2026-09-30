@@ -76,7 +76,7 @@ export default async function BlogPage() {
 
         <p className="pg-next">
           <Link href="/crackit" data-route-load className="btn btn-primary">
-            Join a coding round →
+            Try a practice round →
           </Link>
         </p>
       </div>
