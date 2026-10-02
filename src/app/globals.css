@@ -2840,3 +2840,11 @@ p, li { text-wrap: pretty; }
   .story .story-meta li { font-size: 12.5px; }
   .story .story-btn, .story .story-btn-ghost { min-height: var(--tap-min); font-size: 13px; }
 }
+
+/* ============================================================
+   WHILE THE NAV COVERS THE PAGE (see lib/navState.ts)
+   Nothing under an opaque menu needs painting or animating.
+   ============================================================ */
+html[data-nav-open] #content * { animation-play-state: paused !important; }
+html[data-nav-covered] #content,
+html[data-nav-covered] body > canvas { visibility: hidden; }

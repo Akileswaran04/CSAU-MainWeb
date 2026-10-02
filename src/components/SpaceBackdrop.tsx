@@ -84,7 +84,7 @@ export default function SpaceBackdrop() {
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
-      if (document.hidden) return;
+      if (document.hidden || document.documentElement.dataset.navOpen) return; // nothing to draw for while the menu covers it
       if (now - last < 40) return; // ~25fps is plenty for slow stars
       const dt = last ? (now - last) / 1000 : 0;
       last = now;

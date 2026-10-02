@@ -178,7 +178,7 @@ function IntroScene({
   onDone: () => void;
 }) {
   const tokens = useMemo(() => readTokens(), []);
-  const { camera, size } = useThree();
+  const { camera, size, gl, scene } = useThree();
   const aspect = size.width / size.height;
   const narrow = aspect < 0.9;
   const [gone, setGone] = useState(false);
@@ -232,6 +232,9 @@ function IntroScene({
   const uniforms = useMemo(() => ({ uStreak: { value: 0 }, uOpacity: { value: 0 } }), []);
   const letterMats = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
   const letterGroups = useRef<(THREE.Group | null)[]>([]);
+  /* sets of hidden groups waiting for their one warm-up draw, and the set being drawn now */
+  const pendingPrime = useRef<THREE.Group[][]>([]);
+  const priming = useRef<{ obj: THREE.Object3D; fc: boolean }[] & { groups?: { g: THREE.Group; v: boolean; s: THREE.Vector3 }[] }>([]);
   const arrival = useRef<number[]>([-1, -1, -1, -1]);
   const rings = useRef<(THREE.Mesh | null)[]>([]);
   const traffic = useRef<Record<string, THREE.Group | null>>({});
@@ -239,12 +242,91 @@ function IntroScene({
   const lastX = useRef(0);
   const roll = useRef(0);
 
+  /* Warm up while Earth stands by. The traffic and the letters are hidden until the flight, so their
+     shaders would otherwise compile on the first flight frame and block the main thread for a second
+     or more (a hard stall right after the tap). Show each set for one compileAsync call, which links the
+     programs in parallel without blocking, then hide it again. The letters mount only once the font has
+     loaded, so each set is warmed as soon as it exists. */
+  useEffect(() => {
+    if (reduced) return;
+    let id = 0;
+    let primeTimer = 0;
+    let tries = 0;
+    let trafficDone = false;
+    let lettersDone = false;
+    /* three keys a program by the render target it draws into (output colour space, tone mapping).
+       On desktop the scene is drawn through the bloom composer's float buffer, so compiling against
+       the canvas would warm the wrong programs and every hidden object would compile again, on the
+       main thread, when first seen. Compile against a matching float target there. */
+    const target = mobile ? null : new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+    const warm = (groups: THREE.Group[]) => {
+      const was = groups.map((g) => g.visible);
+      groups.forEach((g) => (g.visible = true));
+      const prev = gl.getRenderTarget();
+      try {
+        gl.setRenderTarget(target);
+        void gl.compileAsync(scene, camera).catch(() => {});
+      } catch {
+        /* a failed warm-up only costs the first-frame hitch */
+      } finally {
+        gl.setRenderTarget(prev);
+      }
+      groups.forEach((g, i) => (g.visible = was[i]));
+      /* compiling links the programs; many drivers only finish them at the first draw, which would land
+         mid-flight. Queue one real (invisible) draw of the set while Earth is still standing by. */
+      primeTimer = window.setTimeout(() => pendingPrime.current.push(groups), 350);
+    };
+    const step = () => {
+      const crossing = Object.values(traffic.current).filter((g): g is THREE.Group => Boolean(g));
+      const letters = letterGroups.current.filter((g): g is THREE.Group => Boolean(g));
+      if (!trafficDone && crossing.length >= 5) {
+        warm(crossing);
+        trafficDone = true;
+      }
+      if (!lettersDone && letters.length >= 4) {
+        warm(letters);
+        lettersDone = true;
+      }
+      if ((!trafficDone || !lettersDone) && tries++ < 80) id = window.setTimeout(step, 150);
+    };
+    id = window.setTimeout(step, 200);
+    return () => {
+      clearTimeout(id);
+      clearTimeout(primeTimer);
+      target?.dispose();
+    };
+  }, [reduced, mobile, gl, scene, camera]);
+
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const now = performance.now() / 1000;
     const st = ctl.current;
     const t = st.startedAt < 0 ? -1 : now - st.startedAt;
     const cam = camera as THREE.PerspectiveCamera;
+
+    /* --- warm-up draw: one frame with a hidden set switched on, culling off and scaled to a point, so
+           its programs are bound and finished now but nothing shows; the next frame puts it all back --- */
+    if (priming.current.groups) {
+      priming.current.forEach(({ obj, fc }) => (obj.frustumCulled = fc));
+      priming.current.groups.forEach(({ g, v, s }) => {
+        g.visible = v;
+        g.scale.copy(s);
+      });
+      priming.current = [];
+    } else if (t < 0 && pendingPrime.current.length) {
+      const groups = pendingPrime.current.shift()!;
+      const saved: { obj: THREE.Object3D; fc: boolean }[] & { groups?: { g: THREE.Group; v: boolean; s: THREE.Vector3 }[] } = [];
+      saved.groups = groups.map((g) => ({ g, v: g.visible, s: g.scale.clone() }));
+      groups.forEach((g) => {
+        g.visible = true;
+        g.scale.setScalar(0.0001);
+        g.traverse((o) => {
+          saved.push({ obj: o, fc: o.frustumCulled });
+          o.frustumCulled = false;
+        });
+      });
+      priming.current = saved;
+    }
 
     /* --- standby: Earth alone, dead centre, a slow drift, pings around it --- */
     if (t < 0) {
@@ -256,7 +338,7 @@ function IntroScene({
         rings.current[i]?.scale.setScalar(EARTH_R * (1.12 + age * 0.5));
       });
       uniforms.uOpacity.value = 0;
-      Object.values(traffic.current).forEach((g) => g && (g.visible = false));
+      if (!priming.current.groups) Object.values(traffic.current).forEach((g) => g && (g.visible = false));
       return;
     }
     if (!pressed.current) {

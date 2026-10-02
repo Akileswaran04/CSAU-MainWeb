@@ -6,7 +6,7 @@ import LandingPage from "./LandingPage";
 import HeroSection from "./HeroSection";
 import Lenis from "lenis";
 import { lockScroll } from "@/lib/scrollLock";
-import StorySection from "./story/StorySection";
+import StorySection, { STORY_HEIGHT } from "./story/StorySection";
 import EventsPreview, { type PreviewEvent } from "./EventsPreview";
 import { buildStops } from "./story/stops";
 import type { PastEvent, UpcomingEvent } from "@/data/events";
@@ -70,6 +70,26 @@ export default function HomeClient({
     };
   }, [phase]);
 
+  /* The story's 3D scene is the heaviest thing on the page (large planet shaders). Mounting it the moment
+     the flight hands off stalls the main thread right on the transition, so it waits until the hero has
+     settled and the browser is idle. Its space is reserved (STORY_HEIGHT), so nothing shifts. */
+  const [storyReady, setStoryReady] = useState(false);
+  useEffect(() => {
+    if (phase !== "content") return;
+    let idle = 0;
+    const ric: (cb: () => void) => number =
+      "requestIdleCallback" in window
+        ? (cb) => window.requestIdleCallback(cb, { timeout: 2500 })
+        : (cb) => window.setTimeout(cb, 1);
+    const t = window.setTimeout(() => {
+      idle = ric(() => setStoryReady(true));
+    }, 1500);
+    return () => {
+      clearTimeout(t);
+      if (idle && "cancelIdleCallback" in window) window.cancelIdleCallback(idle);
+    };
+  }, [phase]);
+
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -78,8 +98,10 @@ export default function HomeClient({
       setPhase("content");
     } else {
       sessionStorage.setItem(GATE_KEY, "true");
-      // Warm the 3D intro chunk while the boot preloader plays.
+      // Warm the 3D intro chunk while the boot preloader plays, and the story's scene
+      // chunk too, so neither is fetched and parsed in the middle of the flight.
       void import("./space/PowerOnIntro");
+      void import("./story/SpaceScene");
     }
   }, []);
 
@@ -136,7 +158,7 @@ export default function HomeClient({
           <HeroSection />
           {/* rocket + flag in the hero's bottom-right corner */}
           <WhatsNew items={whatsNew} />
-          <StorySection stops={stops} />
+          {storyReady ? <StorySection stops={stops} /> : <div aria-hidden style={{ height: STORY_HEIGHT }} />}
           <EventsPreview items={preview} total={eventCount} />
         </div>
       )}

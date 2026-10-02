@@ -5,6 +5,7 @@ import Link from "next/link";
 import DestGlyph from "./DestGlyph";
 import { NAV_DESTINATIONS } from "@/lib/destinations";
 import { lockScroll } from "@/lib/scrollLock";
+import { setNavState } from "@/lib/navState";
 import { usePathname } from "next/navigation";
 
 /* ============================================================
@@ -48,6 +49,23 @@ export default function LaserNav() {
   useEffect(() => {
     if (!open) return;
     return lockScroll();
+  }, [open]);
+
+  /* Tell the rest of the page when the menu covers it, so it can stop drawing what nobody can see
+     (see lib/navState.ts): open at once, covered once the overlay has faded in, both cleared on close. */
+  useEffect(() => {
+    if (!open) return;
+    setNavState({ open: true, covered: false });
+    const t = window.setTimeout(() => setNavState({ covered: true }), 320);
+    return () => {
+      clearTimeout(t);
+      setNavState({ covered: false }); // the page is shown again as soon as the menu starts to leave
+    };
+  }, [open]);
+  useEffect(() => {
+    if (open) return;
+    const t = window.setTimeout(() => setNavState({ open: false }), 300); // after the fade-out
+    return () => clearTimeout(t);
   }, [open]);
 
   // Focus moves into the overlay on open, and back to the button on close

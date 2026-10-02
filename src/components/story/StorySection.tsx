@@ -22,6 +22,9 @@ const N = STOP_LAYOUT.length;
 const TOTAL_W = STOP_LAYOUT.reduce((a, s) => a + s.weight, 0);
 const VH_PER_WEIGHT = 78;
 
+/** The section's height, also reserved by the home page before the story mounts so nothing shifts. */
+export const STORY_HEIGHT = `${TOTAL_W * VH_PER_WEIGHT + 100}vh`;
+
 // cumulative weight boundaries → which stop owns a given progress
 const EDGES: number[] = [];
 {
@@ -41,6 +44,13 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
   // and the scene gets exactly the rest of the screen. null on wide screens.
   const [panel, setPanel] = useState<number | null>(null);
   const [inView, setInView] = useState(true);
+  /* the fullscreen menu covers the page: stop drawing the 3D scene under it */
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setNavOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener("csau:nav-state", on);
+    return () => window.removeEventListener("csau:nav-state", on);
+  }, []);
   const [reduced] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
@@ -130,7 +140,7 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
       aria-label="The CSAU story"
       className="story"
       style={{
-        height: `${TOTAL_W * VH_PER_WEIGHT + 100}vh`,
+        height: STORY_HEIGHT,
         ...(panel ? ({ "--story-panel": `${panel}px` } as React.CSSProperties) : null),
       }}
     >
@@ -138,7 +148,7 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
 
       <div className="story-stage">
         <div className="story-canvas" aria-hidden>
-          <SpaceScene progress={progress} active={inView} reduced={reduced} />
+          <SpaceScene progress={progress} active={inView && !navOpen} reduced={reduced} />
         </div>
 
         <div className="story-copy">

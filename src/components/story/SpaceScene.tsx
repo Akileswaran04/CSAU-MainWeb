@@ -4,7 +4,7 @@
    the intended react-three-fiber pattern. */
 /* eslint-disable react-hooks/immutability */
 
-import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { STOP_LAYOUT as STOPS } from "./stops";
@@ -495,6 +495,37 @@ function Director({ progress, reduced, mobile }: { progress: MutableRefObject<nu
 
 /* ---------------- Canvas wrapper ---------------- */
 
+/** Links every shader in parallel (off the main thread) before the first frame is drawn, then says so.
+ *  On desktop the scene is drawn through the bloom composer's float buffer, and three keys programs by
+ *  render target, so the compile runs against a matching one. */
+function Prewarm({ mobile, onReady }: { mobile: boolean; onReady: (ready: boolean) => void }) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      onReady(true);
+    };
+    const target = mobile ? null : new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+    const prev = gl.getRenderTarget();
+    try {
+      gl.setRenderTarget(target);
+      gl.compileAsync(scene, camera).then(finish, finish);
+    } catch {
+      finish();
+    } finally {
+      gl.setRenderTarget(prev);
+    }
+    const guard = window.setTimeout(finish, 4000); // never hold the scene back for long
+    return () => {
+      clearTimeout(guard);
+      target?.dispose();
+    };
+  }, [gl, scene, camera, mobile, onReady]);
+  return null;
+}
+
 export default function SpaceScene({
   progress,
   active,
@@ -506,18 +537,20 @@ export default function SpaceScene({
 }) {
   const mobile = useMemo(() => isMobileViewport(), []);
   const settled = useSettled();
+  const [warm, setWarm] = useState(false);
   if (!settled) return null;
   return (
     <Canvas
       flat
       dpr={[1, mobile ? 2 : 1.5]}
-      frameloop={active ? "always" : "never"}
+      frameloop={active && warm ? "always" : "never"}
       camera={{ fov: 42, position: [0, 2, 10], near: 0.1, far: 900 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0 }}
     >
       {/* pitch black */}
       <color attach="background" args={["#000000"]} />
+      <Prewarm mobile={mobile} onReady={setWarm} />
       <Director progress={progress} reduced={reduced} mobile={mobile} />
     </Canvas>
   );
