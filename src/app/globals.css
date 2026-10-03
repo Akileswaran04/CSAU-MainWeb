@@ -2042,6 +2042,12 @@ html.scroll-locked { overflow: hidden; }
   letter-spacing: 0.02em;
   color: var(--lit);
 }
+.tm-profile-quote {
+  margin: 10px 0 0;
+  max-width: 48ch;
+  font: italic 13px/1.5 var(--font-mono);
+  color: var(--on-surface-variant);
+}
 .dm-detail-desc {
   margin: 16px 0 0;
   max-width: 62ch;

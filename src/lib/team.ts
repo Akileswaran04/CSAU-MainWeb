@@ -11,6 +11,8 @@ import { DOMAINS_META } from "./domains";
 
    Nothing here is invented: name, designation, domain,
    department, year, photo and profile link are the CMS fields.
+   The current office bearers and heads come from the club's
+   leadership forms instead (see LEADERSHIP_ROWS below).
 
    Faculty Advisor: the CMS holds no faculty record yet. Any
    `team` document whose designation mentions faculty / advisor
@@ -46,6 +48,8 @@ export interface TeamMember {
   /** Sanity image URL without transform params ("" if none) */
   photo: string;
   link?: TeamLink;
+  /** signature catchphrase, from the leadership form ("" if none) */
+  quote?: string;
 }
 
 export type TeamState = "ok" | "fallback";
@@ -104,6 +108,7 @@ interface SanityTeamRow {
   lnurl?: string;
   slug?: string;
   photo?: string;
+  quote?: string;
 }
 
 function groupOf(designation: string): TeamGroup {
@@ -164,8 +169,9 @@ function toMember(r: SanityTeamRow): TeamMember | null {
     domainId: meta?.id,
     department: r.department?.trim() || "",
     year: r.year?.trim() || "",
-    photo: photo.startsWith("http") ? photo : photo ? SANITY_IMAGE_BASE + photo : "",
+    photo: /^(https?:)?\//.test(photo) ? photo : photo ? SANITY_IMAGE_BASE + photo : "",
     link: toLink(r.lnurl),
+    quote: r.quote?.trim() || undefined,
   };
 }
 
@@ -189,13 +195,26 @@ function orderMembers(a: TeamMember, b: TeamMember): number {
 function toRoster(rows: SanityTeamRow[]): TeamMember[] {
   const seen = new Set<string>();
   const members: TeamMember[] = [];
-  for (const r of rows) {
+  for (const r of withLeadership(rows)) {
     const m = toMember(r);
     if (!m || seen.has(m.id)) continue;
     seen.add(m.id);
     members.push(m);
   }
   return members.sort(orderMembers);
+}
+
+/* The CMS still holds last year's office bearers, heads and deputies.
+   Drop them and put the current leadership in. */
+function withLeadership(rows: SanityTeamRow[]): SanityTeamRow[] {
+  const slugs = new Set(LEADERSHIP_ROWS.map((r) => r.slug));
+  const names = new Set(LEADERSHIP_ROWS.map((r) => r.name?.toLowerCase()));
+  const rest = rows.filter((r) => {
+    const group = groupOf(r.designation?.trim() || "Member");
+    if (group === "office" || group === "heads" || group === "deputies") return false;
+    return !slugs.has(r.slug?.trim()) && !names.has(r.name?.trim().toLowerCase());
+  });
+  return [...LEADERSHIP_ROWS, ...rest];
 }
 
 /* ---- live fetch from Sanity ---- */
@@ -236,6 +255,49 @@ export async function getTeam(): Promise<TeamResult> {
     clearTimeout(timeout);
   }
 }
+
+/* ============================================================
+   LEADERSHIP - the 2026-27 office bearers, domain heads and
+   deputy heads, from the club's leadership form responses
+   (Google Sheets) and the photos submitted with them, October
+   2026. They replace the CMS's office bearers, heads and
+   deputies until the CMS is updated; once it carries this
+   team, delete this list.
+   Slugs and profile links are reused from each person's existing
+   CMS record; `quote` is the catchphrase from the heads' form. Photos are square crops in public/images/team.
+   ============================================================ */
+const LEADERSHIP_ROWS: SanityTeamRow[] = [
+  { name: "Suvi Sharon", designation: "President", domain: "", department: "CSE", year: "4th", lnurl: "http://www.linkedin.com/in/suvi-sharon-5b3907287", slug: "suvi-sharon", photo: "/images/team/suvi-sharon.jpg", quote: "Well... I can do this all day." },
+  { name: "Ananyalakshmi V K", designation: "President", domain: "", department: "IT", year: "4th", lnurl: "https://www.linkedin.com/in/ananyalakshmi-v-k-93b420344/", slug: "ananyalakshmi", photo: "/images/team/ananyalakshmi.jpg", quote: "Naan paatuku sivanenu dhaana da poikittu irundhen" },
+  { name: "Sanjay Kumaran S", designation: "General Secretary", domain: "", department: "CSE", year: "4th", lnurl: "https://www.linkedin.com/in/sanjay-kumaran-s-922441292/", slug: "sanjay-kumaran", photo: "/images/team/sanjay-kumaran.jpg", quote: "Once a wise man said, \"Simply Lovely!!!\"" },
+  { name: "Nagasurya N", designation: "Head", domain: "Web and App", department: "IT", year: "4th", lnurl: "https://www.linkedin.com/in/nagasurya-nagamanickam-6ab65a330/", slug: "nagasurya", photo: "/images/team/nagasurya.jpg", quote: "All is well" },
+  { name: "Devadharsan", designation: "Head", domain: "CP Wing", department: "CSE", year: "4th", lnurl: "https://www.linkedin.com/in/devadharsan-m-847017276/", slug: "devadharshan", photo: "/images/team/devadharshan.jpg", quote: "No post-credit scenes ✌️" },
+  { name: "Vilweshwaran M", designation: "Head", domain: "CP Wing", department: "IT", year: "4th", lnurl: "https://www.linkedin.com/in/vilweshwaran-m-a66b2836b/", slug: "vilweshwaran", photo: "/images/team/vilweshwaran.jpg", quote: "Live and let live" },
+  { name: "Abdullah S", designation: "Head", domain: "Design", department: "IT", year: "4th", lnurl: "https://www.linkedin.com/in/abdullah-suhail-baa383287/", slug: "abdullah", photo: "/images/team/abdullah.jpg", quote: "Jack of all trades, master of none... But oftentimes better than master of one 🙂" },
+  { name: "Asifalekha", designation: "Head", domain: "Design", department: "IT", year: "4th", lnurl: "https://www.linkedin.com/in/asifa-lekha", slug: "asifalekha", photo: "/images/team/asifalekha.jpg" },
+  { name: "Ragotma", designation: "Head", domain: "Events", department: "CSE", year: "4th", lnurl: "https://www.linkedin.com/in/ragotma-ragavendar-b6ab90226/", slug: "ragotma-ragavendar", photo: "/images/team/ragotma-ragavendar.jpg", quote: "Don't complicate it." },
+  { name: "Saravana Kumar B", designation: "Head", domain: "Events", department: "CSE", year: "4th", lnurl: "https://www.linkedin.com/in/saravanakumar7447", slug: "saravana-kumar", photo: "/images/team/saravana-kumar.jpg", quote: "Bro... Mela Mela thookitanga, Deputy la irundhu Head uh.. Promotion kuduthutanga..." },
+  { name: "Srisivanandana U", designation: "Head", domain: "HR and Logistics", department: "CSE", year: "4th", lnurl: "http://www.linkedin.com/in/srisivanandana-umaiyorupagam-287249369", slug: "srisivanandana", photo: "/images/team/srisivanandana.jpg", quote: "Too calm for someone with no plan" },
+  { name: "Mohana Krishnan", designation: "Head", domain: "Marketing and IR", department: "EEE", year: "4th", slug: "mohana-krishnan", photo: "/images/team/mohana-krishnan.jpg", quote: "Lead with Purpose. Win with Passion." },
+  /* deputy heads (2024 batch) - the deputy form has no profile links */
+  { name: "Chandhini", designation: "Deputy Head", domain: "Web and App", department: "CSE", year: "3rd", slug: "chandhini", photo: "/images/team/chandhini.jpg" },
+  { name: "Akileswaran A", designation: "Deputy Head", domain: "Web and App", department: "IT", year: "3rd", slug: "akileswaran-a", photo: "/images/team/akileswaran-a.jpg" },
+  { name: "Vijayakumar R", designation: "Deputy Head", domain: "Web and App", department: "IT", year: "3rd", slug: "vijayakumar-r", photo: "/images/team/vijayakumar-r.jpg" },
+  { name: "Sneha Manikandan", designation: "Deputy Head", domain: "Web and App", department: "CSE", year: "3rd", slug: "sneha-manikandan", photo: "/images/team/sneha-manikandan.jpg" },
+  { name: "John Abraham V", designation: "Deputy Head", domain: "CP Wing", department: "IT", year: "3rd", slug: "john-abraham-v", photo: "/images/team/john-abraham-v.jpg" },
+  { name: "Prem Kumar Kale", designation: "Deputy Head", domain: "CP Wing", department: "IT", year: "3rd", slug: "prem-kumar-kale", photo: "/images/team/prem-kumar-kale.jpg" },
+  { name: "Ashlin Thishya J A", designation: "Deputy Head", domain: "Design", department: "CSE", year: "3rd", slug: "ashlin-thishya-j-a", photo: "/images/team/ashlin-thishya-j-a.jpg" },
+  { name: "Karam Santh N", designation: "Deputy Head", domain: "Design", department: "CSE", year: "3rd", slug: "karam-santh-n", photo: "/images/team/karam-santh-n.jpg" },
+  { name: "Bavishya N", designation: "Deputy Head", domain: "Events", department: "IT", year: "3rd", slug: "bavishya-n", photo: "/images/team/bavishya-n.jpg" },
+  { name: "Shyam", designation: "Deputy Head", domain: "Events", department: "IT", year: "3rd", slug: "shyam", photo: "/images/team/shyam.jpg" },
+  { name: "Reena S", designation: "Deputy Head", domain: "Events", department: "IT", year: "3rd", slug: "reena-s", photo: "/images/team/reena-s.jpg" },
+  { name: "Senthil Raja R", designation: "Deputy Head", domain: "Events", department: "IT", year: "3rd", slug: "senthil-raja-r", photo: "/images/team/senthil-raja-r.jpg" },
+  { name: "Harshitha Ganesh", designation: "Deputy Head", domain: "HR and Logistics", department: "CSE", year: "3rd", slug: "harshitha-ganesh", photo: "/images/team/harshitha-ganesh.jpg" },
+  { name: "Akshaya K", designation: "Deputy Head", domain: "HR and Logistics", department: "IT", year: "3rd", slug: "akshaya-k", photo: "/images/team/akshaya-k.jpg" },
+  { name: "Subakshan Sivakumar", designation: "Deputy Head", domain: "HR and Logistics", department: "CSE", year: "3rd", slug: "subakshan-sivakumar", photo: "/images/team/subakshan-sivakumar.jpg" },
+  { name: "Keshika ST", designation: "Deputy Head", domain: "Marketing and IR", department: "CSE", year: "3rd", slug: "keshika-st", photo: "/images/team/keshika-st.jpg" },
+  { name: "Mohammed Ibrahim", designation: "Deputy Head", domain: "Marketing and IR", department: "BME", year: "3rd", slug: "mohammed-ibrahim", photo: "/images/team/mohammed-ibrahim.jpg" },
+];
 
 /* ============================================================
    FALLBACK - a real snapshot of the CSAU `team` documents,

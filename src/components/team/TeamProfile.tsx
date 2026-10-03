@@ -151,6 +151,7 @@ export default function TeamProfile({
               {member.name}
             </h2>
             <p className="dm-detail-lede">{member.role}</p>
+            {member.quote && <p className="tm-profile-quote">&ldquo;{member.quote}&rdquo;</p>}
 
             <dl className="tm-facts">
               {facts

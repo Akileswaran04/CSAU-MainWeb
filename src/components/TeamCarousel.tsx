@@ -16,7 +16,7 @@ import { initials, memberMeta, photoUrl } from "@/lib/team";
      to the front where it faces the camera dead-centre.
    • A vertical "CSAU" wordmark (Ethnocentric brand font)
      stands at the centre of the ring, inside the carousel.
-   • role / name / dept / links crossfade beside the front panel;
+   • role / name / dept / catchphrase / links crossfade beside the front panel;
      the front card (or "View profile") opens the member profile.
    • The ring is sized from the member count: past ten members it
      grows so every card keeps the same width, and is pushed back
@@ -956,6 +956,15 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
             >
               {memberMeta(member)}
             </div>
+            {member.quote && (
+              <p
+                key={member.id + "-quote"}
+                className="tc-quote"
+                style={{ animation: "tw-fade-in .6s ease .2s both" }}
+              >
+                &ldquo;{member.quote}&rdquo;
+              </p>
+            )}
             <div
               key={member.id + "-links"}
               className="tc-links-row"
@@ -1095,6 +1104,16 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
           @media (prefers-reduced-motion: reduce) {
             .tc-wave path { animation: none; stroke-dashoffset: 0; }
           }
+          .tc-quote {
+            max-width: 34ch;
+            margin: 12px 0 0 auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-style: italic;
+            line-height: 1.5;
+            color: var(--on-surface-variant);
+            text-wrap: pretty;
+          }
           .tc-links-row {
             display: flex;
             gap: 10px;
@@ -1117,6 +1136,15 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
             .tc-role-block { padding: 0 0 0 14px; }
             .tc-detail-block { padding: 0; }
             .tc-wave { margin-left: 0; }
+            /* one line here - the full line is in the profile */
+            .tc-quote {
+              max-width: none;
+              margin: 6px 0 0;
+              font-size: 12px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
             .tc-links-row { flex-wrap: wrap; justify-content: flex-start; margin-top: 14px; }
           }
           .tc-links-row .btn { pointer-events: auto; text-shadow: none; }

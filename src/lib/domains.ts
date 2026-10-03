@@ -1,12 +1,12 @@
+import { getTeam } from "./team";
+
 /* ============================================================
    DOMAINS DATA - CSAU's six working domains.
 
-   The domain names and their members are the club's real data,
-   stored in the same Sanity CMS the main site uses (project
-   wzu06sd5 / production, `team` documents carry a `domain`
-   field). Members are fetched live and grouped by domain, with
-   a baked-in real snapshot as a fallback if the CMS is
-   unreachable.
+   The domain names are the club's real data, matching the
+   `domain` field of the `team` documents in the Sanity CMS
+   (project wzu06sd5 / production). Members are the /team roster
+   (src/lib/team.ts) grouped by domain.
 
    The description / principles / activities describe what each
    real wing actually does - written to match the club, not
@@ -23,7 +23,7 @@ export interface DomainMember {
   year: string;
   /** LinkedIn / profile URL, if present */
   url?: string;
-  /** the member's photograph (Sanity image URL without transform params), if the CMS has one */
+  /** the member's photograph (Sanity image URL without transform params, or a local path), if there is one */
   photo?: string;
 }
 
@@ -44,10 +44,6 @@ export interface Domain {
   activities: string[];
   members: DomainMember[];
 }
-
-const SANITY_PROJECT_ID = "wzu06sd5";
-const SANITY_DATASET = "production";
-const SANITY_API_VERSION = "v2021-10-21";
 
 /* ---- the six domains (order = ring order on Saturn) ---- */
 
@@ -149,17 +145,7 @@ export interface DomainsResult {
   state: DomainsState;
 }
 
-/* ---- live member fetch from Sanity ---- */
-
-interface SanityTeamMember {
-  name?: string;
-  domain?: string;
-  designation?: string;
-  department?: string;
-  year?: string;
-  lnurl?: string;
-  photo?: string;
-}
+/* ---- members, from the team roster ---- */
 
 function orderMembers(a: DomainMember, b: DomainMember): number {
   const rank = (d: string) => (/^head$/i.test(d) ? 0 : 1);
@@ -167,134 +153,26 @@ function orderMembers(a: DomainMember, b: DomainMember): number {
   return r !== 0 ? r : a.name.localeCompare(b.name);
 }
 
-async function fetchMembersByDomain(
-  signal?: AbortSignal,
-): Promise<Map<string, DomainMember[]> | null> {
-  const query = `*[_type == "team" && defined(domain)]{name, domain, designation, department, year, lnurl, "photo": image.asset->url}`;
-  const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(
-    query,
-  )}`;
-
-  try {
-    const res = await fetch(url, { signal, next: { revalidate: 3600 } });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { result?: SanityTeamMember[] };
-    const rows = data.result ?? [];
-    if (rows.length === 0) return null;
-
-    const byDomain = new Map<string, DomainMember[]>();
-    for (const r of rows) {
-      const dom = r.domain?.trim();
-      const name = r.name?.trim();
-      if (!dom || !name) continue;
-      const member: DomainMember = {
-        name,
-        designation: r.designation?.trim() || "Member",
-        department: r.department?.trim() || "",
-        year: r.year?.trim() || "",
-        url: r.lnurl?.trim() || undefined,
-        photo: r.photo?.trim() || undefined,
-      };
-      const list = byDomain.get(dom) ?? [];
-      list.push(member);
-      byDomain.set(dom, list);
-    }
-    for (const list of byDomain.values()) list.sort(orderMembers);
-    return byDomain;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * The six domains with their live member lists. Revalidated hourly.
- * Falls back to the baked-in real snapshot if Sanity is unreachable.
+ * The six domains with their members. Members come from the same roster
+ * as /team (the CMS plus the current leadership, with its own fallback),
+ * so both pages always list the same people.
  */
 export async function getDomains(): Promise<DomainsResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const byDomain = await fetchMembersByDomain(controller.signal);
-    if (!byDomain) {
-      return { domains: withFallbackMembers(), state: "fallback" };
-    }
-    const domains = DOMAIN_DEFS.map<Domain>((d) => ({
-      ...d,
-      members: byDomain.get(d.cmsDomain) ?? [],
-    }));
-    // If the CMS returned rows but none matched our six domains, use fallback.
-    const anyMembers = domains.some((d) => d.members.length > 0);
-    if (!anyMembers) return { domains: withFallbackMembers(), state: "fallback" };
-    return { domains, state: "ok" };
-  } catch {
-    return { domains: withFallbackMembers(), state: "fallback" };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function withFallbackMembers(): Domain[] {
-  return DOMAIN_DEFS.map<Domain>((d) => ({
+  const { members, state } = await getTeam();
+  const domains = DOMAIN_DEFS.map<Domain>((d) => ({
     ...d,
-    members: (FALLBACK_MEMBERS[d.cmsDomain] ?? []).slice().sort(orderMembers),
+    members: members
+      .filter((m) => m.domainId === d.id)
+      .map<DomainMember>((m) => ({
+        name: m.name,
+        designation: m.designation,
+        department: m.department,
+        year: m.year,
+        url: m.link?.url,
+        photo: m.photo || undefined,
+      }))
+      .sort(orderMembers),
   }));
+  return { domains, state };
 }
-
-/* ============================================================
-   FALLBACK - a real snapshot of the CSAU team by domain,
-   captured from Sanity. Used only when the live CMS cannot be
-   reached. These are genuine members, not invented ones.
-   ============================================================ */
-const FALLBACK_MEMBERS: Record<string, DomainMember[]> = {
-  "Web and App": [
-    { name: "Mohamed Imran", designation: "Head", department: "CSE", year: "4th", url: "https://www.linkedin.com/in/mohamed-imran-rmn-206713253" },
-    { name: "Tarun Kumar Elangovan", designation: "Head", department: "CSE", year: "4th", url: "https://www.linkedin.com/in/tarun-kumar-x12" },
-    { name: "Abhijith", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/abhijith-m-a3541b278/" },
-    { name: "Gnana Keshav", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://github.com/161-Keshav" },
-    { name: "Hiba Al Hasan", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/hiba-hasan-5b4b64254/" },
-    { name: "Suhaib Sharieff", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/suhaib-sharieff/" },
-  ],
-  "CP Wing": [
-    { name: "Dakshinesh M", designation: "Head", department: "CSE", year: "4th", url: "https://www.linkedin.com/in/dakshinesh-mandrasalam/" },
-    { name: "Neelakandan", designation: "Head", department: "IT", year: "4th", url: "https://linkedin.com/in/neelakandan-s-profile" },
-    { name: "Sree Ram T R", designation: "Head", department: "IT", year: "4th", url: "https://www.linkedin.com/in/sreeramtr/" },
-    { name: "Devadharshan", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/devadharsan-m-847017276/" },
-    { name: "Vilweshwaran", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/vilweshwaran-m-a66b2836b/" },
-  ],
-  Design: [
-    { name: "Jayashree J", designation: "Head", department: "IT", year: "4th", url: "https://www.linkedin.com/in/jayashree-jeyapal-008a90297" },
-    { name: "Kiruthiga P M", designation: "Head", department: "CSE", year: "4th", url: "https://www.linkedin.com/in/kiruthiga-pm" },
-    { name: "Abdullah", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/abdullah-suhail-baa383287/" },
-    { name: "Asifalekha", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/asifa-lekha" },
-    { name: "Kashika", designation: "Deputy Head", department: "GI", year: "3rd", url: "https://www.linkedin.com/in/kashika-venkatesan-991550331/" },
-    { name: "Nagasurya", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/nagasurya-nagamanickam-6ab65a330/" },
-  ],
-  Events: [
-    { name: "Soumya R", designation: "Head", department: "IT", year: "4th", url: "https://www.linkedin.com/in/soumya-renganathen-aa61a1263" },
-    { name: "Swarna Karthika N", designation: "Head", department: "IT", year: "4th", url: "https://www.linkedin.com/in/swarna-karthika-n" },
-    { name: "Ananyalakshmi", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/ananyalakshmi-v-k-93b420344/" },
-    { name: "Ragotma Ragavendar", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/ragotma-ragavendar-b6ab90226/" },
-    { name: "Sainikitha", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/sainikithailangovan/" },
-    { name: "Sanjay Kumaran", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/sanjay-kumaran-s-922441292/" },
-    { name: "Sankara Krishnan", designation: "Deputy Head", department: "IT", year: "3rd", url: "https://www.linkedin.com/in/sankara-krishnan-p-3ab7bb28a/" },
-    { name: "Suvi Sharon", designation: "Deputy Head", department: "CSE", year: "3rd", url: "http://www.linkedin.com/in/suvi-sharon-5b3907287" },
-  ],
-  "HR and Logistics": [
-    { name: "Abhi Lavanya", designation: "Head", department: "CSE", year: "4th", url: "http://www.linkedin.com/in/abhi-lavanya-597457300" },
-    { name: "Harshika Senthil", designation: "Head", department: "CSE", year: "4th", url: "https://www.linkedin.com/in/harshika-senthil-24bb19317" },
-    { name: "Abirami Ramanathan", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/abirami-ramanathan-707521285/" },
-    { name: "Kavya Sri", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/kavya-sri-v-4547272b3/" },
-    { name: "Nikhitaa", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/nikhitaa-muthukumar/" },
-    { name: "Srisivanandana", designation: "Deputy Head", department: "IT", year: "3rd", url: "http://www.linkedin.com/in/srisivanandana-umaiyorupagam-287249369" },
-  ],
-  "Marketing and IR": [
-    { name: "Lavanyalashmi E", designation: "Head", department: "IT", year: "4th", url: "https://www.linkedin.com/in/lavanyalashmi-elavarasan-816b7a287/" },
-    { name: "Sowmiya D", designation: "Head", department: "CSE", year: "4th", url: "http://www.linkedin.com/in/sowmiya-dasarathan-687b1527a" },
-    { name: "Balaji", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/balaji-tamilselvan-b26105344/" },
-    { name: "Naslun Wafa", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/naslun-wafa-50961633a/" },
-    { name: "Sarveswar", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/sarveswar/" },
-    { name: "Vishva Pranav", designation: "Deputy Head", department: "CSE", year: "3rd", url: "https://www.linkedin.com/in/vishva-pranav-048003280/" },
-    { name: "Abdullah Mohamed Jahufar", designation: "Deputy Head", department: "EEE", year: "3rd" },
-    { name: "Mohamed Huzaifa", designation: "Deputy Head", department: "EEE", year: "3rd" },
-  ],
-};
