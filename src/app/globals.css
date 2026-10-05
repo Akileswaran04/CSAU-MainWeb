@@ -2854,3 +2854,9 @@ p, li { text-wrap: pretty; }
 html[data-nav-open] #content * { animation-play-state: paused !important; }
 html[data-nav-covered] #content,
 html[data-nav-covered] body > canvas { visibility: hidden; }
+
+/* ============================================================
+   BOOT GATE - returning visitors skip it (set before paint by the
+   script in layout.tsx), so it never flashes.
+   ============================================================ */
+html[data-gate="seen"] .gate { display: none !important; }

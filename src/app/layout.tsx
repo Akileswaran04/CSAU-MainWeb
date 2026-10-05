@@ -25,13 +25,19 @@ export const metadata: Metadata = {
     "Computer Society of Anna University, CEG - Build. Break. Ship.",
 };
 
+/* Returning visitors skip the boot gate; this marks <html> before paint so it never flashes. */
+const GATE_SCRIPT = `try{if(sessionStorage.getItem("csau-gate-seen")==="true")document.documentElement.dataset.gate="seen"}catch(e){}`;
+
 export default function RootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
   return (
-    <html lang="en" className={jetbrainsMono.variable}>
+    <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: GATE_SCRIPT }} />
+      </head>
       <body>
         <a href="#content" className="skip-link">
           Skip to content
