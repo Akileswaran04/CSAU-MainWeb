@@ -70,9 +70,13 @@ const LOOK: Record<string, { d: number; c: string; ring?: boolean }> = {
   Pluto: { d: 5, c: "#d7ccbd" },
 };
 
-/* The menu's stops, outermost first: the order they light in. Orbits are evenly spaced from a fifth of
-   the outermost out; one turn takes longer further out (Kepler, softened); starts are spread round. */
-const PLANETS = [...NAV_DESTINATIONS]
+/* The menu's stops, and Earth (where the start page is, and where the fall lands) if no stop is Earth,
+   outermost first: the order they light in. Orbits are evenly spaced from a fifth of the outermost out;
+   one turn takes longer further out (Kepler, softened); starts are spread round. */
+const STOPS: { planet: string; au: string }[] = NAV_DESTINATIONS.some((d) => d.planet === "Earth")
+  ? NAV_DESTINATIONS
+  : [...NAV_DESTINATIONS, { planet: "Earth", au: "1.00 AU" }];
+const PLANETS = [...STOPS]
   .sort((a, b) => parseFloat(b.au) - parseFloat(a.au))
   .map((dest, i, all) => {
     const f = 1 - (0.8 * i) / Math.max(1, all.length - 1);

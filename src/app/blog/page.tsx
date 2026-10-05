@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getBlogPosts } from "@/lib/blog";
 import BlogList from "./BlogList";
 
@@ -73,12 +72,6 @@ export default async function BlogPage() {
         ) : (
           <BlogList posts={posts} />
         )}
-
-        <p className="pg-next">
-          <Link href="/crackit" data-route-load className="btn btn-primary">
-            Try a practice round →
-          </Link>
-        </p>
       </div>
     </main>
   );

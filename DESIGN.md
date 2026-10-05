@@ -64,7 +64,7 @@ No model files, no textures. Everything is built in three.js. `space/bodies.tsx`
 | `/` | Boot → start → hero → story |
 | `/team` | `TeamCarousel`: a 3D ring of member panels around a CSAU totem, two satellites orbiting the floor rings |
 | `/events`, `/blog` | Archive panels with radar-ping hover (`space-panel`) |
-| `/crackit`, `/quick-code` | Arena pages (`arena-css.ts`); quick-code hero uses CSS radar rings |
+| `/quick-code` | Arena page (`arena-css.ts`); its hero uses CSS radar rings |
 | not-found | Ping rule and probe mark |
 
 Navigation is the fullscreen `LaserNav` overlay (see section 20). Travelling by nav or `[data-route-load]` CTAs plays `RouteLoadGate` / `LoadingOverlay` (~5s, unchanged behaviour).
@@ -159,7 +159,7 @@ The story looked pixelated because each planet was only tetrahedron particles, a
 Nothing on the public site is sample data presented as real.
 
 - **Events, What's New, story, preview**: CMS events only. The hand-written Logic Lift-Off and Quick Code entries are gone; with no upcoming event in the CMS the events page shows its empty state and the preview strip shows the latest events.
-- **`/crackit`**: a practice round. The invented current event, seed leaderboard and past-round archive are removed. It keeps the working quiz (sample questions, labelled as such) and lists only the visitor's own attempts from this browser's localStorage, with the real elapsed time.
+- **`/crackit`**: removed (2026-10-05), with its stop in the menu and the Blog page's link to it.
 - **`/quick-code`**: describes the format and says no round is open. The invented weekly challenge, participant counts, leaderboard and previous challenges are removed.
 - When real rounds, results or counts exist in the CMS, wire them in through a data module (as `src/lib/events.ts` does) rather than writing them into a page.
 

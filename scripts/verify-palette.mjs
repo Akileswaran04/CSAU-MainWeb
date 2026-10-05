@@ -101,7 +101,7 @@ body.overflowX === "clip" ? pass("body overflow-x is clip") : fail("body overflo
 await page.close();
 
 /* 4. fonts + measure on every route */
-const ROUTES = ["/", "/team", "/events", "/blog", "/crackit", "/quick-code", "/does-not-exist"];
+const ROUTES = ["/", "/team", "/events", "/blog", "/quick-code", "/does-not-exist"];
 const ALLOWED = /ethnocentric|jetbrains|monospace|fallback/i;
 for (const r of ROUTES) {
   const p = await browser.newPage();

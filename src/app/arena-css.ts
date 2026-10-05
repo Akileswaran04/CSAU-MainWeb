@@ -1,4 +1,4 @@
-/* Shared space styling for /crackit and /quick-code (scoped by pa-* / qc-* classes). */
+/* Space styling for /quick-code (scoped by pa-* / qc-* classes). */
 export const ARENA_CSS = `
   .pa-btn {
     position: relative;

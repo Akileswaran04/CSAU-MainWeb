@@ -24,7 +24,6 @@ export const DESTINATIONS: Destination[] = [
   { href: "/events", label: "EVENTS", name: "Events", glyph: "station", sector: "Docking ring", planet: "Saturn", au: "9.5 AU", gate: "II", gateNo: 2 },
   { href: "/blog", label: "BLOG", name: "Blog", glyph: "comet", sector: "Comet trail", planet: "Jupiter", au: "5.2 AU", gate: "III", gateNo: 3 },
   { href: "/domains", label: "DOMAINS", name: "Domains", glyph: "rings", sector: "Ringed world", planet: "Mars", au: "1.52 AU", gate: "IV", gateNo: 4 },
-  { href: "/crackit", label: "CRACKIT", name: "CrackIt", glyph: "hole", sector: "Event horizon", planet: "Earth", au: "1.00 AU", gate: "V", gateNo: 5 },
   { href: "/team", label: "TEAM", name: "Team", glyph: "constellation", sector: "Crew constellation", planet: "Venus", au: "0.72 AU", gate: "VI", gateNo: 6 },
   // Out of the nav until a real, CMS-backed round exists; the page still explains the format.
   { href: "/quick-code", label: "QUICK CODE", name: "Quick Code", glyph: "pulsar", sector: "Pulsar beam", planet: "Ceres", au: "2.77 AU", gate: "IX", gateNo: 9, hidden: true },

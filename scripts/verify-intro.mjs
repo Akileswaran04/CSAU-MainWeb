@@ -109,7 +109,7 @@ for (const [label, w, h, mob] of [["desktop", 1440, 900, false], ["mobile", 390,
 }
 
 /* ---------- 4. Every route scrolls right after load ---------- */
-const ROUTES = ["/team", "/events", "/blog", "/crackit", "/quick-code", "/does-not-exist"];
+const ROUTES = ["/team", "/events", "/blog", "/quick-code", "/does-not-exist"];
 for (const [label, w, h, mob] of [["desktop", 1440, 900, false], ["mobile", 390, 844, true]]) {
   for (const r of ROUTES) {
     const { page } = await open(w, h, mob);

@@ -8,7 +8,7 @@ const browser = await puppeteer.launch({
   headless: "new",
   args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
 });
-const ROUTES = ["/team", "/events", "/blog", "/crackit", "/quick-code", "/nope"];
+const ROUTES = ["/team", "/events", "/blog", "/quick-code", "/nope"];
 for (const [label, w, h, mob] of [["m", 390, 844, true], ["d", 1440, 900, false]]) {
   for (const r of ROUTES) {
     const page = await browser.newPage();
