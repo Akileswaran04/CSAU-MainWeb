@@ -159,7 +159,6 @@ The story looked pixelated because each planet was only tetrahedron particles, a
 Nothing on the public site is sample data presented as real.
 
 - **Events, What's New, story, preview**: CMS events only. The hand-written Logic Lift-Off and Quick Code entries are gone; with no upcoming event in the CMS the events page shows its empty state and the preview strip shows the latest events.
-- **`/crackit`**: removed (2026-10-05), with its stop in the menu and the Blog page's link to it.
 - **`/quick-code`**: describes the format and says no round is open. The invented weekly challenge, participant counts, leaderboard and previous challenges are removed.
 - When real rounds, results or counts exist in the CMS, wire them in through a data module (as `src/lib/events.ts` does) rather than writing them into a page.
 

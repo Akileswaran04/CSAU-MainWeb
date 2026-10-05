@@ -28,13 +28,6 @@ export default function DestGlyph({ kind, size = 44, on = true, orbit = false }:
           <path d="M30 18L6 42M32 20L14 42M36 19L26 42" opacity=".7" />
         </>
       )}
-      {kind === "hole" && (
-        <>
-          <circle cx="24" cy="24" r="7" fill="var(--void-950)" />
-          <ellipse cx="24" cy="24" rx="20" ry="7" />
-          <ellipse cx="24" cy="24" rx="14" ry="4.5" opacity=".6" stroke={hot} />
-        </>
-      )}
       {kind === "constellation" && (
         <>
           <path d="M8 34L18 20 28 28 40 10" opacity=".7" />

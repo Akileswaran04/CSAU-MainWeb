@@ -25,8 +25,9 @@ export const metadata: Metadata = {
     "Computer Society of Anna University, CEG - Build. Break. Ship.",
 };
 
-/* Returning visitors skip the boot gate; this marks <html> before paint so it never flashes. */
-const GATE_SCRIPT = `try{if(sessionStorage.getItem("csau-gate-seen")==="true")document.documentElement.dataset.gate="seen"}catch(e){}`;
+/* Returning visitors skip the boot gate; this marks <html> before paint so it never flashes. It also clears what
+   the removed CrackIt practice round saved in this browser (names and roll numbers typed on shared machines). */
+const GATE_SCRIPT = `try{if(sessionStorage.getItem("csau-gate-seen")==="true")document.documentElement.dataset.gate="seen"}catch(e){}try{localStorage.removeItem("csau-crackit-leaderboard-v1")}catch(e){}`;
 
 export default function RootLayout({
   children,

@@ -174,10 +174,14 @@ function toUpcoming(e: MappedEvent): UpcomingEvent {
   };
 }
 
+/** CrackIT is no longer on the site (2026-10-05): its events are left out wherever they come from */
+const DROPPED = /crack\s*-?\s*it/i;
+
 function build(rows: SanityEventRow[], now: number): { current: UpcomingEvent[]; past: PastEvent[] } {
   const seen = new Set<string>();
   const mapped: MappedEvent[] = [];
   for (const r of rows) {
+    if (DROPPED.test(r.title ?? "") || DROPPED.test(r.slug ?? "")) continue;
     const m = mapRow(r);
     if (!m || seen.has(m.past.id)) continue;
     seen.add(m.past.id);

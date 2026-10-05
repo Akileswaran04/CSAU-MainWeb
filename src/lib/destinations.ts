@@ -1,7 +1,7 @@
 /* Each page is a place in the deep space network. The nav menu and the
    travel loader use these: a glyph, a name and a one-line sector call. */
 
-export type GlyphKind = "earth" | "station" | "comet" | "hole" | "constellation" | "pulsar" | "rings" | "dish";
+export type GlyphKind = "earth" | "station" | "comet" | "constellation" | "pulsar" | "rings" | "dish";
 
 export interface Destination {
   href: string;
