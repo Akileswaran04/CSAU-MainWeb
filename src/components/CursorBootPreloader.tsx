@@ -1,74 +1,215 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import AstronautScene from "./AstronautScene";
+import "./boot.css";
+import { useEffect, useRef, type CSSProperties } from "react";
+import { NAV_DESTINATIONS } from "@/lib/destinations";
+import type { EarthOnScreen } from "./space/PowerOnIntro";
 
 /* ============================================================
-   BOOT PRELOADER - the pre-flight checklist
+   BOOT PRELOADER - the planets light up
 
-   Plays once per session, before the start page. No animation
-   tricks: a big counter and a ruled checklist of six systems that
-   flip from WAIT to OK one after another as the count climbs, then
-   "Cleared for launch" and a fade.
+   Plays once per session, before the start page. A small Sun and the
+   orbits of the menu's eight stops (lib/destinations: Home is Neptune
+   ... Contact is Pluto), seen at a slant. As the site loads, the
+   planets light up one by one, outermost first, and the Sun
+   brightens. When the last one is lit the view falls toward Earth,
+   which grows into the real Earth of the start page, already drawn
+   underneath (HomeClient builds the start page under this).
 
-   The count is driven by time (so it always reads, ~3.4s) but is
-   held at 92 until the page has really finished loading, so it can
-   never claim to be done early. onComplete fires once, after the
-   fade. Reduced motion: the same checklist, in about a second.
+   The only words are the percentage and Skip.
+
+   It follows real loading, not a clock. Five things, each worth a
+   share of the 100%: the page itself, its fonts, the browser's load
+   event, the start page's 3D code, and Earth drawn once. While some
+   are pending the count creeps toward them but never reaches them,
+   so the last planet lights (100%) only once Earth is on screen. It
+   rises no faster than 100% in RISE_MS and lights one planet at a
+   time, so it reads. After MAX_WAIT_MS it lets the visitor through,
+   whatever is still pending.
+
+   The orbits turn with CSS transforms on the compositor, so they keep
+   moving while the 3D scene is built on the main thread. The count and
+   the planets are written straight to the page from the frame loop, as
+   the route loader does, so no planet is ever skipped on screen. Reduced
+   motion: nothing turns and nothing falls; the planets light in place
+   and it fades onto the start page.
    ============================================================ */
 
-interface CursorBootPreloaderProps {
+interface Props {
+  /** the start page's 3D code has arrived */
+  scene: boolean;
+  /** Earth has been drawn on the start page, and how big it is there; null until then */
+  earth: EarthOnScreen | null;
   onComplete?: () => void;
 }
 
-/* the constellation that draws itself as the signal is acquired */
-const NODES: [number, number][] = [[20, 128], [62, 84], [112, 104], [150, 52], [204, 74], [246, 30], [268, 96], [214, 128], [150, 118]];
-const EDGES: [number, number][] = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [4, 6], [6, 7], [7, 8], [8, 2]];
-const CALLS = ["Searching for signal", "Locking star tracker", "Aligning the dish", "Drawing the constellation", "Link established"];
-const MIN_MS = 3400;
-const MIN_MS_REDUCED = 1100;
-const HELD_AT = 92; // the count waits here until the page has really loaded
+/* what loading is made of, and each part's share of the 100% */
+const SHARE = { page: 10, fonts: 15, load: 20, scene: 25, earth: 30 } as const;
+type Part = keyof typeof SHARE;
+const CREEP = 0.6; // how far into the pending shares the count may creep while it waits
+const CREEP_MS = 3000;
+const RISE_MS = 1500; // 0 to 100 never takes less than this, so each planet is seen to light
+const RISE_MS_REDUCED = 700;
+const MAX_WAIT_MS = 15000; // safety net: never hold the visitor longer than this (Skip is always there)
+const HOLD_MS = 300; // the last planet's ping, before the fall
+const FALL_MS = 1000;
+const FADE_MS = 450;
+const SKIP_MS = 300;
 
-export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderProps) {
-  const [pct, setPct] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const [visible, setVisible] = useState(true);
+const round = (n: number, d = 3) => Math.round(n * 10 ** d) / 10 ** d;
+
+/* how each planet looks once lit: size in px, a muted natural colour, Saturn's ring */
+const LOOK: Record<string, { d: number; c: string; ring?: boolean }> = {
+  Mercury: { d: 6, c: "#c9c4bb" },
+  Venus: { d: 9, c: "#efe1bf" },
+  Earth: { d: 10, c: "#5b9cf0" },
+  Mars: { d: 7, c: "#df9b7d" },
+  Jupiter: { d: 19, c: "#e5cba4" },
+  Saturn: { d: 15, c: "#e7d8b2", ring: true },
+  Neptune: { d: 12, c: "#8fb3e8" },
+  Pluto: { d: 5, c: "#d7ccbd" },
+};
+
+/* The menu's stops, outermost first: the order they light in. Orbits are evenly spaced from a fifth of
+   the outermost out; one turn takes longer further out (Kepler, softened); starts are spread round. */
+const PLANETS = [...NAV_DESTINATIONS]
+  .sort((a, b) => parseFloat(b.au) - parseFloat(a.au))
+  .map((dest, i, all) => {
+    const f = 1 - (0.8 * i) / Math.max(1, all.length - 1);
+    return {
+      id: dest.planet.toLowerCase(),
+      f: round(f),
+      T: round(9 * Math.pow(f / 0.2, 1.5), 1),
+      a: Math.round((i * 137.5 + 20) % 360),
+      ...(LOOK[dest.planet] ?? { d: 7, c: "#e6e1d4" }),
+    };
+  });
+const STEP = 100 / PLANETS.length;
+
+/* sparse still stars: left %, top %, opacity */
+const STARS = (() => {
+  let s = 20261003;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  return Array.from({ length: 34 }, () => [round(rnd() * 100, 2), round(rnd() * 100, 2), round(0.18 + rnd() * 0.42, 2)] as const);
+})();
+
+export default function CursorBootPreloader({ scene, earth, onComplete }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const parts = useRef<Record<Part, boolean>>({ page: false, fonts: false, load: false, scene: false, earth: false });
+  const earthRef = useRef(earth);
   const completeRef = useRef(onComplete);
+  const skipRef = useRef(false);
+  const leaveRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     completeRef.current = onComplete;
-  }, [onComplete]);
+    earthRef.current = earth;
+    parts.current.scene ||= scene || !!earth;
+    parts.current.earth ||= !!earth;
+  }, [onComplete, scene, earth]);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const min = reduced ? MIN_MS_REDUCED : MIN_MS;
-    const t0 = performance.now();
-    let loaded = document.readyState === "complete";
-    const onLoad = () => {
-      loaded = true;
-    };
-    window.addEventListener("load", onLoad);
+    const has = parts.current;
+    has.page = true;
+    const onLoad = () => void (has.load = true);
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad);
+    void document.fonts?.ready.then(() => void (has.fonts = true));
 
+    const dots = [...root.querySelectorAll<HTMLElement>("[data-planet]")];
+    const orbits = [...root.querySelectorAll<SVGCircleElement>(".bt-orbits circle")];
+    const pctEl = root.querySelector<HTMLElement>(".bt-pct")!;
+    const t0 = performance.now();
+    const rise = 100 / (reduced ? RISE_MS_REDUCED : RISE_MS); // % per ms
+    let p = 0;
+    let last = t0;
+    let pct = 0;
+    let lit = 0;
+    const show = () => {
+      pctEl.textContent = `${pct}%`;
+      pctEl.setAttribute("aria-valuenow", String(pct));
+      root.style.setProperty("--p", String(pct / 100));
+      for (let i = 0; i < lit; i++) {
+        dots[i].dataset.lit = "true";
+        orbits[i].dataset.lit = "true";
+      }
+    };
     let raf = 0;
-    let last = -1;
-    let finished = false;
+    let leaving = false;
+    let completed = false;
     const timers: number[] = [];
+    const anims: Animation[] = [];
+    const run = (el: Element, frames: Keyframe[], o: KeyframeAnimationOptions) => {
+      const a = el.animate(frames, { fill: "forwards", ...o });
+      anims.push(a);
+      return a;
+    };
+    const complete = () => {
+      if (completed) return;
+      completed = true;
+      completeRef.current?.();
+    };
+    const fadeOut = (ms: number, delay = 0) => void run(root, [{ opacity: 1 }, { opacity: 0 }], { duration: ms, delay, easing: "ease" }).finished.then(complete, () => {});
+
+    /* the fall: the system swings toward Earth and fades, while Earth grows from its dot into the real Earth below */
+    const fall = (dot: HTMLElement, r: number) => {
+      const sys = root.querySelector<HTMLElement>(".bt-sys")!;
+      const sky = root.querySelector<HTMLElement>(".bt-sky")!;
+      const disc = root.querySelector<HTMLElement>(".bt-earth")!;
+      const at = dot.getBoundingClientRect();
+      const box = sys.getBoundingClientRect();
+      const ex = at.left + at.width / 2;
+      const ey = at.top + at.height / 2;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const ease = "cubic-bezier(.65,0,.25,1)";
+      Object.assign(disc.style, { width: `${2 * r}px`, height: `${2 * r}px`, margin: `${-r}px 0 0 ${-r}px` });
+      sys.style.transformOrigin = `${ex - box.left}px ${ey - box.top}px`;
+      sky.style.transformOrigin = `${ex}px ${ey}px`;
+      dot.style.visibility = "hidden";
+      run(sys, [{ transform: "none", opacity: 1 }, { opacity: 0.55, offset: 0.4 }, { transform: `translate(${cx - ex}px, ${cy - ey}px) scale(5)`, opacity: 0 }], { duration: FALL_MS, easing: ease });
+      run(disc, [{ transform: `translate(${ex - cx}px, ${ey - cy}px) scale(${at.width / (2 * r)})`, opacity: 1 }, { transform: "none", opacity: 1 }], { duration: FALL_MS, easing: ease });
+      /* it starts as the bright dot it was, and darkens into the real Earth's face as it nears */
+      run(disc.firstElementChild!, [{ opacity: 1 }, { opacity: 0, offset: 0.6 }, { opacity: 0 }], { duration: FALL_MS, easing: ease });
+      run(sky, [{ transform: "none", opacity: 1 }, { transform: "scale(1.7)", opacity: 0 }], { duration: FALL_MS, easing: "ease-in" });
+      root.querySelectorAll(".bt-pct, .bt-skip").forEach((el) => run(el, [{ opacity: 0 }], { duration: 250 }));
+      /* the real Earth is underneath, the same size in the same place: fade onto it */
+      fadeOut(FADE_MS, FALL_MS - 100);
+    };
+
+    const leave = () => {
+      if (leaving) return;
+      leaving = true;
+      cancelAnimationFrame(raf);
+      const e = earthRef.current;
+      const dot = root.querySelector<HTMLElement>('[data-planet="earth"]');
+      if (skipRef.current || reduced || !e || !dot) return fadeOut(skipRef.current ? SKIP_MS : FADE_MS);
+      fall(dot, e.r);
+    };
+    leaveRef.current = leave;
 
     const tick = (now: number) => {
-      const sim = Math.min(100, ((now - t0) / min) * 100);
-      const p = Math.floor(Math.min(sim, loaded ? 100 : HELD_AT));
-      if (p !== last) {
-        last = p;
-        setPct(p);
+      now = Math.max(now, last); // a frame's timestamp can be older than the moment the loop started
+      const waited = now - t0;
+      const giveUp = waited > MAX_WAIT_MS;
+      let got = 0;
+      for (const k of Object.keys(SHARE) as Part[]) if (has[k] || giveUp) got += SHARE[k];
+      const target = got >= 100 ? 100 : got + (100 - got) * CREEP * (1 - Math.exp(-waited / CREEP_MS));
+      const nextPlanet = (Math.floor(p / STEP + 1e-6) + 1) * STEP; // one planet at a time, however long a frame took
+      p = Math.min(target, p + rise * (now - last), nextPlanet, 100);
+      last = now;
+      const nPct = Math.floor(p);
+      const nLit = Math.min(PLANETS.length, Math.floor(p / STEP + 1e-6));
+      if (nPct !== pct || nLit !== lit) {
+        pct = nPct;
+        lit = nLit;
+        show();
       }
-      if (p >= 100 && !finished) {
-        finished = true;
-        timers.push(window.setTimeout(() => setLeaving(true), reduced ? 250 : 650));
-        timers.push(
-          window.setTimeout(() => {
-            setVisible(false);
-            completeRef.current?.();
-          }, reduced ? 650 : 1250)
-        );
+      if (p >= 100) {
+        timers.push(window.setTimeout(leave, HOLD_MS));
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -79,182 +220,73 @@ export default function CursorBootPreloader({ onComplete }: CursorBootPreloaderP
       cancelAnimationFrame(raf);
       window.removeEventListener("load", onLoad);
       timers.forEach((id) => clearTimeout(id));
+      anims.forEach((a) => a.cancel());
+      leaveRef.current = () => {};
     };
   }, []);
 
-  if (!visible) return null;
-
-  const cleared = pct >= 100;
-  const drawn = (i: number) => pct >= 8 + i * 10; // edge i starts drawing
-  const call = CALLS[Math.min(CALLS.length - 1, Math.floor(pct / 22))];
-
   return (
-    <>
-      <style>{`
-        .bp-root {
-          position: fixed;
-          inset: 0;
-          z-index: var(--z-preloader);
-          background: var(--space-black);
-          color: var(--starlight);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: max(28px, env(safe-area-inset-top)) var(--pg-x) max(28px, env(safe-area-inset-bottom));
-          transition: opacity .6s ease;
-        }
-        .bp-root[data-leaving="true"] { opacity: 0; }
-        .bp-in { width: 100%; max-width: 720px; margin: 0 auto; }
-        .bp-head {
-          display: flex; justify-content: space-between; gap: 16px;
-          font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim-300);
-        }
-        .bp-hero { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 28px 0 8px; }
-        .bp-globe { flex: none; width: clamp(84px, 24vw, 190px); aspect-ratio: 1; }
-        .bp-globe svg { width: 100%; height: 100%; overflow: visible; }
-        .bp-mer { transform-box: fill-box; transform-origin: center; animation: bp-mer 3.6s linear infinite; }
-        .bp-mer.b { animation-delay: -1.2s; }
-        .bp-mer.c { animation-delay: -2.4s; }
-        @keyframes bp-mer { 0% { transform: scaleX(1); } 50% { transform: scaleX(0.03); } 100% { transform: scaleX(1); } }
-        .bp-orbit { transform-origin: 50px 50px; transform: rotate(-24deg) scaleY(0.34); }
-        .bp-sat { transform-origin: 50px 50px; animation: bp-turn 5.5s linear infinite; }
-        @keyframes bp-turn { to { transform: rotate(360deg); } }
-        .bp-count {
-          margin: 0;
-          font-family: var(--font-display);
-          font-size: clamp(56px, 18vw, 200px);
-          line-height: .95;
-          letter-spacing: -.02em;
-          font-variant-numeric: tabular-nums;
-          color: var(--starlight);
-        }
-        .bp-count span { font-size: .28em; letter-spacing: 0; margin-left: .15em; color: var(--dim-300); }
-        .bp-sky { margin-top: 22px; width: 100%; }
-        .bp-sky svg { width: 100%; height: auto; display: block; overflow: visible; }
-        .bp-sweep { animation: bp-turn 3.2s linear infinite; }
-        .bp-ping { transform-box: fill-box; transform-origin: center; animation: bp-ping 1.8s ease-out infinite; }
-        @keyframes bp-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(3.4); opacity: 0; } }
-        .bp-in { position: relative; z-index: 1; }
-        .bp-scene.as-root { inset: auto 0 0 0; height: 26%; }
-        .bp-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; }
-        .bp-row {
-          display: flex; align-items: baseline; gap: 12px;
-          min-height: 44px; padding: 10px 0;
-          border-top: 1px solid var(--outline-variant);
-          font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim-300);
-          transition: color .25s ease;
-        }
-        .bp-row:last-child { border-bottom: 1px solid var(--outline-variant); }
-        .bp-row[data-on="true"] { color: var(--starlight); }
-        .bp-lead { flex: 1; border-bottom: 1px dotted var(--outline-variant); transform: translateY(-4px); }
-        .bp-state { min-width: 4ch; text-align: right; font-weight: 500; }
-        .bp-row[data-on="true"] .bp-state { color: var(--lit); }
-        .bp-row[data-now="true"] .bp-state { animation: bp-blink 0.9s steps(2, end) infinite; }
-        @keyframes bp-blink { 50% { opacity: .25; } }
-        .bp-foot { margin-top: 24px; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--dim-300); min-height: 1.4em; }
-        .bp-foot[data-on="true"] { color: var(--lit); }
-        .bp-ticker { position: fixed; left: 0; right: 0; bottom: 3px; overflow: hidden; border-top: 1px solid var(--outline-variant);
-          padding: 10px 0; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim-300); white-space: nowrap; }
-        .bp-ticker-track { display: inline-flex; gap: 48px; padding-left: 48px; animation: bp-tick 22s linear infinite; }
-        @keyframes bp-tick { to { transform: translateX(-50%); } }
-        .bp-ticker-track b { font-weight: 500; color: var(--starlight); }
-        .bp-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 3px; background: var(--hull-900); }
-        .bp-bar > div { height: 100%; background: var(--lit); transition: width .12s linear; }
-        @media (prefers-reduced-motion: reduce) {
-          .bp-root, .bp-row, .bp-bar > div { transition: none; }
-          .bp-row[data-now="true"] .bp-state { animation: none; }
-          .bp-mer, .bp-sat, .bp-ticker-track, .bp-sweep, .bp-ping { animation: none; }
-        }
-      `}</style>
+    <div
+      ref={rootRef}
+      className="bt"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Loading CSAU"
+    >
+      <div className="bt-sky" aria-hidden>
+        {STARS.map(([l, t, o], i) => (
+          <i key={i} className="bt-star" style={{ left: `${l}%`, top: `${t}%`, opacity: o }} />
+        ))}
+      </div>
 
-      <div
-        className="bp-root"
-        data-leaving={leaving}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Loading CSAU"
-      >
-        <AstronautScene className="bp-scene" />
-        <div className="bp-in">
-          <div className="bp-head">
-            <span>CSAU</span>
-            <span>Pre-flight &nbsp; T-{Math.max(0, Math.ceil(((100 - pct) / 100) * (MIN_MS / 1000)))}s</span>
-          </div>
-
-          <div className="bp-hero">
-            <div className="bp-count" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Loading">
-              {String(pct).padStart(3, "0")}
-              <span>%</span>
+      <div className="bt-sys" aria-hidden>
+        <svg className="bt-orbits" viewBox="-1 -1 2 2" preserveAspectRatio="none">
+          {PLANETS.map((pl) => (
+            <circle key={pl.id} r={pl.f} data-lit="false" />
+          ))}
+        </svg>
+        <i className="bt-glow" />
+        <i className="bt-sun" data-sun />
+        {/* the plane is squashed into the slant; each planet turns on it and is turned and unsquashed back, so it stays round */}
+        <div className="bt-plane">
+          {PLANETS.map((pl) => (
+            <div key={pl.id} className="bt-orbit" style={{ "--a": `${pl.a}deg`, "--T": `${pl.T}s` } as CSSProperties}>
+              <div className="bt-arm">
+                <div className="bt-at" style={{ "--f": pl.f } as CSSProperties}>
+                  <div className="bt-face">
+                    <div className="bt-face0">
+                      <i className="bt-dot" data-planet={pl.id} data-lit="false" style={{ "--d": `${pl.d}px`, "--c": pl.c } as CSSProperties}>
+                        {pl.ring && <i className="bt-ring" />}
+                        <i className="bt-ping" />
+                      </i>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bp-globe" aria-hidden>
-              <svg viewBox="0 0 100 100" fill="none" stroke="var(--dim-300)" strokeWidth="0.8">
-                <circle cx="50" cy="50" r="32" stroke="var(--starlight)" strokeWidth="1" />
-                <ellipse className="bp-mer" cx="50" cy="50" rx="32" ry="32" />
-                <ellipse className="bp-mer b" cx="50" cy="50" rx="32" ry="32" />
-                <ellipse className="bp-mer c" cx="50" cy="50" rx="32" ry="32" />
-                <path d="M18 50 h64 M22 34 h56 M22 66 h56" opacity=".55" />
-                <g className="bp-orbit">
-                  <circle cx="50" cy="50" r="46" strokeDasharray="2 3" opacity=".8" />
-                  <g className="bp-sat">
-                    <circle cx="96" cy="50" r="3.2" fill="var(--lit)" stroke="none" />
-                  </g>
-                </g>
-              </svg>
-            </div>
-          </div>
-
-          <div className="bp-sky" aria-hidden>
-            <svg viewBox="0 0 290 160" preserveAspectRatio="xMidYMid meet">
-              <g fill="none" stroke="var(--hull-700)" strokeWidth="0.8">
-                <circle cx="145" cy="80" r="70" />
-                <circle cx="145" cy="80" r="46" />
-                <circle cx="145" cy="80" r="22" />
-                <path d="M145 8v144M73 80h144" opacity=".5" />
-                <g className="bp-sweep" style={{ transformOrigin: "145px 80px" }}>
-                  <path d="M145 80L145 10" stroke="var(--lit)" strokeWidth="1.2" />
-                  <path d="M145 80L145 10A70 70 0 0 1 182 20Z" fill="var(--lit)" stroke="none" opacity=".12" />
-                </g>
-              </g>
-              {EDGES.map(([p, q], i) => (
-                <line key={i} x1={NODES[p][0]} y1={NODES[p][1]} x2={NODES[q][0]} y2={NODES[q][1]} pathLength={1}
-                  stroke="var(--starlight)" strokeWidth="1" strokeDasharray="1" strokeDashoffset={drawn(i) ? 0 : 1} opacity=".75"
-                  style={{ transition: "stroke-dashoffset .5s ease" }} />
-              ))}
-              {NODES.map(([x, y], i) => {
-                const on = i === 0 ? pct >= 4 : drawn(i - 1) || cleared;
-                return (
-                  <g key={i}>
-                    <circle cx={x} cy={y} r={on ? 3 : 1.4} fill={on ? "var(--lit)" : "var(--hull-700)"} style={{ transition: "all .3s ease" }} />
-                    {on && <circle className="bp-ping" cx={x} cy={y} r="3" fill="none" stroke="var(--lit)" strokeWidth="0.8" />}
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-
-          <div className="bp-foot" data-on={cleared} aria-live="polite">
-            {cleared ? "Link established / cleared for launch" : call}
-          </div>
-        </div>
-
-        <div className="bp-ticker" aria-hidden>
-          <div className="bp-ticker-track">
-            {[0, 1].map((n) => (
-              <span key={n} style={{ display: "inline-flex", gap: 48 }}>
-                <span>Signal <b>searching</b></span>
-                <span>Star tracker <b>locking</b></span>
-                <span>Dish <b>aligning</b></span>
-                <span>Constellation <b>plotted</b></span>
-                <span>Link <b>open</b></span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="bp-bar" aria-hidden>
-          <div style={{ width: `${pct}%` }} />
+          ))}
         </div>
       </div>
-    </>
+
+      {/* Earth, for the fall: it grows from its dot to the size of the real Earth below */}
+      <i className="bt-earth" aria-hidden style={{ "--c": LOOK.Earth.c } as CSSProperties}>
+        <i className="bt-earth-lit" />
+      </i>
+
+      <div className="bt-pct" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0} aria-label="Loading">
+        0%
+      </div>
+
+      <button
+        type="button"
+        className="bt-skip"
+        onClick={() => {
+          skipRef.current = true;
+          leaveRef.current();
+        }}
+      >
+        Skip
+      </button>
+    </div>
   );
 }

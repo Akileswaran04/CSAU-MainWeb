@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
+import type { EarthOnScreen } from "./space/PowerOnIntro";
 import HeroSection from "./HeroSection";
 import Lenis from "lenis";
 import { lockScroll } from "@/lib/scrollLock";
@@ -17,11 +18,15 @@ import { setLenis } from "./story/lenis";
 /* ============================================================
    HOME CLIENT - Deep Space Network Flow
 
-   1. BootPreloader (cursor draws diamond, types CSAU)
+   1. BootPreloader (the menu's planets light up as the site loads)
    2. LandingPage (3D power-on intro: board, traces, C S A U)
    3. Zoom transition → scrollable page:
       - Hero section (full viewport)
       - Scroll down reveals About Us section
+
+   The landing is built under the preloader from the start, and the
+   preloader follows it: it fills only once Earth has been drawn, then
+   falls onto it, so there is no gap between the two.
 
    The preloader + landing gate plays ONCE per browser session.
    On refresh, the page goes straight to content with freshly
@@ -53,6 +58,10 @@ export default function HomeClient({
   const [phase, setPhase] = useState<Phase>("boot");
   const [zooming, setZooming] = useState(false);
   const initializedRef = useRef(false);
+  /* A first visit: the landing is built under the preloader, which waits for its code and then for Earth. */
+  const [landingUp, setLandingUp] = useState(false);
+  const [sceneLoaded, setSceneLoaded] = useState(false);
+  const [earth, setEarth] = useState<EarthOnScreen | null>(null);
   // Smooth scrolling for the story, once the gate has cleared.
   useEffect(() => {
     if (phase !== "content") return;
@@ -98,9 +107,13 @@ export default function HomeClient({
       setPhase("content");
     } else {
       sessionStorage.setItem(GATE_KEY, "true");
-      // Warm the 3D intro chunk while the boot preloader plays, and the story's scene
-      // chunk too, so neither is fetched and parsed in the middle of the flight.
-      void import("./space/PowerOnIntro");
+      // Build the 3D intro under the boot preloader (it reports when Earth is drawn), and warm the
+      // story's scene chunk too, so neither is fetched and parsed in the middle of the flight.
+      setLandingUp(true);
+      void import("./space/PowerOnIntro").then(
+        () => setSceneLoaded(true),
+        () => {} // the preloader's own time limit lets the visitor through
+      );
       void import("./story/SpaceScene");
     }
   }, []);
@@ -132,13 +145,11 @@ export default function HomeClient({
 
   return (
     <>
-      {phase === "boot" && (
-        <CursorBootPreloader onComplete={handleBootComplete} />
-      )}
-
-      {phase === "landing" && (
+      {/* The landing mounts once, under the preloader, and stays mounted when the preloader lifts. */}
+      {(phase === "landing" || (phase === "boot" && landingUp)) && (
         <div
-          className="fixed inset-0"
+          className="fixed inset-0 gate"
+          inert={phase !== "landing"}
           style={{
             zIndex: 600,
             // Handoff: the wordmark rushes up and sinks into the void.
@@ -149,7 +160,13 @@ export default function HomeClient({
             backgroundColor: zooming ? "var(--void-950)" : "transparent",
           }}
         >
-          <LandingPage onEnter={handleEnter} />
+          <LandingPage onEnter={handleEnter} onReady={setEarth} />
+        </div>
+      )}
+
+      {phase === "boot" && (
+        <div className="gate">
+          <CursorBootPreloader scene={sceneLoaded} earth={earth} onComplete={handleBootComplete} />
         </div>
       )}
 

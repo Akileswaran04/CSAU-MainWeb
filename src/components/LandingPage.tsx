@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { EarthOnScreen } from "./space/PowerOnIntro";
 
 /* The 3D intro is a separate chunk; the boot preloader warms it up. */
 const PowerOnIntro = dynamic(() => import("./space/PowerOnIntro"), { ssr: false });
@@ -18,9 +19,11 @@ const PowerOnIntro = dynamic(() => import("./space/PowerOnIntro"), { ssr: false 
 
 interface LandingPageProps {
   onEnter?: () => void;
+  /** Earth has been drawn and can be tapped (the boot preloader, above it, waits for this) */
+  onReady?: (earth: EarthOnScreen) => void;
 }
 
-export default function LandingPage({ onEnter }: LandingPageProps) {
+export default function LandingPage({ onEnter, onReady }: LandingPageProps) {
   const [started, setStarted] = useState(false);
   const [clock, setClock] = useState("--:--:--");
   const entered = useRef(false);
@@ -69,7 +72,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         .ld-skip:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
       `}</style>
       <div className="fixed inset-0 overflow-hidden" style={{ zIndex: 10, background: "var(--space-black)" }}>
-        <PowerOnIntro onPowerOn={() => setStarted(true)} onEnter={enter} />
+        <PowerOnIntro onPowerOn={() => setStarted(true)} onEnter={enter} onReady={onReady} />
 
         <h1 className="sr-only">CSAU - Computer Society of Anna University</h1>
 

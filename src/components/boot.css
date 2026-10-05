@@ -1,0 +1,208 @@
+/* ============================================================
+   BOOT PRELOADER - the planets light up (CursorBootPreloader.tsx).
+   Pitch black, starlight, one amber Sun; the planets keep muted
+   natural colours, as the 3D planets do. The orbit plane is seen at a
+   slant (--k): the plane is squashed, and each planet is unsquashed
+   again, so it stays round. The orbits are as wide as the screen
+   allows (--R). Only transform and opacity animate.
+   ============================================================ */
+
+.bt {
+  --k: 0.42; /* the slant: how much of a circle's height an orbit keeps */
+  --u: 1; /* planet size unit */
+  --R: min(44vw, calc(31vh / var(--k)), 500px); /* the outermost orbit's radius */
+  --sun: max(16px, calc(var(--R) * 0.085));
+  --p: 0; /* progress, 0..1, set by the component */
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-preloader);
+  overflow: hidden;
+  background: var(--space-black);
+  color: var(--starlight);
+  cursor: progress;
+}
+/* portrait: look down on the plane more steeply, so it fills more of the height */
+@media (max-aspect-ratio: 9/10) {
+  .bt { --k: 0.74; --u: 0.8; }
+}
+
+.bt-sky { position: absolute; inset: 0; pointer-events: none; }
+.bt-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: var(--starlight); }
+
+/* ── the system: everything is placed from its centre ── */
+.bt-sys { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+
+.bt-orbits {
+  position: absolute;
+  left: calc(var(--R) * -1);
+  top: calc(var(--R) * var(--k) * -1);
+  width: calc(var(--R) * 2);
+  height: calc(var(--R) * 2 * var(--k));
+  overflow: visible;
+}
+.bt-orbits circle {
+  fill: none;
+  stroke: var(--dim-300);
+  stroke-width: 1;
+  stroke-opacity: 0.14;
+  vector-effect: non-scaling-stroke;
+  transition: stroke-opacity 0.6s ease;
+}
+.bt-orbits circle[data-lit="true"] { stroke-opacity: 0.4; }
+
+/* ── the Sun brightens as the count climbs ── */
+.bt-glow {
+  position: absolute;
+  left: calc(var(--sun) * -3);
+  top: calc(var(--sun) * -3);
+  width: calc(var(--sun) * 6);
+  height: calc(var(--sun) * 6);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, rgba(240, 183, 58, 0.38), rgba(240, 183, 58, 0.1) 45%, rgba(240, 183, 58, 0));
+  opacity: calc(0.25 + var(--p) * 0.75);
+  transform: scale(calc(0.6 + var(--p) * 0.5));
+  transition: opacity 0.4s linear, transform 0.4s linear;
+}
+.bt-sun {
+  position: absolute;
+  left: calc(var(--sun) / -2);
+  top: calc(var(--sun) / -2);
+  width: var(--sun);
+  height: var(--sun);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff4d6 0, var(--lit) 42%, #c9741f 100%);
+  box-shadow: 0 0 calc(var(--sun) * 0.6) rgba(240, 183, 58, 0.55);
+  animation: bt-breathe 3.2s ease-in-out infinite;
+}
+@keyframes bt-breathe { 50% { transform: scale(1.06); } }
+
+/* ── each planet: start angle, the turn, out to its orbit, the turn undone, the slant undone ── */
+.bt-plane, .bt-orbit, .bt-arm, .bt-at, .bt-face, .bt-face0 { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.bt-plane { transform: scaleY(var(--k)); }
+.bt-orbit { transform: rotate(var(--a)); }
+.bt-arm { animation: bt-turn var(--T) linear infinite; }
+.bt-at { left: calc(var(--R) * var(--f)); }
+.bt-face { animation: bt-unturn var(--T) linear infinite; }
+.bt-face0 { transform: rotate(calc(var(--a) * -1)) scaleY(calc(1 / var(--k))); }
+@keyframes bt-turn { to { transform: rotate(-360deg); } }
+@keyframes bt-unturn { to { transform: rotate(360deg); } }
+
+/* unlit: a dark disc with a faint rim. Lit: its own colour, a soft glow, and one amber ping. */
+.bt-dot {
+  --s: calc(var(--d) * var(--u));
+  position: absolute;
+  left: calc(var(--s) / -2);
+  top: calc(var(--s) / -2);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #22242a;
+  box-shadow: inset 0 0 0 1px rgba(163, 168, 176, 0.6);
+}
+.bt-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #ffffff 0, var(--c) 45%, color-mix(in srgb, var(--c) 45%, #000000) 100%);
+  box-shadow: 0 0 calc(var(--s) * 0.9) color-mix(in srgb, var(--c) 55%, transparent);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.bt-dot[data-lit="true"]::before { opacity: 1; }
+.bt-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 240%;
+  height: 64%;
+  border: 1px solid rgba(163, 168, 176, 0.45);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-16deg);
+  transition: border-color 0.5s ease;
+}
+.bt-dot[data-lit="true"] .bt-ring { border-color: color-mix(in srgb, var(--c) 80%, transparent); }
+.bt-ping {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 1px solid var(--lit);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.bt-dot[data-lit="true"] .bt-ping { animation: bt-ping 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+@keyframes bt-ping {
+  from { transform: scale(0.3); opacity: 0.9; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+
+/* ── Earth for the fall: sized to the real Earth by the component, shown only while it falls ── */
+.bt-earth {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(120, 175, 245, 0.22), rgba(120, 175, 245, 0) 55%),
+    radial-gradient(circle, #06122a 0, #0a1f45 66%, #1d4f99 88%, #4a8fe6 100%);
+  box-shadow: 0 0 50px rgba(70, 140, 235, 0.35);
+}
+/* the lit dot's own look, which fades as Earth nears */
+.bt-earth-lit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #ffffff 0, var(--c) 45%, color-mix(in srgb, var(--c) 45%, #000000) 100%);
+}
+
+/* ── the count sits where "Tap Earth to launch" will be; Skip where the start page's Skip is ── */
+.bt-pct {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  padding-left: 0.24em; /* balances the letter-spacing after the last character */
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim-300);
+}
+.bt-skip {
+  position: absolute;
+  right: 5%;
+  bottom: 26px;
+  z-index: 2;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 16px;
+  background: transparent;
+  color: var(--starlight);
+  border: 1px solid var(--dim-300);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.bt-skip:hover { border-color: var(--starlight); background: var(--hull-900); }
+.bt-skip:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+
+/* ── reduced motion: nothing turns, pings or swells; the planets light in place ── */
+@media (prefers-reduced-motion: reduce) {
+  .bt-arm, .bt-face, .bt-sun, .bt-ping { animation: none !important; }
+  .bt-glow { transform: none; transition: none; }
+  .bt-dot::before, .bt-orbits circle, .bt-ring, .bt-skip { transition: none; }
+}

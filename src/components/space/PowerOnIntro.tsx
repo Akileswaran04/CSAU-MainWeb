@@ -13,6 +13,7 @@ import { SatelliteModel } from "./models";
 import { Bloom } from "./Bloom";
 import { isMobileViewport, readTokens, reducedMotion, seeded } from "./tokens";
 import { useSettled } from "./useSettled";
+import GLBoundary, { webglAvailable } from "./GLBoundary";
 
 /* ============================================================
    START - Earth, alone, and a straight flight through traffic
@@ -58,6 +59,11 @@ const flicker = (s: number) => (s < 0 ? 0 : s < 0.07 ? 0.35 : s < 0.14 ? 1 : s <
 interface Control {
   startedAt: number; // seconds (performance.now / 1000); -1 = standby
   done: boolean;
+}
+
+/** Earth as the start page shows it: its radius on screen, in px. It sits at the centre. */
+export interface EarthOnScreen {
+  r: number;
 }
 
 /* ---------- streaked stars: world-fixed, stretched along the flight ---------- */
@@ -170,12 +176,14 @@ function IntroScene({
   reduced,
   onPress,
   onDone,
+  onReady,
 }: {
   ctl: MutableRefObject<Control>;
   mobile: boolean;
   reduced: boolean;
   onPress: () => void;
   onDone: () => void;
+  onReady: (earth: EarthOnScreen) => void;
 }) {
   const tokens = useMemo(() => readTokens(), []);
   const { camera, size, gl, scene } = useThree();
@@ -241,6 +249,9 @@ function IntroScene({
   const pressed = useRef(false);
   const lastX = useRef(0);
   const roll = useRef(0);
+  /* the boot preloader waits until Earth has been drawn and the start control is in place */
+  const startEl = useRef<HTMLButtonElement | null>(null);
+  const frames = useRef(0);
 
   /* Warm up while Earth stands by. The traffic and the letters are hidden until the flight, so their
      shaders would otherwise compile on the first flight frame and block the main thread for a second
@@ -303,6 +314,13 @@ function IntroScene({
     const st = ctl.current;
     const t = st.startedAt < 0 ? -1 : now - st.startedAt;
     const cam = camera as THREE.PerspectiveCamera;
+
+    /* --- ready: Earth has been drawn once (this is the second frame) and can be tapped; say how big it is on screen --- */
+    if (frames.current >= 0 && ++frames.current > 1 && startEl.current) {
+      frames.current = -1;
+      const r = (Math.tan(Math.asin(EARTH_R / zStart)) / Math.tan(THREE.MathUtils.degToRad(cam.fov / 2))) * (size.height / 2);
+      onReady({ r });
+    }
 
     /* --- warm-up draw: one frame with a hidden set switched on, culling off and scaled to a point, so
            its programs are bound and finished now but nothing shows; the next frame puts it all back --- */
@@ -456,7 +474,13 @@ function IntroScene({
         ))}
         {!gone && (
           <Html center zIndexRange={[30, 20]}>
-            <StartControl diameter={d} onPress={() => (ctl.current.startedAt < 0 ? (ctl.current.startedAt = performance.now() / 1000) : null)} />
+            <StartControl
+              diameter={d}
+              buttonRef={(el) => {
+                startEl.current = el;
+              }}
+              onPress={() => (ctl.current.startedAt < 0 ? (ctl.current.startedAt = performance.now() / 1000) : null)}
+            />
           </Html>
         )}
       </group>
@@ -528,14 +552,14 @@ function IntroScene({
 }
 
 /** The real, accessible control laid over Earth: one big round button. */
-function StartControl({ diameter, onPress }: { diameter: number; onPress: () => void }) {
+function StartControl({ diameter, onPress, buttonRef }: { diameter: number; onPress: () => void; buttonRef: (el: HTMLButtonElement | null) => void }) {
   return (
     <>
       <style>{`
         .st-earth { border-radius: 50%; background: transparent; border: 0; cursor: pointer; touch-action: manipulation; }
         .st-earth:focus-visible { outline: 2px solid var(--signal); outline-offset: 6px; }
       `}</style>
-      <button type="button" className="st-earth" aria-label="Start" style={{ width: diameter, height: diameter }} onClick={onPress} />
+      <button ref={buttonRef} type="button" className="st-earth" aria-label="Start" style={{ width: diameter, height: diameter }} onClick={onPress} />
     </>
   );
 }
@@ -543,11 +567,14 @@ function StartControl({ diameter, onPress }: { diameter: number; onPress: () => 
 export default function PowerOnIntro({
   onPowerOn,
   onEnter,
+  onReady,
 }: {
   /** Earth was tapped - the landing chrome can appear */
   onPowerOn?: () => void;
   /** the flight finished - hand off to the hero */
   onEnter: () => void;
+  /** Earth has been drawn and can be tapped - the boot preloader can lift onto it */
+  onReady?: (earth: EarthOnScreen) => void;
 }) {
   const ctl = useRef<Control>({ startedAt: -1, done: false });
   const settled = useSettled();
@@ -556,20 +583,31 @@ export default function PowerOnIntro({
   const reduced = useMemo(() => reducedMotion(), []);
   const enterRef = useRef(onEnter);
   const powerRef = useRef(onPowerOn);
+  const readyRef = useRef(onReady);
   useEffect(() => {
     enterRef.current = onEnter;
     powerRef.current = onPowerOn;
-  }, [onEnter, onPowerOn]);
+    readyRef.current = onReady;
+  }, [onEnter, onPowerOn, onReady]);
 
   const handlePress = useCallback(() => {
     setStatus("Starting");
     powerRef.current?.();
   }, []);
   const handleDone = useCallback(() => enterRef.current(), []);
+  const handleReady = useCallback((earth: EarthOnScreen) => readyRef.current?.(earth), []);
+
+  /* no WebGL (no GPU, or the browser blocked it after GPU resets): skip the flight and hand off to the hero */
+  const [glFailed, setGlFailed] = useState(false);
+  const noGL = glFailed || (settled && !webglAvailable());
+  useEffect(() => {
+    if (noGL) enterRef.current();
+  }, [noGL]);
 
   return (
     <div style={{ position: "absolute", inset: 0 }}>
-      {settled && (
+      {settled && !noGL && (
+        <GLBoundary onFail={() => setGlFailed(true)}>
         <Canvas
           flat
           dpr={mobile ? [1, 2] : [1, 1.75]}
@@ -577,8 +615,9 @@ export default function PowerOnIntro({
           gl={{ antialias: true, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0 }}
         >
-          <IntroScene ctl={ctl} mobile={mobile} reduced={reduced} onPress={handlePress} onDone={handleDone} />
+          <IntroScene ctl={ctl} mobile={mobile} reduced={reduced} onPress={handlePress} onDone={handleDone} onReady={handleReady} />
         </Canvas>
+        </GLBoundary>
       )}
       <p className="sr-only" role="status">
         {status}
