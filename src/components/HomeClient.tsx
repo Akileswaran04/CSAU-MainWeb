@@ -36,6 +36,8 @@ import { setLenis } from "./story/lenis";
 type Phase = "boot" | "landing" | "content";
 
 const GATE_KEY = "csau-gate-seen";
+/* safety net: never hold the page still longer than this waiting for the story's scene */
+const STORY_MAX_WAIT_MS = 12000;
 
 export default function HomeClient({
   whatsNew = [],
@@ -83,6 +85,14 @@ export default function HomeClient({
      the flight hands off stalls the main thread right on the transition, so it waits until the hero has
      settled and the browser is idle. Its space is reserved (STORY_HEIGHT), so nothing shifts. */
   const [storyReady, setStoryReady] = useState(false);
+  /* the story's space is compiled and drawing: until then the page stays still, so no one scrolls onto an empty stage */
+  const [storyWarm, setStoryWarm] = useState(false);
+  const onStoryWarm = useCallback(() => setStoryWarm(true), []);
+  useEffect(() => {
+    if (phase !== "content" || storyWarm) return;
+    const t = window.setTimeout(onStoryWarm, STORY_MAX_WAIT_MS);
+    return () => clearTimeout(t);
+  }, [phase, storyWarm, onStoryWarm]);
   useEffect(() => {
     if (phase !== "content") return;
     let idle = 0;
@@ -105,6 +115,9 @@ export default function HomeClient({
     const seen = sessionStorage.getItem(GATE_KEY) === "true";
     if (seen) {
       setPhase("content");
+      // The route loader covers this load: build the story under it now (it holds the loader with aria-busy
+      // until its scene is compiled), so the page never opens on an empty stage.
+      setStoryReady(true);
     } else {
       sessionStorage.setItem(GATE_KEY, "true");
       // Build the 3D intro under the boot preloader (it reports when Earth is drawn), and warm the
@@ -118,13 +131,13 @@ export default function HomeClient({
     }
   }, []);
 
-  // Lock scroll and reset to top while the boot/landing gate covers
-  // the page, so the hero is what you land on after entering.
+  // Lock scroll while the boot/landing gate covers the page (reset to top, so the hero is what you land on
+  // after entering), and on the hero until the story's space is ready.
   useEffect(() => {
-    if (phase === "content") return;
-    window.scrollTo(0, 0);
+    if (phase === "content" && storyWarm) return;
+    if (phase !== "content") window.scrollTo(0, 0);
     return lockScroll();
-  }, [phase]);
+  }, [phase, storyWarm]);
 
   const handleBootComplete = useCallback(() => {
     setPhase("landing");
@@ -172,10 +185,10 @@ export default function HomeClient({
 
       {phase === "content" && (
         <div style={{ background: "transparent", position: "relative" }}>
-          <HeroSection />
+          <HeroSection story={storyWarm ? "ready" : storyReady ? "build" : "wait"} />
           {/* rocket + flag in the hero's bottom-right corner */}
           <WhatsNew items={whatsNew} />
-          {storyReady ? <StorySection stops={stops} /> : <div aria-hidden style={{ height: STORY_HEIGHT }} />}
+          {storyReady ? <StorySection stops={stops} onWarm={onStoryWarm} /> : <div aria-hidden style={{ height: STORY_HEIGHT }} />}
           <EventsPreview items={preview} total={eventCount} />
         </div>
       )}

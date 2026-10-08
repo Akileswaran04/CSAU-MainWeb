@@ -1,0 +1,136 @@
+/* ============================================================
+   CONTACT - the pulsar map (components/contact/ContactChannels).
+   Wide screens: the channel list is laid over the map's line
+   ends. Under 1100px: the map is a figure, the list ruled rows.
+   ============================================================ */
+
+.pm { max-width: 1240px; margin: clamp(24px, 6vh, 64px) auto 0; }
+.pm-map { position: relative; }
+.pm-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* the map */
+.pm-orbit, .pm-axis, .pm-line, .pm-bits, .pm-end, .pm-pulse, .pm-ping { vector-effect: non-scaling-stroke; }
+.pm-orbit { fill: none; stroke: var(--hull-700); stroke-dasharray: 2 6; }
+.pm-axis { stroke: var(--hull-700); }
+.pm-line { stroke: var(--dim-300); opacity: .7; transition: stroke .2s ease, opacity .2s ease; }
+.pm-bits { fill: none; stroke: var(--dim-300); stroke-width: 1.4; transition: stroke .2s ease; }
+.pm-end { fill: var(--space-black); stroke: var(--dim-300); stroke-width: 1.2; transition: fill .2s ease, stroke .2s ease; }
+.pm-num { display: none; font-family: var(--font-mono); font-size: 30px; letter-spacing: .08em; fill: var(--dim-300); }
+.pm-ray { transition: opacity .25s ease; }
+
+/* a pulse runs out along each line in turn */
+.pm-pulse {
+  stroke: var(--signal); stroke-width: 2.2; stroke-linecap: round;
+  stroke-dasharray: 5 300; stroke-dashoffset: 5; opacity: 0;
+  animation: pm-pulse 9.6s linear infinite; animation-delay: calc(var(--i) * 1.6s);
+}
+@keyframes pm-pulse {
+  0% { stroke-dashoffset: 5; opacity: 1; }
+  14% { stroke-dashoffset: -100; opacity: 1; }
+  14.1%, 100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@keyframes pm-run {
+  from { stroke-dashoffset: 5; opacity: 1; }
+  to { stroke-dashoffset: -100; opacity: 1; }
+}
+
+/* the base */
+.pm-core { fill: var(--starlight); }
+.pm-ping {
+  fill: none; stroke: var(--dim-300); opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  animation: pm-ping 4.8s cubic-bezier(.2, .6, .3, 1) infinite;
+}
+.pm-ping:nth-child(2) { animation-delay: 1.6s; }
+.pm-ping:nth-child(3) { animation-delay: 3.2s; }
+@keyframes pm-ping {
+  from { transform: scale(.5); opacity: .7; }
+  to { transform: scale(7); opacity: 0; }
+}
+
+/* tuned to one channel: its line lights, the rest step back */
+.pm[data-tuned] .pm-ray:not([data-on]) { opacity: .3; }
+.pm[data-tuned] .pm-ray:not([data-on]) .pm-pulse { animation: none; }
+.pm[data-tuned] .pm-ping { stroke: var(--signal); }
+.pm-ray[data-on] .pm-line { stroke: var(--lit); opacity: 1; }
+.pm-ray[data-on] .pm-bits { stroke: var(--lit); }
+.pm-ray[data-on] .pm-end { fill: var(--lit); stroke: var(--lit); }
+.pm-ray[data-on] .pm-num { fill: var(--lit); }
+.pm-ray[data-on] .pm-pulse { animation: pm-run 1.1s linear infinite; }
+
+/* the channels, at the line ends */
+.pm-nodes { list-style: none; margin: 0; padding: 0; }
+.pm-node {
+  position: absolute; left: calc(var(--x) * 100%); top: calc(var(--y) * 100%);
+  width: 250px; transform: translate(18px, -50%);
+  display: grid; gap: 4px; justify-items: start;
+}
+.pm-node[data-side="left"] { transform: translate(calc(-100% - 18px), -50%); justify-items: end; text-align: right; }
+.pm-label {
+  display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px;
+  font: 500 11px/1.3 var(--font-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--dim-300);
+}
+.pm-node[data-side="left"] .pm-label { justify-content: flex-end; }
+.pm-no { color: var(--outline); transition: color .2s ease; }
+.pm-bin { letter-spacing: .06em; opacity: .5; }
+.pm-handle {
+  display: inline-block; padding: 11px 0; overflow-wrap: anywhere;
+  font: 400 17px/1.3 var(--font-mono); color: var(--starlight); text-decoration: none;
+  transition: color .16s ease;
+}
+.pm-arrow { display: inline-block; margin-left: 8px; transition: transform .16s ease; }
+.pm-handle:hover, .pm-node[data-on] .pm-handle { color: var(--lit); }
+.pm-node[data-on] .pm-arrow { transform: translate(2px, -2px); }
+.pm-node[data-on] .pm-no { color: var(--lit); }
+.pm-handle:focus-visible { outline: 2px solid var(--signal); outline-offset: 4px; }
+.pm-note { max-width: 32ch; font-size: 13px; line-height: 1.5; color: var(--dim-300); }
+.pm-copy { margin-top: 6px; padding: 0 14px; font-size: 12px; }
+
+/* the readout sits on the long line, the base's address under the base */
+.pm-readout {
+  position: absolute; right: 0; top: calc(320 / 660 * 100%); transform: translateY(calc(-100% - 12px));
+  margin: 0; display: grid; gap: 4px; text-align: right; font-family: var(--font-mono);
+}
+.pm-readout-key { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--dim-300); }
+.pm-readout-value { font-size: 16px; letter-spacing: .06em; color: var(--starlight); }
+.pm[data-tuned] .pm-readout-value { color: var(--lit); }
+
+.pm-baseinfo {
+  position: absolute; left: 50%; top: calc(400 / 660 * 100%); transform: translateX(-50%);
+  width: 260px; display: grid; justify-items: center; gap: 6px; text-align: center;
+}
+.pm-logo { width: 180px; height: auto; }
+.pm-base-title {
+  margin: 10px 0 0; font: 500 11px/1 var(--font-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--dim-300);
+}
+.pm-base-lines { display: grid; gap: 2px; font-style: normal; font-size: 14px; line-height: 1.5; color: var(--starlight); }
+.pm-base-coords { font: 500 11px/1 var(--font-mono); letter-spacing: .16em; color: var(--dim-300); }
+
+.pm-caption { margin: 12px 0 0; font: 500 11px/1.6 var(--font-mono); letter-spacing: .12em; color: var(--dim-300); }
+
+/* under 1100px: the map is a figure, the channels ruled rows numbered to match */
+@media (max-width: 1099px) {
+  .pm-svg { max-width: 600px; margin: 0 auto; }
+  .pm-caption { text-align: center; }
+  .pm-num { display: block; }
+  .pm-nodes { margin-top: 28px; border-bottom: 1px solid var(--hull-700); }
+  .pm-node,
+  .pm-node[data-side="left"] {
+    position: static; width: auto; transform: none; text-align: left; justify-items: start;
+    grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px;
+    padding: 14px 0; border-top: 1px solid var(--hull-700);
+  }
+  .pm-node[data-side="left"] .pm-label { justify-content: flex-start; }
+  .pm-label, .pm-handle, .pm-note { grid-column: 1; }
+  .pm-label { font-size: 12px; }
+  .pm-copy { grid-column: 2; grid-row: 1 / span 3; align-self: center; margin: 0; }
+  .pm-note { max-width: none; }
+  .pm-readout { position: static; transform: none; text-align: left; margin-top: 24px; }
+  .pm-baseinfo { position: static; transform: none; width: auto; justify-items: start; text-align: left; margin-top: 32px; }
+}
+
+html[data-nav-open] .pm * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pm-pulse, .pm-ping { animation: none !important; opacity: 0; }
+  .pm-ray, .pm-line, .pm-handle, .pm-arrow { transition: none; }
+}

@@ -3,80 +3,24 @@
 import { useMemo, useState } from "react";
 import type { BlogPost } from "@/lib/blog";
 import { collectCategories } from "@/lib/blog";
+import { Cover, Meta } from "./parts";
+import BlogFlight from "./BlogFlight";
 
 /* ============================================================
-   BLOG LIST (client) - the interactive layer over the real posts.
+   BLOG LIST (client) - the flight and the signal log.
 
-     • a category rail (ALL + every Medium tag) filters the grid
-     • the newest post leads as a wide feature; the rest are cards
-     • entrance is a staggered fade/rise (skipped for reduced motion,
-       handled in CSS); hover lifts the border to ink and nudges
-       the title, matching the events/nav language
-     • cover images degrade to a lettered plate if Medium 404s
+     • the flight (BlogFlight): the home story's ship visits one
+       post per scroll stop; the page header and the band selector
+       (ALL + every Medium tag) are its first stop
+     • below it, the signal log: one ruled row per transmission,
+       channel numbers in the same order as the flight's stops
+     • both follow the band filter
    Posts arrive already sorted newest-first from the server.
    ============================================================ */
 
-const DATE_FMT = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
+const pad = (n: number) => String(n).padStart(2, "0");
 
-function formatDate(raw: string): string {
-  const d = new Date(raw.replace(" ", "T") + (raw.includes("T") ? "" : "Z"));
-  if (Number.isNaN(d.getTime())) return raw;
-  return DATE_FMT.format(d).toUpperCase();
-}
-
-function initialsFromTitle(title: string): string {
-  return title
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function Cover({ post }: { post: BlogPost }) {
-  const [failed, setFailed] = useState(false);
-  if (!post.image || failed) {
-    return (
-      <div className="bl-cover bl-cover-fallback" aria-hidden>
-        <span>{initialsFromTitle(post.title)}</span>
-      </div>
-    );
-  }
-  return (
-    <div className="bl-cover">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={post.image}
-        alt={`Cover image of the article: ${post.title}`}
-        loading="lazy"
-        decoding="async"
-        className="bl-cover-img"
-        onError={() => setFailed(true)}
-      />
-    </div>
-  );
-}
-
-function Meta({ post }: { post: BlogPost }) {
-  return (
-    <div className="bl-meta">
-      {post.categories[0] && (
-        <span className="bl-kind" data-kind="ARTICLE">
-          {post.categories[0]}
-        </span>
-      )}
-      <span>{formatDate(post.date)}</span>
-      <span>{post.readingMinutes} min read</span>
-    </div>
-  );
-}
-
-export default function BlogList({ posts }: { posts: BlogPost[] }) {
+export default function BlogList({ posts, header }: { posts: BlogPost[]; header?: React.ReactNode }) {
   const categories = useMemo(() => ["ALL", ...collectCategories(posts)], [posts]);
   const [active, setActive] = useState<string>("ALL");
 
@@ -85,91 +29,92 @@ export default function BlogList({ posts }: { posts: BlogPost[] }) {
     [posts, active],
   );
 
-  const [lead, ...rest] = shown;
-
-  return (
+  const intro = (
     <>
-      <nav aria-label="Filter posts by topic" className="bl-tabs">
-        {categories.map((cat) => {
-          const pressed = active === cat;
-          return (
+      {header}
+      <nav aria-label="Filter posts by topic" className="bl-band">
+        <span className="bl-band-label" aria-hidden>
+          Band
+        </span>
+        <div className="bl-band-chips">
+          {categories.map((cat) => (
             <button
               key={cat}
               type="button"
-              className="bl-tab"
+              className="bl-band-chip"
               onClick={() => setActive(cat)}
-              aria-pressed={pressed}
+              aria-pressed={active === cat}
             >
               {cat}
             </button>
-          );
-        })}
+          ))}
+        </div>
         <span className="bl-count tabular" aria-live="polite">
           {shown.length} {shown.length === 1 ? "post" : "posts"}
         </span>
       </nav>
+    </>
+  );
 
-      {shown.length === 0 ? (
-        <p className="bl-empty-body" role="status" style={{ marginTop: 32 }}>
-          No posts tagged “{active}”. Try another topic.
-        </p>
+  return (
+    <>
+      {shown.length > 0 ? (
+        <BlogFlight posts={shown} intro={intro} />
       ) : (
-        <div className="bl-grid" key={active}>
-          {lead && (
-            <article className="bl-card bl-card-lead bl-enter" style={{ ["--i" as string]: 0 }}>
-              <a
-                className="bl-card-link"
-                href={lead.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Read “${lead.title}” on Medium (opens in a new tab)`}
-              >
-                <Cover post={lead} />
-                <div className="bl-card-body">
-                  <Meta post={lead} />
-                  <h2 className="bl-card-title bl-lead-title">{lead.title}</h2>
-                  <p className="bl-blurb">{lead.excerpt}</p>
-                  <div className="bl-card-foot">
-                    <span className="bl-author">{lead.author}</span>
-                    <span className="bl-readmore" aria-hidden>
-                      Read on Medium →
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </article>
-          )}
-
-          {rest.map((post, idx) => (
-            <article
-              key={post.id}
-              className="bl-card bl-enter"
-              style={{ ["--i" as string]: idx + 1 }}
-            >
-              <a
-                className="bl-card-link"
-                href={post.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Read “${post.title}” on Medium (opens in a new tab)`}
-              >
-                <Cover post={post} />
-                <div className="bl-card-body">
-                  <Meta post={post} />
-                  <h2 className="bl-card-title">{post.title}</h2>
-                  <p className="bl-blurb">{post.excerpt}</p>
-                  <div className="bl-card-foot">
-                    <span className="bl-author">{post.author}</span>
-                    <span className="bl-readmore" aria-hidden>
-                      Read →
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </article>
-          ))}
+        <div className="bl-rx">
+          <div className="bl-scope">
+            <div className="bl-rx-over">{intro}</div>
+          </div>
         </div>
       )}
+
+      <section className="bl-log pg-in" aria-labelledby="bl-log-h">
+        <div className="bl-log-head">
+          <h2 id="bl-log-h" className="eyebrow">
+            Signal log
+          </h2>
+          <span className="eyebrow tabular" aria-hidden>
+            CH 01-{pad(shown.length)}
+          </span>
+        </div>
+
+        {shown.length === 0 ? (
+          <p className="bl-empty-body" role="status" style={{ marginTop: 32 }}>
+            No posts tagged “{active}”. Try another topic.
+          </p>
+        ) : (
+          <ol className="bl-log-list" key={active}>
+            {shown.map((post, i) => (
+              <li key={post.id} className="bl-log-row bl-enter" style={{ ["--i" as string]: Math.min(i, 8) }}>
+                <a
+                  className="bl-log-link"
+                  href={post.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Read “${post.title}” on Medium (opens in a new tab)`}
+                  data-latest={i === 0 || undefined}
+                >
+                  <span className="bl-log-ch tabular">{pad(i + 1)}</span>
+                  <div className="bl-log-thumb">
+                    <Cover post={post} />
+                  </div>
+                  <div className="bl-log-body">
+                    <Meta post={post} />
+                    <h3 className="bl-log-title">{post.title}</h3>
+                    <p className="bl-blurb">{post.excerpt}</p>
+                  </div>
+                  <div className="bl-log-foot">
+                    <span className="bl-author">{post.author}</span>
+                    <span className="bl-readmore" aria-hidden>
+                      {i === 0 ? "Read on Medium →" : "Read →"}
+                    </span>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </>
   );
 }

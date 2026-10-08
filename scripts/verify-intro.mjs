@@ -2,7 +2,7 @@
    1. Boot preloader clears and the landing intro mounts a WebGL canvas
    2. Only the start button is visible at first; pressing it flies through the void,
       C, S, A, U appear and connect, and the page hands off to the hero
-   3. After handoff the page is not scroll-locked and really scrolls
+   3. After handoff the page holds still until the story's space is ready, then really scrolls
    4. Every route scrolls, straight after load, on desktop and mobile widths
    Run: node scripts/verify-intro.mjs [baseUrl] [shotsDir]
    (needs `npm run start` or `npm run dev`)  */
@@ -68,6 +68,8 @@ for (const [label, w, h, mob] of [["desktop", 1440, 900, false], ["mobile", 390,
     await page.close();
     continue;
   }
+  // the boot preloader covers the start page until Earth is drawn
+  await page.waitForFunction(() => !document.querySelector('[role="dialog"][aria-label="Loading CSAU"]'), { timeout: 60000, polling: 100 }).catch(() => {});
   const hasCanvas = await page.evaluate(() => !!document.querySelector("canvas"));
   hasCanvas ? pass(`${label}: WebGL canvas present`) : fail(`${label}: WebGL canvas present`);
   const lockedDuring = await page.evaluate(() => document.documentElement.classList.contains("scroll-locked"));
@@ -91,10 +93,28 @@ for (const [label, w, h, mob] of [["desktop", 1440, 900, false], ["mobile", 390,
   }
   await sleep(600);
   await shot(page, `${label}-3-hero`);
+  const storyBusy = () => document.querySelector('[data-section="story"]')?.getAttribute("aria-busy") !== "false";
+  const held = await page.evaluate((busy) => {
+    const log = [];
+    return new Promise((r) => {
+      const t0 = performance.now();
+      const loop = () => {
+        const b = new Function(`return (${busy})()`)();
+        log.push({ busy: b, locked: document.documentElement.classList.contains("scroll-locked") });
+        if (!b || performance.now() - t0 > 15000) return r({ leaks: log.filter((s) => s.busy && !s.locked).length, frames: log.length, ready: !b, ms: Math.round(performance.now() - t0) });
+        requestAnimationFrame(loop);
+      };
+      loop();
+    });
+  }, String(storyBusy));
+  held.ready && held.leaks === 0
+    ? pass(`${label}: page holds still until the story's space is ready`, `${held.ms}ms after the hero`)
+    : fail(`${label}: page holds still until the story's space is ready`, JSON.stringify(held));
+  await sleep(100);
   const p = await scrollProbe(page);
   !p.locked && p.bodyInline === "" && p.tall && p.moved
-    ? pass(`${label}: page scrolls after handoff`, JSON.stringify(p))
-    : fail(`${label}: page scrolls after handoff`, JSON.stringify(p));
+    ? pass(`${label}: then the page scrolls`, JSON.stringify(p))
+    : fail(`${label}: then the page scrolls`, JSON.stringify(p));
 
   // story
   await page.evaluate(() => window.scrollTo(0, window.innerHeight * 1.6));

@@ -1,0 +1,260 @@
+/* ============================================================
+   BLOG PAGE - receiver shell and signal log.
+   Reuses the .bl-* pieces in globals.css; overrides scoped here.
+   ============================================================ */
+
+.pg.bl-page { padding: 0 0 96px; }
+
+/* -- the receiver: first screen, full bleed, under the fixed header -- */
+.bl-rx {
+  position: relative;
+  height: 100dvh;
+  min-height: 600px;
+}
+
+/* header + band selector over the waterfall; text lets the pointer through */
+.bl-rx-over {
+  position: relative;
+  z-index: 2;
+  max-width: min(600px, 100%);
+  padding: clamp(84px, 12vh, 128px) var(--pg-x) 0;
+  pointer-events: none;
+}
+.bl-rx-over a,
+.bl-rx-over button,
+.bl-rx-over .bl-band-chips { pointer-events: auto; }
+
+.bl-rx-head {
+  padding: 16px 18px 18px;
+  border-left: 1px solid var(--signal);
+  background: color-mix(in srgb, var(--space-black) 78%, transparent);
+}
+.bl-rx-head .pg-title { font-size: clamp(32px, 6vw, 64px); }
+.bl-rx-head .pg-lede { margin-top: 12px; font-size: 14px; line-height: 1.6; }
+.bl-rx-head .bl-notice { margin-top: 14px; }
+
+/* -- band selector: the topic filter as receiver bands -- */
+.bl-band {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 10px;
+  padding: 8px 18px;
+  background: color-mix(in srgb, var(--space-black) 78%, transparent);
+  border-left: 1px solid var(--outline-variant);
+}
+.bl-band-label,
+.bl-band .bl-count {
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+.bl-band .bl-count { grid-column: 2; margin: 0; }
+.bl-band-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.bl-band-chips::-webkit-scrollbar { display: none; }
+.bl-band-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap-min);
+  padding: 0 12px;
+  background: transparent;
+  color: var(--on-surface-variant);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.bl-band-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+.bl-band-chip:hover { color: var(--on-surface); border-color: var(--outline); }
+.bl-band-chip[aria-pressed="true"] { color: var(--lit); border-color: var(--lit); }
+.bl-band-chip[aria-pressed="true"]::before { background: var(--lit); }
+.bl-band-chip:focus-visible { outline: 1px solid var(--lit); outline-offset: 2px; }
+
+/* -- empty and loading receiver: a dead band, hairline channels, a sweep -- */
+.bl-scope {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  background-color: var(--space-black);
+  background-image: repeating-linear-gradient(90deg, var(--hull-900) 0 1px, transparent 1px 12.5%);
+}
+.bl-rx .bl-scope { height: 100%; min-height: 0; }
+.bl-scope::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--signal);
+  opacity: 0.7;
+  animation: bl-sweep 3.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes bl-sweep {
+  from { transform: translateY(0); }
+  to { transform: translateY(100dvh); }
+}
+.bl-scope .bl-empty {
+  margin: 10px 0 0;
+  padding: 18px;
+  border-style: solid;
+  border-radius: var(--radius-xs);
+  background: var(--space-black);
+  pointer-events: auto;
+}
+.bl-scope-label {
+  margin: 0;
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.bl-scope-label-scan {
+  position: absolute;
+  left: var(--pg-x);
+  bottom: max(24px, env(safe-area-inset-bottom));
+  color: var(--outline);
+}
+.bl-scope-carrier {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--dim-300);
+  opacity: 0;
+  animation: bl-carrier 1.9s ease-in-out infinite;
+}
+@keyframes bl-carrier {
+  0%, 100% { opacity: 0; }
+  40% { opacity: 0.22; }
+  55% { opacity: 0.05; }
+}
+
+/* -- the signal log: received transmissions, ruled rows -- */
+.bl-log {
+  max-width: calc(1120px + 2 * var(--pg-x));
+  padding: clamp(48px, 8vh, 88px) var(--pg-x) 0;
+}
+.bl-log-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+.bl-log-head h2 { margin: 0; color: var(--on-surface); }
+.bl-log-list { list-style: none; margin: 0; padding: 0; }
+.bl-log-row { border-bottom: 1px solid var(--outline-variant); }
+.bl-log-link {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas: "ch thumb" "ch body" "ch foot";
+  gap: 14px 12px;
+  padding: 22px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.bl-log-link:focus-visible { outline: 1px solid var(--lit); outline-offset: 4px; }
+.bl-log-ch {
+  grid-area: ch;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--outline);
+  transition: color var(--dur-fast) ease;
+}
+.bl-log-link[data-latest] .bl-log-ch { color: var(--lit); }
+.bl-log-thumb { grid-area: thumb; max-width: 240px; }
+.bl-log-thumb .bl-cover {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xs);
+}
+.bl-log-thumb .bl-cover-fallback { background: var(--surface-container-high); }
+.bl-log-thumb .bl-cover-fallback span { font-size: 22px; }
+.bl-log-body { grid-area: body; min-width: 0; }
+.bl-log-title {
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.2;
+  color: var(--on-surface);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  transition: color var(--dur-fast) ease;
+}
+.bl-log-body .bl-blurb { margin-top: 8px; font-size: 15px; }
+.bl-log-body .bl-kind { text-transform: lowercase; letter-spacing: 0.06em; }
+.bl-log-foot {
+  grid-area: foot;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+.bl-log-foot .bl-author { margin: 0; }
+.bl-log-foot .bl-readmore {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  transition: color var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+.bl-log-link:hover .bl-log-ch,
+.bl-log-link:focus-visible .bl-log-ch,
+.bl-log-link:hover .bl-log-title,
+.bl-log-link:focus-visible .bl-log-title,
+.bl-log-link:hover .bl-readmore,
+.bl-log-link:focus-visible .bl-readmore { color: var(--lit); }
+.bl-log-link:hover .bl-readmore { transform: translateX(2px); }
+
+@media (min-width: 760px) {
+  .bl-log-link {
+    grid-template-columns: 56px 200px minmax(0, 1fr) 150px;
+    grid-template-areas: "ch thumb body foot";
+    gap: 28px;
+    padding: 28px 0;
+    align-items: start;
+  }
+  .bl-log-foot { flex-direction: column; align-items: flex-end; text-align: right; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-scope::after { animation: none; top: 38%; }
+  .bl-scope-carrier { animation: none; opacity: 0.12; }
+  .bl-band-chip,
+  .bl-log-ch,
+  .bl-log-title,
+  .bl-log-foot .bl-readmore { transition: none; }
+  .bl-log-link:hover .bl-readmore { transform: none; }
+}
+
+/* -- the flight: the home story's stage (.story-* in globals.css), with room for post titles -- */
+.bl-flight .story-line { white-space: normal; }
+.bl-flight .story-title { font-size: clamp(22px, 2.6vw, 38px); text-wrap: balance; }
+.bl-flight .story-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.bl-flight .bl-meta { color: var(--dim-300); }

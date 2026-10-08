@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isExternal } from "@/data/events";
 import { SECTIONS, STOP_LAYOUT, type Stop } from "./stops";
 import { scrollToY } from "./lenis";
@@ -35,8 +35,8 @@ const EDGES: number[] = [];
   });
 }
 
-/** `stops` comes from buildStops(), so it always matches STOP_LAYOUT. */
-export default function StorySection({ stops }: { stops: Stop[] }) {
+/** `stops` comes from buildStops(), so it always matches STOP_LAYOUT. `onWarm`: the scene is compiled and drawing. */
+export default function StorySection({ stops, onWarm: onWarmProp }: { stops: Stop[]; onWarm?: () => void }) {
   const sectionRef = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const [active, setActive] = useState(0);
@@ -44,6 +44,12 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
   // and the scene gets exactly the rest of the screen. null on wide screens.
   const [panel, setPanel] = useState<number | null>(null);
   const [inView, setInView] = useState(true);
+  /* the route loader holds until the scene's shaders are compiled (aria-busy below) */
+  const [warm, setWarm] = useState(false);
+  const onWarm = useCallback(() => {
+    setWarm(true);
+    onWarmProp?.();
+  }, [onWarmProp]);
   /* the fullscreen menu covers the page: stop drawing the 3D scene under it */
   const [navOpen, setNavOpen] = useState(false);
   useEffect(() => {
@@ -138,6 +144,7 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
       ref={sectionRef}
       data-section="story"
       aria-label="The CSAU story"
+      aria-busy={!warm}
       className="story"
       style={{
         height: STORY_HEIGHT,
@@ -148,7 +155,7 @@ export default function StorySection({ stops }: { stops: Stop[] }) {
 
       <div className="story-stage">
         <div className="story-canvas" aria-hidden>
-          <SpaceScene progress={progress} active={inView && !navOpen} reduced={reduced} />
+          <SpaceScene progress={progress} active={inView && !navOpen} reduced={reduced} onWarm={onWarm} />
         </div>
 
         <div className="story-copy">

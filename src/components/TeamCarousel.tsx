@@ -388,6 +388,8 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
 
   const [textureUrls, setTextureUrls] = useState<string[]>([]);
   const [active, setActive] = useState(0);
+  /* the route loader holds until the ring's first frame is drawn (aria-busy below) */
+  const [drawn, setDrawn] = useState(false);
 
   const N = members.length;
 
@@ -672,6 +674,7 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
       resize();
 
       let raf = 0;
+      let firstDrawn = false;
       let lastT = performance.now();
       const animFrame = () => {
         if (disposed) return;
@@ -750,6 +753,10 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
         updateFloor(now / 1000, reducedMotion);
 
         renderer.render(scene, camera);
+        if (!firstDrawn) {
+          firstDrawn = true;
+          setDrawn(true);
+        }
         raf = requestAnimationFrame(animFrame);
       };
       raf = requestAnimationFrame(animFrame);
@@ -827,6 +834,7 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
     <div
       ref={holderRef}
       data-team-carousel
+      aria-busy={!drawn}
       style={{ height: `${Math.min(N * 70, 840)}vh`, position: "relative" }}
     >
       <div

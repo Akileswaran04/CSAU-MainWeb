@@ -1,0 +1,199 @@
+/* ============================================================
+   SIGNAL DECODER - the blog page as a receiver (blog/SignalDecoder.tsx)
+   Fills its container. Band (scale, waterfall, carriers, page
+   header overlay, meter) on the left; decoded console docked right
+   on desktop, a bottom sheet over the waterfall on phones.
+   ============================================================ */
+.rx {
+  --rx-scale: 44px;
+  --rx-dock: 0px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  overflow: hidden;
+  background: var(--space-black);
+}
+.rx-band { position: absolute; inset: 0 var(--rx-dock) 0 0; }
+
+/* ── frequency scale ── */
+.rx-scale {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--rx-scale);
+  border-bottom: 1px solid var(--outline-variant);
+  background: var(--space-black);
+}
+.rx-tick { position: absolute; bottom: 0; width: 1px; height: 5px; background: var(--outline-variant); }
+.rx-tick:nth-child(4n + 1) { height: 9px; background: var(--outline); }
+.rx-cursor {
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  width: 1px;
+  background: var(--signal);
+  transition: left var(--dur-slow, 220ms) var(--ease-out);
+}
+.rx-cursor::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -4px;
+  width: 9px;
+  height: 3px;
+  background: var(--signal);
+}
+
+/* ── waterfall + carriers ── */
+.rx-canvas { position: absolute; inset: var(--rx-scale) 0 0; width: 100%; height: calc(100% - var(--rx-scale)); display: block; }
+.rx-hits { position: absolute; inset: 0; }
+.rx-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 24px;
+  transform: translateX(-50%);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.rx-ch {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 4px;
+  background: var(--space-black);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--outline);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.rx-hit:hover .rx-ch,
+.rx-hit:focus-visible .rx-ch { color: var(--lit); }
+.rx-hit[aria-pressed="true"] .rx-ch { color: var(--signal); }
+.rx-hit:focus-visible { outline: 1px solid var(--signal); outline-offset: -1px; }
+
+/* ── page header over the field ── */
+.rx-overlay {
+  position: absolute;
+  top: calc(var(--rx-scale) + 1px);
+  left: 0;
+  z-index: 2;
+  width: fit-content;
+  max-width: min(600px, 100%);
+  padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px);
+  background: color-mix(in srgb, var(--space-black) 80%, transparent);
+  pointer-events: none;
+}
+.rx-overlay > * { pointer-events: auto; }
+
+/* ── readout / bandwidth meter ── */
+.rx-meter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--outline-variant);
+  background: var(--void-950);
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+.rx-meter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+.rx-meter-ch { color: var(--signal); }
+.rx-meter.is-hov .rx-meter-ch { color: var(--lit); }
+.rx-meter-bw { display: inline-flex; align-items: center; gap: 8px; }
+.rx-bars { display: inline-flex; gap: 2px; }
+.rx-bars i { width: 4px; height: 10px; background: var(--hull-700); }
+.rx-bars i.on { background: var(--lit); }
+.rx-meter-title {
+  margin: 6px 0 0;
+  letter-spacing: 0.04em;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── decoded console ── */
+.rx-out {
+  position: absolute;
+  z-index: 4;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--void-950);
+}
+.rx-out-top { padding: 8px 16px 12px; }
+.rx-out-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rx-status.is-locked { color: var(--lit); }
+.rx-status.is-locked .ev-status-dot { background: var(--lit); }
+.rx-title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(18px, 2vw, 26px);
+  line-height: 1.18;
+  color: var(--on-surface);
+  overflow-wrap: anywhere;
+}
+.rx-out-body { display: flex; flex-direction: column; gap: 14px; padding: 4px 16px 20px; min-width: 0; }
+.rx-scan {
+  position: relative;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: repeating-linear-gradient(to bottom, var(--hull-900) 0 2px, var(--space-black) 2px 4px);
+}
+.rx-scan .bl-cover { border-bottom: 0; animation: rx-reveal 1.5s steps(30, end) both; }
+.rx-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--signal);
+  pointer-events: none;
+  animation: rx-line 1.5s steps(30, end) both;
+}
+@keyframes rx-reveal { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes rx-line { from { top: 0; opacity: 1; } to { top: 100%; opacity: 0; } }
+.rx-out .bl-blurb { margin: 0; }
+.rx-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.rx-foot .bl-author { margin-top: 0; }
+
+/* phones: bottom sheet over the waterfall, collapsed to status + title */
+@media (max-width: 899px) {
+  .rx-out { left: 0; right: 0; bottom: 0; max-height: 85%; border-top: 1px solid var(--outline-variant); }
+  .rx-meter { bottom: var(--rx-sheet, 120px); }
+  .rx-out:not(.is-open) .rx-out-body { display: none; }
+  .rx-out:not(.is-open) .rx-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+}
+/* desktop: docked console */
+@media (min-width: 900px) {
+  .rx { --rx-dock: clamp(380px, 30vw, 420px); }
+  .rx-out { top: 0; right: 0; bottom: 0; width: var(--rx-dock); border-left: 1px solid var(--outline-variant); }
+  .rx-out-top { padding: 12px 20px 14px; border-bottom: 1px solid var(--outline-variant); }
+  .rx-out-body { padding: 18px 20px 24px; }
+  .rx-toggle { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rx-scan .bl-cover { animation: none; }
+  .rx-scanline { display: none; }
+  .rx-ch,
+  .rx-cursor { transition: none; }
+}

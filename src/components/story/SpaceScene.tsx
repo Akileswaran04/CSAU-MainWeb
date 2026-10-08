@@ -9,7 +9,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { STOP_LAYOUT as STOPS } from "./stops";
 import { SatelliteModel } from "../space/models";
-import { AsteroidField, ParticlePlanet, ShipModel, UfoModel } from "../space/bodies";
+import { AsteroidField, ShipModel, UfoModel } from "../space/bodies";
+import { NOISE_GLSL, Planet, earthMap } from "../space/planet";
 import { Bloom } from "../space/Bloom";
 import { isMobileViewport, readTokens, seeded, type SpaceTokens } from "../space/tokens";
 import { useSettled } from "../space/useSettled";
@@ -17,11 +18,15 @@ import { useSettled } from "../space/useSettled";
 /* ============================================================
    SPACE SCENE - from Earth to the Sun, on a spaceship.
 
-   A ship leaves a rotating particle Earth and follows a route through
-   pitch-black space, one stop at a time: past Venus, through an asteroid
-   belt with saucers, past Mercury, and on to the Sun. Scroll drives the
-   ship. The camera starts ahead of it looking back at Earth, orbits round
-   to its right over the first stops, then chases it from behind.
+   A ship leaves a turning Earth (seas that catch the Sun, clouds,
+   towns lit on the night side, a blue rim of air) and follows a
+   route through space, one stop at a time: past Venus, through a
+   belt of cratered asteroids with saucers, past Mercury, and on to
+   a boiling Sun with its corona. Stars of every colour and
+   brightness drift past; the Milky Way lies across the sky behind.
+   Scroll drives the ship. The camera starts ahead of it looking
+   back at Earth, orbits round to its right over the first stops,
+   then chases it from behind.
 
    Everything is a pure function of scroll progress, so scrolling back
    flies back. All geometry is built in three.js - no model files.
@@ -72,44 +77,179 @@ function stopFloat(p: number): number {
   return S - 1;
 }
 
-/* ---------------- Sparse stars in pitch-black space ---------------- */
+/* ---------------- The sky: stars of every colour and brightness, and the Milky Way ---------------- */
 
-function Field({ tokens, mobile }: { tokens: SpaceTokens; mobile: boolean }) {
+/* a star: a hot point in a faint glow; the bright ones twinkle and throw thin diffraction spikes */
+const STAR_VERT = /* glsl */ `
+attribute float aSize;
+attribute vec3 aColor;
+attribute float aTw;
+uniform float uTime;
+uniform float uPx;
+varying vec3 vColor;
+varying float vSize;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  float tw = 1.0 - step(1.5, aSize) * 0.3 * (0.5 + 0.5 * sin(uTime * (1.3 + aTw * 2.6) + aTw * 50.0));
+  vColor = aColor * tw;
+  vSize = aSize;
+  gl_PointSize = aSize * uPx * 4.0;
+}`;
+const STAR_FRAG = /* glsl */ `
+varying vec3 vColor;
+varying float vSize;
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  float r2 = dot(p, p);
+  float a = exp(-r2 * 40.0) * 1.5 + exp(-r2 * 9.0) * 0.16;
+  float sp = smoothstep(2.3, 3.3, vSize) * 0.5;
+  a += sp * (exp(-abs(p.x) * 34.0) * exp(-p.y * p.y * 2.5) + exp(-abs(p.y) * 34.0) * exp(-p.x * p.x * 2.5));
+  a *= 1.0 - smoothstep(0.7, 1.0, r2);
+  if (a < 0.01) discard;
+  gl_FragColor = vec4(vColor * a, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+/* the Milky Way's glow: a soft band, brighter towards the galaxy's core, split by dark dust lanes */
+const BAND_VERT = /* glsl */ `
+varying vec3 vDir;
+void main() {
+  vDir = normalize(position);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+const BAND_FRAG = /* glsl */ `
+uniform vec3 uPole;
+uniform vec3 uCore;
+uniform vec3 uColor;
+varying vec3 vDir;
+void main() {
+  vec3 d = normalize(vDir);
+  float lat = asin(clamp(dot(d, uPole), -1.0, 1.0));
+  vec3 along = normalize(d - uPole * dot(d, uPole) + 1e-5);
+  float core = 0.35 + 0.65 * pow(max(0.0, dot(along, uCore)), 4.0);
+  float width = mix(0.11, 0.2, core);
+  float band = exp(-pow(lat / width, 2.0)) * core;
+  float cloud = fbm(d * 3.5);
+  float lanes = smoothstep(0.5, 0.72, fbm(d * 8.0 + 5.0)) * exp(-pow(lat / (width * 0.45), 2.0));
+  float k = band * (0.4 + 0.6 * cloud) * (1.0 - lanes * 0.75);
+  gl_FragColor = vec4(uColor * k, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+const SKY_R = 600; // the far sky rides with the camera, inside its far plane (900)
+
+export function Field({ tokens, mobile }: { tokens: SpaceTokens; mobile: boolean }) {
+  const sky = useRef<THREE.Group>(null);
   const parts = useMemo(() => {
     const rnd = seeded(9);
-    const n = mobile ? 320 : 800;
-    const p = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      p[i * 3] = (rnd() - 0.5) * 520;
-      p[i * 3 + 1] = (rnd() - 0.5) * 300;
-      p[i * 3 + 2] = -480 + rnd() * 540;
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(p, 3));
-    const mat = new THREE.PointsMaterial({
-      color: tokens.starlight,
-      size: 1.4,
-      sizeAttenuation: false,
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(Math.PI * 2 * rnd());
+    /* star colours, by how hot: blue-white, white, yellow, orange, red; kept close to the site's starlight */
+    const white = tokens.starlight;
+    const hues = [
+      white.clone().lerp(new THREE.Color(0.62, 0.74, 1), 0.55),
+      white.clone(),
+      white.clone().lerp(tokens.lit, 0.25),
+      white.clone().lerp(tokens.lit, 0.6),
+      white.clone().lerp(tokens.signal, 0.55),
+    ];
+    const hueAt = (r: number) => hues[r < 0.1 ? 0 : r < 0.55 ? 1 : r < 0.8 ? 2 : r < 0.95 ? 3 : 4];
+    const build = (n: number, place: (i: number, p: Float32Array) => void, sizeOf: () => number, lum: () => number) => {
+      const pos = new Float32Array(n * 3);
+      const col = new Float32Array(n * 3);
+      const size = new Float32Array(n);
+      const tw = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        place(i, pos);
+        size[i] = sizeOf();
+        const c = hueAt(rnd());
+        const l = lum() * (0.6 + size[i] * 0.25);
+        col.set([c.r * l, c.g * l, c.b * l], i * 3);
+        tw[i] = rnd();
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      g.setAttribute("aColor", new THREE.BufferAttribute(col, 3));
+      g.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+      g.setAttribute("aTw", new THREE.BufferAttribute(tw, 1));
+      return g;
+    };
+    /* near: the stars the ship flies among, so they drift past */
+    const near = build(
+      mobile ? 900 : 2400,
+      (i, p) => p.set([(rnd() - 0.5) * 520, (rnd() - 0.5) * 300, -480 + rnd() * 540], i * 3),
+      () => 0.55 + 2.9 * Math.pow(rnd(), 7),
+      () => 0.35 + 0.65 * rnd()
+    );
+    /* far: thousands of faint stars crowding into the Milky Way */
+    const pole = new THREE.Vector3(0.32, 0.86, -0.4).normalize();
+    const e1 = new THREE.Vector3(0, 0, 1).cross(pole).normalize();
+    const e2 = pole.clone().cross(e1);
+    const core = new THREE.Vector3(-0.3, 0.2, -1).projectOnPlane(pole).normalize();
+    const coreLon = Math.atan2(core.dot(e2), core.dot(e1));
+    const v = new THREE.Vector3();
+    const far = build(
+      mobile ? 2600 : 8000,
+      (i, p) => {
+        let lon = 0;
+        do lon = rnd() * Math.PI * 2;
+        while (rnd() > 0.3 + 0.7 * Math.pow(Math.max(0, Math.cos(lon - coreLon)), 2));
+        const lat = rnd() < 0.25 ? gauss() * 0.6 : gauss() * 0.1;
+        v.copy(e1).multiplyScalar(Math.cos(lon) * Math.cos(lat)).addScaledVector(e2, Math.sin(lon) * Math.cos(lat)).addScaledVector(pole, Math.sin(lat));
+        p.set([v.x * SKY_R, v.y * SKY_R, v.z * SKY_R], i * 3);
+      },
+      () => 0.35 + 0.7 * Math.pow(rnd(), 3),
+      () => 0.22 + 0.3 * rnd()
+    );
+    const time = { value: 0 };
+    const px = { value: 1 };
+    const starMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: time, uPx: px },
+      vertexShader: STAR_VERT,
+      fragmentShader: STAR_FRAG,
       transparent: true,
-      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    return { geo, mat };
+    const bandGeo = new THREE.SphereGeometry(SKY_R + 5, 48, 24);
+    const bandMat = new THREE.ShaderMaterial({
+      defines: { OCT: mobile ? 3 : 5 },
+      uniforms: { uPole: { value: pole }, uCore: { value: core }, uColor: { value: white.clone().lerp(tokens.lit, 0.15).multiplyScalar(0.035) } },
+      vertexShader: BAND_VERT,
+      fragmentShader: NOISE_GLSL + BAND_FRAG,
+      side: THREE.BackSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    return { near, far, starMat, bandGeo, bandMat, time, px };
   }, [tokens, mobile]);
   useEffect(
     () => () => {
-      parts.geo.dispose();
-      parts.mat.dispose();
+      [parts.near, parts.far, parts.starMat, parts.bandGeo, parts.bandMat].forEach((x) => x.dispose());
     },
     [parts]
   );
-  return <points geometry={parts.geo} material={parts.mat} frustumCulled={false} />;
+  useFrame(({ clock, camera, viewport }) => {
+    parts.time.value = clock.elapsedTime;
+    parts.px.value = viewport.dpr;
+    sky.current?.position.copy(camera.position);
+  });
+  return (
+    <>
+      <group ref={sky}>
+        <mesh geometry={parts.bandGeo} material={parts.bandMat} renderOrder={-2} />
+        <points geometry={parts.far} material={parts.starMat} frustumCulled={false} renderOrder={-1} />
+      </group>
+      <points geometry={parts.near} material={parts.starMat} frustumCulled={false} />
+    </>
+  );
 }
 
 /* ---------------- The route: dim line, lit up to the ship ---------------- */
 
-function Route({ curve, tokens, tp }: { curve: THREE.CatmullRomCurve3; tokens: SpaceTokens; tp: MutableRefObject<number> }) {
-  const N = S * 40;
+export function Route({ curve, tokens, tp }: { curve: THREE.CatmullRomCurve3; tokens: SpaceTokens; tp: MutableRefObject<number> }) {
+  const N = curve.points.length * 40;
   const parts = useMemo(() => {
     const pos = new Float32Array((N + 1) * 3);
     const v = new THREE.Vector3();
@@ -150,12 +290,24 @@ function Route({ curve, tokens, tp }: { curve: THREE.CatmullRomCurve3; tokens: S
 
 /* ---------------- Beacons: one small ring per stop ---------------- */
 
-interface Burst {
+export interface Burst {
   id: number;
   pos: THREE.Vector3;
 }
 
-function Beacons({ tokens, sf, burst }: { tokens: SpaceTokens; sf: MutableRefObject<number>; burst: MutableRefObject<Burst> }) {
+/** one beacon at each of `positions` (the route's stops) */
+export function Beacons({
+  tokens,
+  sf,
+  burst,
+  positions,
+}: {
+  tokens: SpaceTokens;
+  sf: MutableRefObject<number>;
+  burst: MutableRefObject<Burst>;
+  positions: THREE.Vector3[];
+}) {
+  const S = positions.length;
   const { camera } = useThree();
   const parts = useMemo(() => {
     const core = new THREE.IcosahedronGeometry(0.12, 1);
@@ -167,7 +319,7 @@ function Beacons({ tokens, sf, burst }: { tokens: SpaceTokens; sf: MutableRefObj
       coreMats: mk(() => new THREE.MeshBasicMaterial({ color: tokens.dim })),
       ringMats: mk(() => new THREE.MeshBasicMaterial({ color: tokens.dim, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })),
     };
-  }, [tokens]);
+  }, [tokens, S]);
   useEffect(
     () => () => {
       parts.core.dispose();
@@ -178,7 +330,6 @@ function Beacons({ tokens, sf, burst }: { tokens: SpaceTokens; sf: MutableRefObj
   );
   const groups = useRef<(THREE.Group | null)[]>([]);
   const tmp = useMemo(() => new THREE.Color(), []);
-  const positions = useMemo(() => Array.from({ length: S }, (_, i) => stopPos(i)), []);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     for (let i = 0; i < S; i++) {
@@ -455,12 +606,12 @@ function Director({ progress, reduced, mobile }: { progress: MutableRefObject<nu
 
       {/* Earth and its satellites: where the ship starts */}
       <group position={L.earth}>
-        <ParticlePlanet kind="earth" radius={EARTH_R} count={mobile ? 12000 : 90000} sun={scenery.sunDir.earth} rotation={0.05} seed={2} smooth={mobile} />
+        <Planet kind="earth" radius={EARTH_R} sun={scenery.sunDir.earth} rotation={0.05} low={mobile} />
       </group>
       <Orbiters tokens={tokens} earth={L.earth} />
 
       <Route curve={curve} tokens={tokens} tp={tp} />
-      <Beacons tokens={tokens} sf={sf} burst={burst} />
+      <Beacons tokens={tokens} sf={sf} burst={burst} positions={curve.points} />
 
       <group ref={shipRef}>
         <ShipModel tokens={tokens} scale={portrait ? 0.7 : mobile ? 0.4 : 0.5} low={mobile} />
@@ -468,7 +619,7 @@ function Director({ progress, reduced, mobile }: { progress: MutableRefObject<nu
 
       {/* Venus, then the asteroid belt with its saucers, then Mercury */}
       <group position={scenery.venus}>
-        <ParticlePlanet kind="venus" radius={portrait ? 7 : 13} count={mobile ? 5400 : 52000} sun={scenery.sunDir.venus} rotation={0.02} seed={4} smooth={mobile} />
+        <Planet kind="venus" radius={portrait ? 7 : 13} sun={scenery.sunDir.venus} rotation={0.02} low={mobile} />
       </group>
       <AsteroidField tokens={tokens} positions={rocks} size={mobile ? 1.1 : 0.9} low={mobile} />
       {scenery.ufos.map((u, i) => (
@@ -480,12 +631,12 @@ function Director({ progress, reduced, mobile }: { progress: MutableRefObject<nu
         <UfoModel tokens={tokens} scale={mobile ? 0.9 : 1.2} phase={7} />
       </group>
       <group position={scenery.mercury}>
-        <ParticlePlanet kind="mercury" radius={portrait ? 5 : 6.5} count={mobile ? 6800 : 30000} sun={scenery.sunDir.mercury} rotation={0.015} seed={6} smooth={mobile} />
+        <Planet kind="mercury" radius={portrait ? 5 : 6.5} sun={scenery.sunDir.mercury} rotation={0.015} low={mobile} />
       </group>
 
-      {/* the Sun at the end of the route: a glowing particle sphere like the planets */}
+      {/* the Sun at the end of the route, in its corona */}
       <group position={L.sun}>
-        <ParticlePlanet kind="sun" radius={60} count={mobile ? 10200 : 90000} sun={sunFacing} rotation={0.01} seed={9} smooth={mobile} />
+        <Planet kind="sun" radius={60} sun={sunFacing} rotation={0.01} low={mobile} />
       </group>
 
       {!mobile && <Bloom intensity={0.85} threshold={0.32} smoothing={0.2} />}
@@ -495,10 +646,11 @@ function Director({ progress, reduced, mobile }: { progress: MutableRefObject<nu
 
 /* ---------------- Canvas wrapper ---------------- */
 
-/** Links every shader in parallel (off the main thread) before the first frame is drawn, then says so.
- *  On desktop the scene is drawn through the bloom composer's float buffer, and three keys programs by
- *  render target, so the compile runs against a matching one. */
-function Prewarm({ mobile, onReady }: { mobile: boolean; onReady: (ready: boolean) => void }) {
+/** Links every shader in parallel (off the main thread) before the first frame is drawn, then says so
+ *  (after `until` too, if given: the story waits for Earth's map). With bloom the scene is drawn through
+ *  the composer's float buffer, and three keys programs by render target, so the compile runs against a
+ *  matching one. */
+export function Prewarm({ bloom, onReady, until }: { bloom: boolean; onReady: (ready: boolean) => void; until?: Promise<unknown> }) {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
     let done = false;
@@ -507,11 +659,13 @@ function Prewarm({ mobile, onReady }: { mobile: boolean; onReady: (ready: boolea
       done = true;
       onReady(true);
     };
-    const target = mobile ? null : new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+    const target = bloom ? new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false }) : null;
     const prev = gl.getRenderTarget();
     try {
       gl.setRenderTarget(target);
-      gl.compileAsync(scene, camera).then(finish, finish);
+      gl.compileAsync(scene, camera)
+        .then(() => until)
+        .then(finish, finish);
     } catch {
       finish();
     } finally {
@@ -522,7 +676,7 @@ function Prewarm({ mobile, onReady }: { mobile: boolean; onReady: (ready: boolea
       clearTimeout(guard);
       target?.dispose();
     };
-  }, [gl, scene, camera, mobile, onReady]);
+  }, [gl, scene, camera, bloom, onReady, until]);
   return null;
 }
 
@@ -530,14 +684,21 @@ export default function SpaceScene({
   progress,
   active,
   reduced,
+  onWarm,
 }: {
   progress: MutableRefObject<number>;
   active: boolean;
   reduced: boolean;
+  /** called once the shaders are compiled and the scene starts drawing */
+  onWarm?: () => void;
 }) {
   const mobile = useMemo(() => isMobileViewport(), []);
+  const earth = useMemo(() => earthMap(mobile), [mobile]); // painting starts now, in a worker
   const settled = useSettled();
   const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    if (warm) onWarm?.();
+  }, [warm, onWarm]);
   if (!settled) return null;
   return (
     <Canvas
@@ -550,7 +711,7 @@ export default function SpaceScene({
     >
       {/* pitch black */}
       <color attach="background" args={["#000000"]} />
-      <Prewarm mobile={mobile} onReady={setWarm} />
+      <Prewarm bloom={!mobile} onReady={setWarm} until={earth} />
       <Director progress={progress} reduced={reduced} mobile={mobile} />
     </Canvas>
   );

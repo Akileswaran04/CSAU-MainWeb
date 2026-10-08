@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { paintEarthInto } from "./space/earthCanvas";
 
 /* ============================================================
    HERO SECTION - Full-viewport hero after the power-on handoff
@@ -8,9 +9,18 @@ import { useEffect, useState } from "react";
    Left-aligned wordmark and telemetry block; three radar rings
    widen from a signal dot on the right. Scroll down to follow
    the signal.
+
+   Earth, the story's own (space/earth.ts), rises at the foot while the
+   story below gets ready, and the page holds still until it has
+   (HomeClient): a little way while the story waits its turn, most of
+   the way while its scene is built, and the rest when it is drawing.
+   Then a light runs along the horizon and the Scroll hint appears.
    ============================================================ */
 
-export default function HeroSection() {
+/** how far the story below has got: waiting its turn, its scene being built, drawing */
+export type StoryStage = "wait" | "build" | "ready";
+
+export default function HeroSection({ story = "ready" }: { story?: StoryStage }) {
   const [visible, setVisible] = useState(false);
   const [scrollHint, setScrollHint] = useState(false);
 
@@ -83,6 +93,8 @@ export default function HeroSection() {
         />
       </div>
 
+      <EarthRise story={story} />
+
       {/* Content */}
       <div className="relative" style={{ zIndex: 10, display: "flex", flexDirection: "column", gap: 20, maxWidth: 720 }}>
         <h1
@@ -138,7 +150,7 @@ export default function HeroSection() {
           left: "8%",
           bottom: 40,
           zIndex: 10,
-          opacity: scrollHint ? 1 : 0,
+          opacity: scrollHint && story === "ready" ? 1 : 0,
           transition: "opacity 1s ease",
         }}
       >
@@ -165,3 +177,60 @@ export default function HeroSection() {
     </section>
   );
 }
+
+/* Earth's top, rising from the foot of the hero. A wide arc of a big globe, its pole tipped away so the
+   horizon shows the tropics rather than the ice, turned to the continents, lit from the upper right (the radar's
+   side). Its foot fades into the dark the story starts in, so there is no seam below the hero. It is painted once
+   (again only if the width changes: phones resize as the address bar comes and goes) and rises only
+   once painted, so it never rises empty. */
+function EarthRise({ story }: { story: StoryStage }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const [geo, setGeo] = useState<{ w: number; R: number; h: number; m: number } | null>(null);
+  const [painted, setPainted] = useState(false);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    let w = 0;
+    let live = true;
+    const paint = () => {
+      if (window.innerWidth === w) return;
+      w = window.innerWidth;
+      const R = Math.round(Math.min(1100, Math.max(320, w * 0.62))); // the globe's radius
+      const cap = Math.round(Math.min(220, Math.max(110, window.innerHeight * 0.2))); // how much of it shows
+      const m = Math.max(100, Math.round(R * 0.12)); // room above it for the atmosphere and its glow (the fade masks the box)
+      const h = cap + m;
+      setGeo({ w, R, h, m });
+      void paintEarthInto(canvas, w, h, { cx: w / 2, cy: m + R, r: R, dist: 3, tilt: -1.05, spin: 4.4, sun: [0.55, 0.45, 0.7] }, 150000).then(
+        () => live && setPainted(true)
+      );
+    };
+    paint();
+    let t = 0;
+    const onResize = () => {
+      clearTimeout(t);
+      t = window.setTimeout(paint, 250);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      live = false;
+      clearTimeout(t);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  return (
+    <div className="earthrise" data-story={painted ? story : "off"} aria-hidden style={{ height: geo?.h ?? 0 }}>
+      {geo && (
+        <i
+          className="earthrise-air"
+          style={{ left: geo.w / 2 - geo.R, top: geo.m, width: 2 * geo.R, height: 2 * geo.R } as CSSProperties}
+        >
+          <i className="earthrise-ping" />
+        </i>
+      )}
+      <canvas ref={ref} className="earthrise-map" />
+    </div>
+  );
+}
+

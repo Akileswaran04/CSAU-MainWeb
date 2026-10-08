@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CONTACT_BASE, CONTACT_CHANNELS } from "@/data/contact";
 import ContactChannels from "@/components/contact/ContactChannels";
+import "./contact-page.css";
 
 /* ============================================================
-   CONTACT - how to reach the club: a ruled list of its real
-   channels beside a beacon that tunes to whichever channel is
-   hovered or focused. Driven entirely by src/data/contact.ts.
+   CONTACT - how to reach the club, drawn as a pulsar map: lines
+   from the base out to each of its real channels (see
+   components/contact/ContactChannels). Driven entirely by
+   src/data/contact.ts.
    Route: /contact
    ============================================================ */
 
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main id="content" className="pg">
+    <main className="pg">
       <div className="pg-in">
         <header className="ct-head">
           <div className="eyebrow">Open channel</div>
@@ -28,11 +30,13 @@ export default function ContactPage() {
             and open a line.
           </p>
         </header>
+      </div>
 
-        <ContactChannels channels={CONTACT_CHANNELS} base={CONTACT_BASE} />
+      <ContactChannels channels={CONTACT_CHANNELS} base={CONTACT_BASE} />
 
+      <div className="pg-in">
         <p className="pg-next">
-          <Link href="/team" data-route-load className="btn btn-primary">
+          <Link href="/team" className="btn btn-primary">
             Meet the team →
           </Link>
         </p>

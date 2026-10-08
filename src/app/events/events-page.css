@@ -1,0 +1,488 @@
+/* ============================================================
+   /events - the archive on an orbit (page.tsx, EventsOrbit.tsx).
+   The title with Upcoming & Current and the way to get in touch
+   under it; then the archive: two huge arcs across the screen and
+   a dark planet with a glowing rim, the year pills in its middle,
+   rings round it that expand as it scrolls in; one ring of the
+   chosen year's glass cards rides the upper arc, the centre one
+   ringed in gold. Site palette and type
+   only; reuses .ev-*, .pg-*, .btn and the .dm-detail* panel shell
+   from globals.css.
+   ============================================================ */
+
+.evo-label {
+  margin: 0;
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--outline);
+}
+
+/* ── the hero: the title, Upcoming & Current under it in colour, then the way to get in touch ── */
+.evo-hero {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(28px, 4.5svh, 48px);
+  min-height: 100svh;
+  padding: clamp(84px, 12svh, 128px) var(--pg-x) clamp(56px, 9svh, 96px);
+}
+.evo-top { max-width: 64ch; text-align: center; }
+.evo-top .ev-head { max-width: none; }
+.evo-top .pg-title { margin-top: 10px; font-size: clamp(26px, 3.8vw, 52px); color: var(--on-surface-variant); }
+.evo-top .pg-lede { margin: 14px auto 0; font-size: 15px; line-height: 1.65; }
+.evo-top .dm-notice { justify-content: center; margin-top: 16px; }
+.evo-up { display: grid; justify-items: center; gap: 30px; width: 100%; }
+.evo-up-head { display: inline-flex; align-items: center; gap: 10px; color: var(--on-surface); }
+.evo-up-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--outline); }
+.evo-up-dot[data-on] { background: var(--signal); animation: evPulse 2.4s ease-out infinite; }
+.evo-up-count { color: var(--signal); }
+.evo-up-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px 24px; margin: 0; padding: 0; list-style: none; }
+.evo-up .evo-card { position: relative; width: clamp(150px, 14vw, 200px); opacity: 1; will-change: auto; }
+.evo-up .evo-name { font-size: 13px; }
+.evo-hero .pg-next { margin: 0; }
+
+/* the hero rises as the page opens: the title, the label, each card, then the way to get in touch */
+.evo-hero[data-intro="wait"] :is(.evo-top, .evo-up-head, .evo-card, .pg-next) { opacity: 0; }
+.evo-hero[data-intro="play"] :is(.evo-top, .evo-up-head, .evo-card, .pg-next) { animation: evo-rise 800ms var(--ease-out) 100ms both; }
+.evo-hero[data-intro="play"] .evo-up-head { animation-delay: 320ms; }
+.evo-hero[data-intro="play"] .evo-card { animation-delay: calc(440ms + var(--i) * 90ms); }
+.evo-hero[data-intro="play"] .pg-next { animation-delay: 700ms; }
+
+/* ── the archive: the stage holds still at the top while the archive scrolls on (the spacer; not padding,
+   which a sticky child cannot move into); meanwhile the rings round the planet expand and the planet
+   grows (--p, 0 to 1, from EventsOrbit) ── */
+.evo-arch::after { content: ""; display: block; height: 70svh; }
+.evo-stage {
+  --rp: clamp(200px, 36vw, 560px); /* the planet's radius */
+  --cap: clamp(150px, 24svh, 230px); /* how much of it has risen: room for the years in its middle */
+  --cw: 180px; /* card width, set from the layout */
+  --p: 0;
+  position: sticky;
+  top: 0;
+  isolation: isolate;
+  min-height: 100svh;
+  padding: clamp(84px, 12svh, 128px) var(--pg-x) 0;
+  overflow: clip;
+}
+/* the dark the stars fade in from (gone once the intro plays); its top edge soft against the hero */
+.evo-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--space-black);
+  mask-image: linear-gradient(transparent, #000 22%);
+  pointer-events: none;
+}
+
+/* the years: pills in the middle of the dark planet */
+.evo-years {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(var(--cap) / 2);
+  translate: -50% 50%;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: min(calc(100% - 2 * var(--pg-x)), calc(var(--rp) * 1.4)); /* inside the circle: more years wrap */
+}
+.evo-years-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 2px; }
+.evo-chip {
+  flex: none;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 16px;
+  border: 1px solid rgba(190, 205, 230, 0.22);
+  border-radius: 999px;
+  background: rgba(12, 16, 24, 0.82);
+  color: var(--dim-300);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.evo-chip:hover { color: var(--on-surface); border-color: rgba(190, 205, 230, 0.5); }
+.evo-chip[aria-pressed="true"] {
+  color: #1b1404;
+  background: var(--lit);
+  border-color: var(--lit);
+  font-weight: 700;
+  box-shadow: 0 0 22px -4px color-mix(in srgb, var(--lit) 70%, transparent);
+}
+/* ARCHIVE between two lines */
+.evo-years-head { display: flex; align-items: center; gap: 14px; }
+.evo-years-head .evo-label { font-size: 12px; letter-spacing: 0.42em; color: color-mix(in srgb, var(--starlight) 72%, transparent); }
+.evo-years-head::before,
+.evo-years-head::after {
+  content: "";
+  width: clamp(28px, 5vw, 56px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--starlight) 60%, transparent));
+}
+.evo-years-head::after { scale: -1 1; }
+/* pause / play: small to the eye, 44px to the finger */
+.evo-chip.evo-play { position: relative; min-width: 32px; min-height: 32px; padding: 0; font-size: 9px; letter-spacing: 0; }
+.evo-chip.evo-play::after { content: ""; position: absolute; inset: -6px; }
+@media (max-width: 420px) {
+  .evo-chip { padding: 0 12px; }
+}
+
+/* the arcs: orbit lines. Their own layer, so the planet's soft edge is not repainted with them */
+.evo-arcs {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  will-change: transform;
+}
+.evo-arc { fill: none; stroke: color-mix(in srgb, var(--starlight) 26%, transparent); stroke-width: 1; stroke-dasharray: 1; }
+/* the gold mark at the top of the arc, over the centre card (placed by EventsOrbit) */
+.evo-apex {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--lit);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lit) 22%, transparent), 0 0 18px 4px color-mix(in srgb, var(--lit) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.evo-stage[data-intro="in"] .evo-apex { opacity: 1; transition: opacity 700ms ease 900ms; }
+
+/* the cards: each hangs from its dot on an arc */
+.evo-cards {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease-out);
+}
+.evo-cards[data-leaving] { opacity: 0; }
+.evo-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--cw);
+  padding: 10px 10px 12px;
+  border: 1px solid rgba(190, 205, 230, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(24, 30, 42, 0.82), rgba(10, 13, 20, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 14px 34px -14px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  pointer-events: auto;
+  transform-origin: 50% 0; /* it hangs from its point on the arc, and shrinks towards the ends from there */
+  will-change: transform, opacity;
+  transition: border-color 300ms var(--ease-out), box-shadow 300ms var(--ease-out);
+}
+.evo-card[data-hidden] { pointer-events: none; }
+.evo-card:hover { border-color: rgba(190, 205, 230, 0.34); }
+.evo-cards .evo-card[data-c] {
+  border-color: var(--lit);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lit) 45%, transparent),
+    0 0 34px -6px color-mix(in srgb, var(--lit) 50%, transparent),
+    0 14px 40px -12px rgba(0, 0, 0, 0.9);
+}
+/* Upcoming & Current: a touch of the signal colour, and their status in it */
+.evo-card[data-lead] { border-color: color-mix(in srgb, var(--signal) 40%, rgba(190, 205, 230, 0.16)); }
+.evo-status { color: var(--signal); }
+/* the empty launchpad, when nothing is upcoming */
+.evo-pad { display: grid; place-items: center; }
+.evo-pad svg { width: 72%; height: auto; fill: none; stroke: var(--outline); stroke-width: 1; }
+.evo-pad .evo-pad-sky { fill: var(--starlight); stroke: none; }
+.evo-card .ev-poster {
+  aspect-ratio: 4 / 5;
+  border: 0;
+  border-radius: 6px;
+  filter: brightness(0.86);
+  transition: filter 500ms var(--ease-out);
+}
+.evo-card[data-c] .ev-poster,
+.evo-card:hover .ev-poster,
+.evo-card:focus-within .ev-poster { filter: none; }
+.evo-name {
+  margin: 12px 2px 0;
+  font: 700 13px/1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--starlight);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.evo-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.evo-open::after { content: ""; position: absolute; inset: 0; } /* the whole card opens the entry */
+.evo-open:focus-visible { outline: none; }
+.evo-card:has(.evo-open:focus-visible) { outline: 1px solid var(--signal); outline-offset: 6px; }
+.evo-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 2px 0;
+  font: 500 10px/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim-300);
+}
+.evo-cal { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.1; }
+@media (max-width: 600px) {
+  .evo-cal { display: none; } /* phone cards are too narrow to give it a column */
+  .evo-cards .evo-name { font-size: 11px; letter-spacing: 0.02em; } /* so a long word fits a phone card whole */
+}
+
+/* the planet: a dark world, its night side faintly blue, a bright rim of air along the top and a blue glow
+   over it; its shadow eats the stars round it */
+.evo-planet {
+  border-radius: 50%;
+  background:
+    radial-gradient(140% 70% at 50% 0%, rgba(74, 127, 214, 0.18), transparent 55%),
+    radial-gradient(farthest-corner at 50% 0%, #0c1526, #05080f 42%, var(--space-black) 70%);
+  box-shadow:
+    inset 0 2px 1px -1px rgba(214, 232, 255, 0.95),
+    inset 0 18px 30px -14px rgba(120, 170, 255, 0.55),
+    0 -3px 18px -2px rgba(140, 185, 255, 0.6),
+    0 -10px 80px -6px rgba(70, 130, 255, 0.35),
+    0 0 70px 36px var(--space-black);
+}
+.evo-stage-planet {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: calc(100% - var(--cap));
+  width: calc(var(--rp) * 2);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  scale: calc(0.75 + var(--p) * 0.25);
+  will-change: scale;
+}
+/* the rings, centred on the planet. They change with every scroll frame: on their own layer, so the
+   planet's soft edge is not repainted with them */
+.evo-rings {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: calc(100% - var(--cap) + var(--rp));
+  width: min(190vw, 2200px);
+  height: auto;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  overflow: visible;
+  pointer-events: none;
+  will-change: transform;
+}
+/* lights riding the rings: they move out with them (scaled about the rings' centre, the viewBox's 0 0) */
+.evo-rings .evo-ring-dot {
+  fill: rgba(205, 222, 255, 0.95);
+  stroke: rgba(150, 190, 255, 0.35);
+  stroke-width: 5;
+  vector-effect: none;
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.evo-rings circle {
+  fill: none;
+  stroke: color-mix(in srgb, var(--starlight) 22%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(0.6 + var(--p) * var(--k)));
+}
+.evo-cta { margin-top: 20px; }
+
+/* ── the archive's intro (data-intro="in"), once it holds still: the stars fade in, the arcs draw, the years
+   rise, then the cards spread out from the centre (EventsOrbit's frame loop). Transitions, so scrolled back
+   up ("out") it runs backwards: the cards draw back in, the years sink, the arcs undraw, the dark returns ── */
+.evo-stage::before { transition: opacity 600ms ease 900ms; }
+.evo-stage[data-intro="in"]::before { opacity: 0; transition: opacity 900ms ease; }
+.evo-arc { stroke-dashoffset: 1; transition: stroke-dashoffset 700ms cubic-bezier(0.6, 0, 0.2, 1) 300ms; }
+.evo-arc + .evo-arc { transition-delay: 380ms; }
+.evo-stage[data-intro="in"] .evo-arc { stroke-dashoffset: 0; transition: stroke-dashoffset 1400ms cubic-bezier(0.6, 0, 0.2, 1) 250ms; }
+.evo-stage[data-intro="in"] .evo-arc + .evo-arc { transition-delay: 420ms; }
+.evo-years {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 350ms var(--ease-out), transform 350ms var(--ease-out), visibility 0s 350ms;
+}
+.evo-stage[data-intro="in"] .evo-years {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 700ms var(--ease-out) 1050ms, transform 700ms var(--ease-out) 1050ms, visibility 0s;
+}
+@keyframes evo-rise { from { opacity: 0; transform: translateY(12px); } }
+
+/* ── how far down the page: a ring at the bottom right, a dot where each section starts ── */
+.evo-progress {
+  position: fixed;
+  z-index: 30;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+  pointer-events: none;
+}
+.evo-progress circle { fill: none; stroke-width: 1; }
+.evo-progress .evo-progress-track { stroke: var(--outline-variant); }
+.evo-progress .evo-progress-bar {
+  stroke: var(--starlight);
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--p, 0));
+  transform: rotate(-90deg);
+  transform-origin: 22px 22px;
+}
+.evo-progress .evo-progress-dot { fill: var(--space-black); stroke: var(--outline); }
+.evo-progress .evo-progress-dot[data-on] { fill: var(--lit); stroke: var(--lit); }
+
+/* ── the ringed target (mouse only; the system cursor is hidden while it shows) ── */
+.evo-nocursor,
+.evo-nocursor * { cursor: none !important; }
+.evo-target { position: fixed; left: 0; top: 0; z-index: 600; pointer-events: none; opacity: 0; transition: opacity 200ms var(--ease-out); }
+.evo-target[data-on] { opacity: 1; }
+.evo-target-ring,
+.evo-target-dot { position: absolute; left: 0; top: 0; }
+.evo-target-ring::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid color-mix(in srgb, var(--starlight) 70%, transparent);
+  border-radius: 50%;
+  transition: scale 200ms var(--ease-out), border-color 200ms var(--ease-out);
+}
+.evo-target-ring::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid color-mix(in srgb, var(--starlight) 35%, transparent);
+  border-radius: 50%;
+}
+.evo-target[data-hot] .evo-target-ring::before { scale: 1.4; border-color: var(--lit); }
+.evo-target-dot::before { content: ""; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; background: var(--starlight); }
+
+/* ── the entry: a side panel on the .dm-detail shell ── */
+.evo-panel { justify-items: end; align-items: stretch; padding: 0; }
+.evo-panel-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100%);
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-left: 1px solid var(--outline);
+  border-radius: 0;
+  animation: evo-slide 320ms var(--ease-out);
+}
+@keyframes evo-slide { from { opacity: 0; transform: translateX(40px); } }
+.evo-panel-body { flex: 1 0 auto; padding: 20px clamp(16px, 3vw, 28px) 32px; animation: evo-in 240ms var(--ease-out) both; }
+@keyframes evo-in { from { opacity: 0; transform: translateY(8px); } }
+.evo-panel-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.1;
+  color: var(--on-surface);
+  overflow-wrap: anywhere;
+}
+.evo-panel-poster { margin-top: 20px; }
+.evo-panel-poster .ev-poster { border: 1px solid var(--outline-variant); border-radius: var(--radius-sm); }
+.evo-panel-poster .ev-poster:has(.ev-poster-img) { aspect-ratio: auto; }
+.evo-panel-poster .ev-poster-img { height: auto; max-height: 60vh; object-fit: contain; }
+.evo-facts { display: grid; gap: 12px; margin: 20px 0 0; }
+.evo-facts div { padding-top: 8px; border-top: 1px solid var(--outline-variant); }
+.evo-facts dt { font: 500 11px/1.3 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--outline); }
+.evo-facts dd { margin: 6px 0 0; font: 500 14px/1.4 var(--font-mono); color: var(--on-surface); }
+.evo-log {
+  margin: 20px 0 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--on-surface-variant);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.evo-panel .ev-photos { margin-top: 20px; }
+.evo-panel-nav {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface-container-lowest);
+  border-top: 1px solid var(--outline-variant);
+}
+.evo-panel-nav button {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: 500 11px/1.3 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+.evo-panel-nav button + button { text-align: right; border-left: 1px solid var(--outline-variant); }
+.evo-panel-nav button:hover:not(:disabled) { color: var(--lit); }
+.evo-panel-nav button:disabled { opacity: 0.35; cursor: default; }
+.evo-panel-nav button:focus-visible { outline: 1px solid var(--signal); outline-offset: -3px; }
+.evo-panel-nav-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--on-surface);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evo-cards,
+  .evo-card,
+  .evo-card .ev-poster,
+  .evo-apex,
+  .evo-chip,
+  .evo-stage::before,
+  .evo-arc,
+  .evo-years { transition: none !important; }
+  .evo-up-dot[data-on],
+  .evo-panel-sheet,
+  .evo-panel-body { animation: none; }
+}

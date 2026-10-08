@@ -48,9 +48,9 @@ export default function RootLayout({
         {/* Laser navigation - a floating button opens the fullscreen
             Matrix Junction laser overlay with the site links. */}
         <LaserNav />
-        {/* RouteLoadGate shows the loading sequence when travelling
-            between pages via the nav bar or marked CTAs, and staggers
-            the destination page's elements in as it clears. */}
+        {/* RouteLoadGate shows the loading sequence when following any
+            link to another page, opens once that page has its elements,
+            and staggers them in as it clears. */}
         <RouteLoadGate>{children}</RouteLoadGate>
       </body>
     </html>

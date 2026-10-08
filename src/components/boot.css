@@ -1,17 +1,19 @@
 /* ============================================================
    BOOT PRELOADER - the planets light up (CursorBootPreloader.tsx).
-   Pitch black, starlight, one amber Sun; the planets keep muted
-   natural colours, as the 3D planets do. The orbit plane is seen at a
-   slant (--k): the plane is squashed, and each planet is unsquashed
-   again, so it stays round. The orbits are as wide as the screen
-   allows (--R). Only transform and opacity animate.
+   Pitch black, a field of stars and the Milky Way, one Sun; the
+   planets keep their natural colours, as the 3D planets do. The
+   orbit plane is seen at a slant (--k): the plane is squashed, and
+   each planet is unsquashed again, so it stays round. The orbits are
+   as wide as the screen allows (--R). Only transform, opacity and
+   z-index animate.
    ============================================================ */
 
 .bt {
-  --k: 0.42; /* the slant: how much of a circle's height an orbit keeps */
+  --k: 0.4; /* the slant: how much of a circle's height an orbit keeps */
   --u: 1; /* planet size unit */
-  --R: min(44vw, calc(31vh / var(--k)), 500px); /* the outermost orbit's radius */
-  --sun: max(16px, calc(var(--R) * 0.085));
+  --R: min(43vw, calc(30vh / var(--k)), 540px); /* the outermost orbit's radius */
+  --cy: 47%; /* where the Sun stands, from the top */
+  --sun: max(20px, calc(var(--R) * 0.09));
   --p: 0; /* progress, 0..1, set by the component */
   position: fixed;
   inset: 0;
@@ -21,16 +23,31 @@
   color: var(--starlight);
   cursor: progress;
 }
-/* portrait: look down on the plane more steeply, so it fills more of the height */
+/* wide screens: the system is over 1000px across, so the planets grow with it */
+@media (min-width: 1200px) and (min-height: 700px) {
+  .bt { --u: 1.3; }
+}
+/* portrait: look down on the plane more steeply and stand it higher, clear of the count */
 @media (max-aspect-ratio: 9/10) {
-  .bt { --k: 0.74; --u: 0.8; }
+  .bt { --k: 0.68; --u: 0.72; --R: min(46vw, calc(27vh / var(--k))); --cy: 45%; }
 }
 
+/* ── the sky ── */
 .bt-sky { position: absolute; inset: 0; pointer-events: none; }
-.bt-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: var(--starlight); }
+.bt-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bt-twinkle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 0 4px rgba(255, 250, 240, 0.55);
+  animation: bt-twinkle 4s ease-in-out infinite;
+}
+@keyframes bt-twinkle { 50% { opacity: 0.25; } }
 
-/* ── the system: everything is placed from its centre ── */
-.bt-sys { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+/* ── the system: everything is placed from the Sun ── */
+.bt-sys { position: absolute; left: 50%; top: var(--cy); width: 0; height: 0; }
 
 .bt-orbits {
   position: absolute;
@@ -40,29 +57,69 @@
   height: calc(var(--R) * 2 * var(--k));
   overflow: visible;
 }
-.bt-orbits circle {
+.bt-orbits path {
   fill: none;
   stroke: var(--dim-300);
   stroke-width: 1;
-  stroke-opacity: 0.14;
   vector-effect: non-scaling-stroke;
   transition: stroke-opacity 0.6s ease;
 }
-.bt-orbits circle[data-lit="true"] { stroke-opacity: 0.4; }
+.bt-far { stroke-opacity: 0.07; }
+.bt-near { stroke-opacity: 0.16; }
+[data-orbit][data-lit="true"] .bt-far { stroke-opacity: 0.2; }
+[data-orbit][data-lit="true"] .bt-near { stroke-opacity: 0.42; }
 
-/* ── the Sun brightens as the count climbs ── */
+/* ── each planet: start angle, the turn, out to its orbit, the turn undone, the slant undone ── */
+.bt-plane, .bt-orbit, .bt-arm, .bt-at, .bt-face, .bt-face0, .bt-sunwrap { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.bt-plane { transform: scaleY(var(--k)); }
+.bt-orbit {
+  z-index: 3;
+  transform: rotate(var(--a));
+  /* in front of the Sun on the near half of the orbit, behind it on the far half */
+  animation: bt-depth var(--T) step-end infinite;
+  animation-delay: var(--dz);
+}
+.bt-arm { animation: bt-turn var(--T) linear infinite; }
+.bt-at { left: calc(var(--R) * var(--f)); }
+.bt-face { animation: bt-unturn var(--T) linear infinite; }
+.bt-face0 { transform: rotate(calc(var(--a) * -1)) scaleY(calc(1 / var(--k))); }
+@keyframes bt-turn { to { transform: rotate(-360deg); } }
+@keyframes bt-unturn { to { transform: rotate(360deg); } }
+@keyframes bt-depth { 0% { z-index: 3; } 50% { z-index: 1; } 100% { z-index: 1; } }
+
+/* ── the Sun: white-hot core, darker limb, a slow corona; it brightens as the count climbs ── */
+.bt-sunwrap { z-index: 2; transform: scaleY(calc(1 / var(--k))); }
 .bt-glow {
   position: absolute;
-  left: calc(var(--sun) * -3);
-  top: calc(var(--sun) * -3);
-  width: calc(var(--sun) * 6);
-  height: calc(var(--sun) * 6);
+  left: calc(var(--sun) * -3.5);
+  top: calc(var(--sun) * -3.5);
+  width: calc(var(--sun) * 7);
+  height: calc(var(--sun) * 7);
   border-radius: 50%;
-  background: radial-gradient(circle closest-side, rgba(240, 183, 58, 0.38), rgba(240, 183, 58, 0.1) 45%, rgba(240, 183, 58, 0));
-  opacity: calc(0.25 + var(--p) * 0.75);
-  transform: scale(calc(0.6 + var(--p) * 0.5));
+  background: radial-gradient(circle closest-side, rgba(255, 190, 90, 0.32), rgba(255, 170, 70, 0.09) 42%, rgba(255, 170, 70, 0));
+  opacity: calc(0.3 + var(--p) * 0.7);
+  transform: scale(calc(0.65 + var(--p) * 0.45));
   transition: opacity 0.4s linear, transform 0.4s linear;
 }
+.bt-corona {
+  position: absolute;
+  left: calc(var(--sun) * -1.7);
+  top: calc(var(--sun) * -1.7);
+  width: calc(var(--sun) * 3.4);
+  height: calc(var(--sun) * 3.4);
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(255, 216, 160, 0.16) 0deg 3deg,
+    transparent 3deg 11deg,
+    rgba(255, 216, 160, 0.08) 11deg 13deg,
+    transparent 13deg 23deg
+  );
+  -webkit-mask: radial-gradient(circle closest-side, transparent 28%, #000 32%, transparent 100%);
+  mask: radial-gradient(circle closest-side, transparent 28%, #000 32%, transparent 100%);
+  opacity: calc(0.35 + var(--p) * 0.65);
+  animation: bt-spin 140s linear infinite;
+}
+@keyframes bt-spin { to { transform: rotate(360deg); } }
 .bt-sun {
   position: absolute;
   left: calc(var(--sun) / -2);
@@ -70,24 +127,13 @@
   width: var(--sun);
   height: var(--sun);
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 34%, #fff4d6 0, var(--lit) 42%, #c9741f 100%);
-  box-shadow: 0 0 calc(var(--sun) * 0.6) rgba(240, 183, 58, 0.55);
+  background: radial-gradient(circle, #fffdf2 0%, #fff0c2 30%, #ffd27a 58%, #f6a640 80%, #de7420 100%);
+  box-shadow: 0 0 calc(var(--sun) * 0.35) rgba(255, 214, 140, 0.7), 0 0 calc(var(--sun) * 1.2) rgba(255, 170, 70, 0.35);
   animation: bt-breathe 3.2s ease-in-out infinite;
 }
-@keyframes bt-breathe { 50% { transform: scale(1.06); } }
+@keyframes bt-breathe { 50% { transform: scale(1.04); } }
 
-/* ── each planet: start angle, the turn, out to its orbit, the turn undone, the slant undone ── */
-.bt-plane, .bt-orbit, .bt-arm, .bt-at, .bt-face, .bt-face0 { position: absolute; left: 0; top: 0; width: 0; height: 0; }
-.bt-plane { transform: scaleY(var(--k)); }
-.bt-orbit { transform: rotate(var(--a)); }
-.bt-arm { animation: bt-turn var(--T) linear infinite; }
-.bt-at { left: calc(var(--R) * var(--f)); }
-.bt-face { animation: bt-unturn var(--T) linear infinite; }
-.bt-face0 { transform: rotate(calc(var(--a) * -1)) scaleY(calc(1 / var(--k))); }
-@keyframes bt-turn { to { transform: rotate(-360deg); } }
-@keyframes bt-unturn { to { transform: rotate(360deg); } }
-
-/* unlit: a dark disc with a faint rim. Lit: its own colour, a soft glow, and one amber ping. */
+/* ── a planet: its surface, the night side turned away from the Sun, Saturn's ring behind and in front ── */
 .bt-dot {
   --s: calc(var(--d) * var(--u));
   position: absolute;
@@ -95,40 +141,64 @@
   top: calc(var(--s) / -2);
   width: var(--s);
   height: var(--s);
-  border-radius: 50%;
-  background: #22242a;
-  box-shadow: inset 0 0 0 1px rgba(163, 168, 176, 0.6);
+  /* a little larger on the near side of the orbit, smaller on the far side */
+  animation: bt-near var(--T) linear infinite;
+  animation-delay: var(--dz);
 }
-.bt-dot::before {
+@keyframes bt-near {
+  0% { transform: scale(1); animation-timing-function: ease-out; }
+  25% { transform: scale(1.15); animation-timing-function: ease-in; }
+  50% { transform: scale(1); animation-timing-function: ease-out; }
+  75% { transform: scale(0.87); animation-timing-function: ease-in; }
+  100% { transform: scale(1); }
+}
+.bt-body,
+.bt-night { position: absolute; inset: 0; border-radius: 50%; }
+.bt-body { transition: filter 0.7s ease; }
+.bt-dot[data-lit="false"] .bt-body { filter: brightness(0.22) saturate(0.25); }
+/* lit from +x, then turned with the orbit so that side faces the Sun.
+   ponytail: turns at the orbit's even rate; on the squashed ellipse the true sunward angle runs a little
+   ahead or behind (up to ~25deg at the widest slant), invisible at these sizes. */
+.bt-night {
+  background: radial-gradient(circle at 80% 50%, transparent 0 30%, rgba(0, 0, 0, 0.45) 50%, rgba(0, 0, 0, 0.88) 68%, #000 84%);
+  animation: bt-sunward var(--T) linear infinite;
+}
+@keyframes bt-sunward {
+  from { transform: rotate(calc(var(--a) + 180deg)); }
+  to { transform: rotate(calc(var(--a) - 180deg)); }
+}
+/* unlit: only a faint rim shows where it is */
+.bt-dot::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -1px;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #ffffff 0, var(--c) 45%, color-mix(in srgb, var(--c) 45%, #000000) 100%);
-  box-shadow: 0 0 calc(var(--s) * 0.9) color-mix(in srgb, var(--c) 55%, transparent);
-  opacity: 0;
-  transition: opacity 0.5s ease;
+  box-shadow: 0 0 0 1px rgba(163, 168, 176, 0.42);
+  transition: opacity 0.6s ease;
 }
-.bt-dot[data-lit="true"]::before { opacity: 1; }
+.bt-dot[data-lit="true"]::after { opacity: 0; }
 .bt-ring {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 240%;
-  height: 64%;
-  border: 1px solid rgba(163, 168, 176, 0.45);
+  width: 250%;
+  height: 58%;
+  border: 2px solid rgba(214, 196, 150, 0.72);
   border-radius: 50%;
-  transform: translate(-50%, -50%) rotate(-16deg);
-  transition: border-color 0.5s ease;
+  box-shadow: 0 0 0 1px rgba(150, 130, 95, 0.32), inset 0 0 0 1px rgba(150, 130, 95, 0.32);
+  transform: translate(-50%, -50%) rotate(-14deg);
+  transition: border-color 0.6s ease;
 }
-.bt-dot[data-lit="true"] .bt-ring { border-color: color-mix(in srgb, var(--c) 80%, transparent); }
+.bt-ring-far { z-index: -1; }
+.bt-ring-near { z-index: 1; clip-path: inset(50% 0 0 0); }
+.bt-dot[data-lit="false"] .bt-ring { border-color: rgba(163, 168, 176, 0.3); box-shadow: none; }
 .bt-ping {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 28px;
-  height: 28px;
-  margin: -14px 0 0 -14px;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
   border: 1px solid var(--lit);
   border-radius: 50%;
   opacity: 0;
@@ -155,6 +225,16 @@
     radial-gradient(circle, #06122a 0, #0a1f45 66%, #1d4f99 88%, #4a8fe6 100%);
   box-shadow: 0 0 50px rgba(70, 140, 235, 0.35);
 }
+/* the real Earth, painted for this fall (the component); it covers the plain disc once painted */
+.bt-earth-map {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.bt-earth-map[data-painted="true"] { opacity: 1; }
 /* the lit dot's own look, which fades as Earth nears */
 .bt-earth-lit {
   position: absolute;
@@ -163,46 +243,47 @@
   background: radial-gradient(circle at 34% 30%, #ffffff 0, var(--c) 45%, color-mix(in srgb, var(--c) 45%, #000000) 100%);
 }
 
-/* ── the count sits where "Tap Earth to launch" will be; Skip where the start page's Skip is ── */
-.bt-pct {
+/* ── the foot of the screen: the count over its line in the middle (where "Tap Earth to launch" will be) ── */
+.bt-hud {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: max(28px, env(safe-area-inset-bottom));
+  z-index: 2;
+  left: max(20px, 5vw);
+  right: max(20px, 5vw);
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 14px));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+.bt-meter { grid-column: 2; display: grid; justify-items: center; gap: 10px; }
+.bt-pct {
   padding-left: 0.24em; /* balances the letter-spacing after the last character */
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  font: 500 14px/1 var(--font-mono);
   letter-spacing: 0.24em;
   font-variant-numeric: tabular-nums;
-  color: var(--dim-300);
-}
-.bt-skip {
-  position: absolute;
-  right: 5%;
-  bottom: 26px;
-  z-index: 2;
-  min-width: var(--tap-min);
-  min-height: var(--tap-min);
-  padding: 0 16px;
-  background: transparent;
   color: var(--starlight);
-  border: 1px solid var(--dim-300);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: border-color 150ms ease, background-color 150ms ease;
 }
-.bt-skip:hover { border-color: var(--starlight); background: var(--hull-900); }
-.bt-skip:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
-
-/* ── reduced motion: nothing turns, pings or swells; the planets light in place ── */
+.bt-bar {
+  position: relative;
+  display: block;
+  width: clamp(120px, 16vw, 240px);
+  height: 1px;
+  overflow: hidden;
+  background: rgba(163, 168, 176, 0.25);
+}
+.bt-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--lit);
+  transform: scaleX(var(--p));
+  transform-origin: left;
+  transition: transform 0.25s linear;
+}
+/* ── reduced motion: nothing turns, twinkles, pings or swells; the planets light in place ── */
 @media (prefers-reduced-motion: reduce) {
-  .bt-arm, .bt-face, .bt-sun, .bt-ping { animation: none !important; }
+  .bt-orbit, .bt-arm, .bt-face, .bt-dot, .bt-night, .bt-sun, .bt-corona, .bt-ping, .bt-twinkle { animation: none !important; }
+  .bt-night { transform: rotate(calc(var(--a) + 180deg)); }
   .bt-glow { transform: none; transition: none; }
-  .bt-dot::before, .bt-orbits circle, .bt-ring, .bt-skip { transition: none; }
+  .bt-body, .bt-dot::after, .bt-orbits path, .bt-ring, .bt-bar::after { transition: none; }
 }

@@ -14,9 +14,11 @@ import { prefersReducedMotion, readPalette, startCanvasLoop } from "./space/spac
    (two fighters in opposite directions, planets swelling past the
    edges); a reticle turns around the word in the middle; a status
    line steps through the jump (aligning, charging, crossing,
-   arriving) and a segmented charge bar fills below.
+   arriving) and a segmented charge bar fills below. Both follow
+   the real loading of the next page (progress, from RouteLoadGate),
+   one segment at a time so each is seen.
 
-   When the destination has painted the overlay is told to end
+   When the destination has its elements the overlay is told to end
    (phase === "ending"): the streaks slow to a drift, the bar
    completes and the whole thing fades over ~1.2s.
 
@@ -45,27 +47,34 @@ interface Planet {
 
 const STEPS = ["Aligning", "Charging the drive", "Crossing the void", "Approach"];
 const SEGMENTS = 12;
+const SEGMENT_MS = 80; // the bar lights at most one segment per this, so a fast page still shows it filling
 
-export default function LoadingOverlay({ phase, href = "/" }: { phase: "loading" | "ending"; href?: string }) {
+export default function LoadingOverlay({
+  phase,
+  href = "/",
+  progress = 0,
+}: {
+  phase: "loading" | "ending";
+  href?: string;
+  /** how much of the next page has loaded, 0..1 */
+  progress?: number;
+}) {
   const dest = destFor(href);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const speed = useRef(1);
-  const [step, setStep] = useState(0);
   const [charge, setCharge] = useState(0);
 
   useEffect(() => {
     speed.current = phase === "ending" ? 0.1 : 1;
   }, [phase]);
 
-  /* status line and charge bar: they advance while loading and complete when it ends */
+  /* charge bar: it climbs toward the real progress one segment at a time, and completes when it ends */
+  const target = phase === "ending" ? SEGMENTS : Math.floor(progress * SEGMENTS);
   useEffect(() => {
-    if (phase === "ending") return;
-    const id = window.setInterval(() => {
-      setStep((s) => Math.min(STEPS.length - 2, s + 1));
-      setCharge((c) => Math.min(SEGMENTS - 2, c + 1));
-    }, 620);
-    return () => clearInterval(id);
-  }, [phase]);
+    if (charge >= target) return;
+    const id = window.setTimeout(() => setCharge((c) => c + 1), SEGMENT_MS);
+    return () => clearTimeout(id);
+  }, [charge, target]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -210,9 +219,9 @@ export default function LoadingOverlay({ phase, href = "/" }: { phase: "loading"
   }, []);
 
   const ending = phase === "ending";
-  // when the destination has painted, the status and bar complete on their own
-  const shownStep = ending ? STEPS.length - 1 : step;
-  const shownCharge = ending ? SEGMENTS : charge;
+  // the status line reads off the bar; it lands on its last step when the destination is up
+  const shownStep = ending ? STEPS.length - 1 : Math.min(STEPS.length - 2, Math.floor((charge / SEGMENTS) * (STEPS.length - 1)));
+  const shownCharge = charge;
 
   return (
     <div

@@ -1,9 +1,9 @@
 /* Verify the front-page preloader on the served site:
-   - it is drawn, not written: a Sun, eight planets, a percentage and Skip, no other words
+   - it is drawn, not written: a Sun, eight planets and a percentage, no words
    - the planets light up one by one from the outside in, and nothing ever goes back
    - it follows real loading: it is never full before the Earth screen is ready, and when it
      lifts, Earth is already there (no gap between the two)
-   - a slow Earth scene holds it; a scene that never comes cannot hang it; Skip always works
+   - a slow Earth scene holds it; a scene that never comes cannot hang it
    - reduced motion: nothing moves, and it still finishes
    - a phone: everything fits the screen
    - a returning visitor gets no preloader, and the Earth scene is not fetched
@@ -172,7 +172,7 @@ const rects = (page, sel) =>
   const log = await record(page);
 
   check(
-    N >= 7 && N <= 9 && drawn.suns === 1 && log.words.length === 1 && log.words[0] === "n% skip",
+    N >= 7 && N <= 9 && drawn.suns === 1 && log.words.length === 1 && log.words[0] === "n%",
     "it is drawn, not written",
     `${drawn.planets} planets, ${drawn.suns} sun, words: ${JSON.stringify(log.words)}`,
   );
@@ -209,7 +209,8 @@ const rects = (page, sel) =>
   const fetched = [];
   page.on("request", (req) => isEarthScript(req) && fetched.push(req.url()));
   await page.reload({ waitUntil: "load" });
-  await sleep(2500);
+  // the page holds still until the story's space is ready (HomeClient), under the route loader
+  await until(page, () => document.querySelector('[data-section="story"]')?.getAttribute("aria-busy") === "false" && !document.documentElement.classList.contains("scroll-locked"), 30000);
   const back = await page.evaluate((START) => ({
     seen: window.__boot.samples.length,
     earth: !!document.querySelector(START),
@@ -259,22 +260,7 @@ const rects = (page, sel) =>
   await page.close();
 }
 
-/* ---------- 5. Skip ---------- */
-{
-  const { page } = await open();
-  await holdEarth(page, Infinity);
-  await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 120000 });
-  await shown(page);
-  await sleep(700);
-  const skip = (await rects(page, "button"))[0];
-  await page.mouse.click(skip.left + skip.width / 2, skip.top + skip.height / 2);
-  const t0 = Date.now();
-  const left = await gone(page, 1500);
-  check(left, "Skip lifts it at once", left ? `${Date.now() - t0}ms` : "still up 1.5s after Skip");
-  await page.close();
-}
-
-/* ---------- 6. reduced motion ---------- */
+/* ---------- 5. reduced motion ---------- */
 {
   const { page } = await open({ reduced: true });
   await holdEarth(page, 2500);
@@ -294,20 +280,19 @@ const rects = (page, sel) =>
   await page.close();
 }
 
-/* ---------- 7. a phone ---------- */
+/* ---------- 6. a phone ---------- */
 {
   const { page } = await open({ width: 390, height: 844, mobile: true });
   await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 120000 });
   await shown(page);
   await sleep(250);
   const bodies = await rects(page, "[data-planet], [data-sun]");
-  const skip = (await rects(page, "button"))[0];
   const wide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   await shot(page, "boot-m-start");
   check(
-    bodies.length >= 8 && bodies.length <= 10 && bodies.every((r) => inside(r, 390, 844)) && !!skip && inside(skip, 390, 844) && skip.width >= 44 && skip.height >= 44 && !wide,
+    bodies.length >= 8 && bodies.length <= 10 && bodies.every((r) => inside(r, 390, 844)) && !wide,
     "a phone: everything fits the screen",
-    `${bodies.length} bodies, Skip ${skip ? Math.round(skip.width) + "x" + Math.round(skip.height) : "missing"}${wide ? ", page wider than the screen" : ""}`,
+    `${bodies.length} bodies${wide ? ", page wider than the screen" : ""}`,
   );
   if (SHOTS) await shootFall(page, "boot-m");
   const left = await gone(page, 40000);

@@ -19,6 +19,8 @@ export interface EventPosterProps {
   poster?: string;
   /** Marks the plate as decorative when the name is already shown as text. */
   variant?: "card" | "feature";
+  /** "eager" where the poster must be in before it slides into view (the events orbit). */
+  loading?: "lazy" | "eager";
 }
 
 /** Small deterministic hash so the same event always gets the same plate. */
@@ -63,7 +65,7 @@ function stars(seed: number, count: number) {
   return out;
 }
 
-export default function EventPoster({ name, tag, poster, variant = "card" }: EventPosterProps) {
+export default function EventPoster({ name, tag, poster, variant = "card", loading = "lazy" }: EventPosterProps) {
   const [failed, setFailed] = useState(false);
 
   if (poster && !failed) {
@@ -73,7 +75,7 @@ export default function EventPoster({ name, tag, poster, variant = "card" }: Eve
         <img
           src={poster}
           alt={`Poster for ${name}`}
-          loading="lazy"
+          loading={loading}
           decoding="async"
           className="ev-poster-img"
           onError={() => setFailed(true)}

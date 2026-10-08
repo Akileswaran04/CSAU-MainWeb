@@ -1058,6 +1058,58 @@ html.lenis, html.lenis body { height: auto; }
   .story-tick-label { display: none; }
 }
 
+/* ===== Hero: Earth rises while the story gets ready (HeroSection's EarthRise) ===== */
+.earthrise {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateY(100%);
+  transition: transform 2.4s cubic-bezier(.2, .7, .3, 1);
+  -webkit-mask-image: linear-gradient(#000 45%, transparent);
+  mask-image: linear-gradient(#000 45%, transparent);
+}
+.earthrise[data-story="wait"] { transform: translateY(55%); }
+.earthrise[data-story="build"] { transform: translateY(16%); transition-duration: 3.2s; }
+.earthrise[data-story="ready"] { transform: none; transition-duration: .9s; }
+.earthrise-map { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* the atmosphere's glow round the globe: it breathes while the story is built, and a light runs along the
+   horizon once it is drawing */
+.earthrise-air {
+  position: absolute;
+  border-radius: 50%;
+  box-shadow: 0 0 70px 14px rgba(63, 134, 224, .28);
+  animation: earthrise-breathe 2.6s ease-in-out infinite;
+}
+.earthrise[data-story="ready"] .earthrise-air { animation: none; }
+@keyframes earthrise-breathe { 50% { opacity: .45; } }
+.earthrise-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 22px 4px rgba(170, 210, 255, .95), inset 0 0 12px 2px rgba(170, 210, 255, .6);
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0 35%, #000 47% 53%, transparent 65% 100%);
+  mask-image: linear-gradient(90deg, transparent 0 35%, #000 47% 53%, transparent 65% 100%);
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.earthrise[data-story="ready"] .earthrise-ping { animation: earthrise-ping 1.6s cubic-bezier(.4, 0, .2, 1) .5s both; }
+@keyframes earthrise-ping {
+  0% { opacity: 0; -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .earthrise, .earthrise[data-story] { transition: none; }
+  .earthrise-air, .earthrise[data-story="ready"] .earthrise-ping { animation: none; }
+}
+
 @keyframes ping-out {
   0%   { transform: scale(0.05); opacity: 0; }
   12%  { opacity: 0.7; }
@@ -2860,3 +2912,9 @@ html[data-nav-covered] body > canvas { visibility: hidden; }
    script in layout.tsx), so it never flashes.
    ============================================================ */
 html[data-gate="seen"] .gate { display: none !important; }
+
+/* The route loader is in every page's first HTML (RouteLoadGate). On the home page's first visit the
+   boot gate above is the loader instead; and if the scripts never run, it lets the page through. */
+html:not([data-gate="seen"]) .rl-boot { display: none; }
+.rl-first { animation: rl-let-go 0s 12s forwards; }
+@keyframes rl-let-go { to { visibility: hidden; } }

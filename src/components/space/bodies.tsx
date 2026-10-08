@@ -3,14 +3,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { seeded, type SpaceTokens } from "./tokens";
+import { cloudDensity, earthColor, fbm, h3, hex, mix3, smoothstep, type Rgb } from "./earth";
 
 /* ============================================================
    SPACE BODIES - built in three.js with no model files or textures:
 
      ParticlePlanet  Earth, Venus, Mercury and the Sun. Each is a smooth
                      surface (vertex colours from 3D noise: coastlines,
-                     deserts, ice caps, craters, sunspots) with tetrahedron
+                     deserts, ice caps, craters, solar granulation) with tetrahedron
                      particles on top for clouds, atmosphere haze and the
                      Sun's corona. The smooth surface keeps close-ups clear;
                      a shader lights both from the Sun (day side, terminator,
@@ -20,7 +22,9 @@ import { seeded, type SpaceTokens } from "./tokens";
                      laser cannons, animated engine flames
      UfoModel        a saucer: lens hull, glass dome, chasing rim
                      lights and an optional tractor beam
-     AsteroidField   lumpy tumbling rocks (one InstancedMesh)
+     AsteroidField   cratered tumbling rocks in three shapes, with dust
+
+   The story's shader planets are in planet.tsx.
    ============================================================ */
 
 function useDispose(...items: ({ dispose(): void } | null | undefined)[]) {
@@ -32,51 +36,6 @@ function useDispose(...items: ({ dispose(): void } | null | undefined)[]) {
     items
   );
 }
-
-/* ------------------------------------------------------------
-   CPU noise (value noise + fbm) for colouring the planets
-   ------------------------------------------------------------ */
-
-function h3(x: number, y: number, z: number) {
-  const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
-  return s - Math.floor(s);
-}
-function vnoise(x: number, y: number, z: number) {
-  const ix = Math.floor(x);
-  const iy = Math.floor(y);
-  const iz = Math.floor(z);
-  let fx = x - ix;
-  let fy = y - iy;
-  let fz = z - iz;
-  fx = fx * fx * (3 - 2 * fx);
-  fy = fy * fy * (3 - 2 * fy);
-  fz = fz * fz * (3 - 2 * fz);
-  const l = (a: number, b: number, t: number) => a + (b - a) * t;
-  return l(
-    l(l(h3(ix, iy, iz), h3(ix + 1, iy, iz), fx), l(h3(ix, iy + 1, iz), h3(ix + 1, iy + 1, iz), fx), fy),
-    l(l(h3(ix, iy, iz + 1), h3(ix + 1, iy, iz + 1), fx), l(h3(ix, iy + 1, iz + 1), h3(ix + 1, iy + 1, iz + 1), fx), fy),
-    fz
-  );
-}
-function fbm(x: number, y: number, z: number, oct = 5) {
-  let a = 0.5;
-  let s = 0;
-  for (let i = 0; i < oct; i++) {
-    s += a * vnoise(x, y, z);
-    x = x * 2.03 + 1.7;
-    y = y * 2.03 + 9.2;
-    z = z * 2.03 + 3.1;
-    a *= 0.5;
-  }
-  return s;
-}
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-const mix3 = (a: number[], b: number[], t: number): number[] => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-/** #rrggbb -> [r,g,b] 0..1 (sRGB) */
-const hex = (h: string): number[] => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
 
 /* ------------------------------------------------------------
    PARTICLE PLANETS
@@ -105,8 +64,6 @@ function dirAt(i: number, n: number): [number, number, number] {
   const m = Math.hypot(x, yy, z) || 1;
   return [x / m, yy / m, z / m];
 }
-
-type Rgb = number[];
 
 /** Everything a planet is made of: a smooth coloured surface, plus particle layers on top */
 interface PlanetBuild {
@@ -141,7 +98,7 @@ function particleLayers(kind: PlanetKind, radius: number, count: number, seed: n
     const cr = radius * 1.028;
     for (let i = 0, kept = 0; i < nCloud * 3 && kept < nCloud; i++) {
       const [x, y, z] = dirAt(i, nCloud * 3);
-      const d = fbm(x * 2.6 + 91, y * 4.2, z * 2.6, 5) * 0.75 + fbm(x * 6 + 5, y * 6, z * 6, 3) * 0.25;
+      const d = cloudDensity(x, y, z);
       if (d > 0.6) {
         push(cloud, x * cr, y * cr, z * cr, mix3(hex("#dfe7f1"), hex("#ffffff"), smoothstep(0.6, 0.78, d)));
         kept++;
@@ -208,28 +165,7 @@ function buildPlanet(kind: PlanetKind, radius: number, count: number, seed: numb
   const spacingFor = (n: number, r: number) => Math.sqrt((4 * Math.PI * r * r) / Math.max(1, n));
 
   if (kind === "earth") {
-    const sea = { deep: hex("#04275c"), mid: hex("#0b5aa3"), shallow: hex("#4a86d8") };
-    const land = { low: hex("#3e8a3c"), dark: hex("#1f5a2b"), dry: hex("#c9a75e"), rock: hex("#7a6a58"), snow: hex("#f4f7fb") };
-    const base = (x: number, y: number, z: number): Rgb => {
-      const big = fbm(x * 1.15 + seed, y * 1.15, z * 1.15, 3);
-      const elev = fbm(x * 2.3 + seed, y * 2.3, z * 2.3, 5) * 0.65 + big * 0.35;
-      const lat = Math.abs(y);
-      // land and sea are both computed and blended over a soft shoreline, so coasts are smooth
-      const e = smoothstep(0.53, 0.75, elev);
-      const moist = fbm(x * 3.6 + 40, y * 3.6, z * 3.6, 4);
-      const dryness = smoothstep(0.62, 0.35, lat) * smoothstep(0.55, 0.4, moist);
-      let ground = mix3(land.low, land.dark, smoothstep(0.35, 0.7, moist));
-      ground = mix3(ground, land.dry, dryness);
-      ground = mix3(ground, land.rock, smoothstep(0.55, 0.85, e));
-      ground = mix3(ground, land.snow, smoothstep(0.86, 0.98, e));
-      const d = smoothstep(0.53, 0.3, elev);
-      let water = mix3(sea.shallow, sea.mid, smoothstep(0, 0.35, d));
-      water = mix3(water, sea.deep, smoothstep(0.35, 1, d));
-      // a pale shallow rim just off the coast
-      water = mix3(water, sea.shallow, smoothstep(0.5, 0.53, elev) * 0.6);
-      const col = mix3(water, ground, smoothstep(0.515, 0.55, elev));
-      return mix3(col, land.snow, smoothstep(0.83, 0.93, lat + (fbm(x * 5, y * 5, z * 5, 3) - 0.5) * 0.18));
-    };
+    const base = earthColor(seed);
     if (!smooth) return { layers: particleLayers("earth", radius, count, seed, base), base, cloudLayer: 1 };
     const nCloud = Math.floor(count * 0.55);
     const nAtmo = count - nCloud;
@@ -238,8 +174,7 @@ function buildPlanet(kind: PlanetKind, radius: number, count: number, seed: numb
     const cr = radius * 1.028;
     for (let i = 0, kept = 0; i < nCloud * 3 && kept < nCloud; i++) {
       const [x, y, z] = dirAt(i, nCloud * 3);
-      // storm bands: stretch the noise along latitude
-      const d = fbm(x * 2.6 + 91, y * 4.2, z * 2.6, 5) * 0.75 + fbm(x * 6 + 5, y * 6, z * 6, 3) * 0.25;
+      const d = cloudDensity(x, y, z);
       if (d > 0.6) {
         push(cloud, x * cr, y * cr, z * cr, mix3(hex("#dfe7f1"), hex("#ffffff"), smoothstep(0.6, 0.78, d)));
         kept++;
@@ -303,10 +238,7 @@ function buildPlanet(kind: PlanetKind, radius: number, count: number, seed: numb
     const f = fbm(x * 11 + 3, y * 11, z * 11, 3); // fine granulation
     let col = mix3(hex("#e2531a"), hex("#ffb324"), smoothstep(0.3, 0.75, g));
     col = mix3(col, hex("#fff1b8"), smoothstep(0.55, 0.85, f) * 0.6);
-    // sunspots
-    const spot = fbm(x * 2.2 + 17, y * 2.2, z * 2.2, 4);
-    if (spot > 0.66 && Math.abs(y) < 0.55) col = mix3(col, hex("#5a1e08"), smoothstep(0.66, 0.74, spot) * 0.85);
-    return col;
+    return col; // no sunspots: the owner wants the Sun without dark spots
   };
   if (!smooth) return { layers: particleLayers("sun", radius, count, seed, base), base, cloudLayer: -1 };
   const corona: Layer = { data: [], size: spacingFor(count, radius * 1.3) * 0.3, rim: 0 };
@@ -750,54 +682,112 @@ export function UfoModel({ tokens, scale = 1, beam = false, phase = 0 }: { token
 }
 
 /* ------------------------------------------------------------
-   ROCKS - noise-displaced asteroids (one InstancedMesh).
+   ROCKS - asteroids in three shapes: a sphere pushed in and out by
+   noise, stretched, pocked with craters and their rims, smooth-
+   shaded so a low Sun picks out the relief; each rock its own
+   shade, tumbling, with dust and grit drifting among them.
    ------------------------------------------------------------ */
 
-export function AsteroidField({ tokens, positions, size = 0.4, low = false }: { tokens: SpaceTokens; positions: THREE.Vector3[]; size?: number; low?: boolean }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const data = useMemo(() => {
-    const geo = new THREE.IcosahedronGeometry(1, low ? 1 : 2);
-    const p = geo.attributes.position;
-    const v = new THREE.Vector3();
-    for (let i = 0; i < p.count; i++) {
-      v.fromBufferAttribute(p, i).normalize();
-      // lumpy shape: layered sines of the direction, plus a flattening
-      const n =
-        Math.sin(v.x * 3.1 + v.y * 2.3) * 0.16 +
-        Math.sin(v.y * 6.7 + v.z * 5.1) * 0.09 +
-        Math.sin(v.z * 12.3 + v.x * 9.7) * 0.05;
-      const r = 1 + n;
-      p.setXYZ(i, v.x * r * 1.15, v.y * r * 0.8, v.z * r);
+const ROCK_SHAPES = 3;
+
+function rockShape(k: number, low: boolean) {
+  const ico = new THREE.IcosahedronGeometry(1, low ? 2 : 4);
+  ico.deleteAttribute("normal");
+  ico.deleteAttribute("uv");
+  const geo = mergeVertices(ico); // shared corners, so it shades smooth and never cracks
+  ico.dispose();
+  const rnd = seeded(41 + k * 13);
+  const craters = Array.from({ length: low ? 5 : 9 }, () => ({
+    v: new THREE.Vector3(rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1).normalize(),
+    r: 0.18 + rnd() * 0.35,
+    d: 0.05 + rnd() * 0.08,
+  }));
+  const stretch = [new THREE.Vector3(1.3, 0.8, 1), new THREE.Vector3(1, 0.75, 1.25), new THREE.Vector3(1.15, 0.95, 0.85)][k];
+  const p = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    let r = 1 + (fbm(v.x * 1.4 + k * 5, v.y * 1.4, v.z * 1.4, 4) - 0.5) * 0.7 + (fbm(v.x * 4 + 3, v.y * 4, v.z * 4, 3) - 0.5) * 0.14;
+    for (const c of craters) {
+      const t = Math.acos(Math.min(1, Math.max(-1, v.dot(c.v)))) / c.r;
+      if (t < 1) r -= c.d * (1 - t * t);
+      else if (t < 1.35) r += c.d * 0.35 * (1 - (t - 1) / 0.35);
     }
-    geo.computeVertexNormals();
-    const mat = new THREE.MeshStandardMaterial({ color: tokens.hullLit.clone().lerp(tokens.hull, 0.35), roughness: 0.95, metalness: 0.02, flatShading: true });
+    p.setXYZ(i, v.x * r * stretch.x, v.y * r * stretch.y, v.z * r * stretch.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+export function AsteroidField({ tokens, positions, size = 0.4, low = false }: { tokens: SpaceTokens; positions: THREE.Vector3[]; size?: number; low?: boolean }) {
+  const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
+  const data = useMemo(() => {
+    const shapes = Array.from({ length: ROCK_SHAPES }, (_, k) => rockShape(k, low));
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.93, metalness: 0.04 });
+    const rnd = seeded(77);
+    const rock = tokens.dim.clone().lerp(tokens.hullLit, 0.55);
     const items = positions.map((_, i) => ({
       s: size * (0.4 + ((i * 37) % 10) / 9),
       rx: i * 1.7,
       ry: i * 2.3,
       wx: (((i * 13) % 7) - 3) * 0.06,
       wy: (((i * 17) % 7) - 3) * 0.06,
+      col: rock.clone().multiplyScalar(0.6 + rnd() * 0.6).lerp(tokens.lit, rnd() * 0.12),
     }));
-    return { geo, mat, items };
+    /* dust and grit round each rock */
+    const per = low ? 4 : 10;
+    const dust = new Float32Array(positions.length * per * 3);
+    positions.forEach((at, i) => {
+      for (let j = 0; j < per; j++) {
+        const o = (i * per + j) * 3;
+        dust[o] = at.x + (rnd() - 0.5) * 7;
+        dust[o + 1] = at.y + (rnd() - 0.5) * 5;
+        dust[o + 2] = at.z + (rnd() - 0.5) * 7;
+      }
+    });
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute("position", new THREE.BufferAttribute(dust, 3));
+    const dustMat = new THREE.PointsMaterial({ color: tokens.dim, size: 0.07, transparent: true, opacity: 0.55, depthWrite: false });
+    return { shapes, mat, items, dustGeo, dustMat };
   }, [tokens, positions, size, low]);
-  useDispose(data.geo, data.mat);
+  useDispose(data.mat, data.dustGeo, data.dustMat, ...data.shapes);
+
+  /* each rock's tint, once the meshes exist */
+  useLayoutEffect(() => {
+    data.items.forEach((it, i) => refs.current[i % ROCK_SHAPES]?.setColorAt(Math.floor(i / ROCK_SHAPES), it.col));
+    refs.current.forEach((mesh) => mesh?.instanceColor && (mesh.instanceColor.needsUpdate = true));
+  }, [data]);
 
   const m = useMemo(() => new THREE.Matrix4(), []);
   const q = useMemo(() => new THREE.Quaternion(), []);
   const e = useMemo(() => new THREE.Euler(), []);
   const sc = useMemo(() => new THREE.Vector3(), []);
   useFrame(({ clock }) => {
-    const mesh = ref.current;
-    if (!mesh) return;
     const t = clock.elapsedTime;
     data.items.forEach((it, i) => {
+      const mesh = refs.current[i % ROCK_SHAPES];
+      if (!mesh) return;
       e.set(it.rx + t * it.wx, it.ry + t * it.wy, 0);
       q.setFromEuler(e);
       sc.setScalar(it.s);
       m.compose(positions[i], q, sc);
-      mesh.setMatrixAt(i, m);
+      mesh.setMatrixAt(Math.floor(i / ROCK_SHAPES), m);
     });
-    mesh.instanceMatrix.needsUpdate = true;
+    refs.current.forEach((mesh) => mesh && (mesh.instanceMatrix.needsUpdate = true));
   });
-  return <instancedMesh ref={ref} args={[data.geo, data.mat, positions.length]} frustumCulled={false} />;
+  return (
+    <>
+      {data.shapes.map((geo, k) => (
+        <instancedMesh
+          key={k}
+          ref={(el) => {
+            refs.current[k] = el;
+          }}
+          args={[geo, data.mat, Math.max(1, Math.ceil((positions.length - k) / ROCK_SHAPES))]}
+          frustumCulled={false}
+        />
+      ))}
+      <points geometry={data.dustGeo} material={data.dustMat} frustumCulled={false} />
+    </>
+  );
 }

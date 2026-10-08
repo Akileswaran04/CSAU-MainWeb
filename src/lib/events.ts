@@ -15,6 +15,7 @@ import { FALLBACK_EVENT_ROWS } from "./events.fallback";
      title        -> name
      date         -> date ("31 OCT 2025", IST) and year (archive grouping)
      description  -> blurb (plain text, emoji removed, short excerpt)
+                     and log (the same text in full, for the flight log)
      mainImage    -> poster (resized by the Sanity CDN)
      eventPics    -> the card's photo strip (the photos taken at that event)
      location     -> stat line, and the tag (ON CAMPUS / ONLINE / HYBRID)
@@ -153,6 +154,7 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
       tag: location ? modeOf(location) : "",
       date,
       blurb: excerpt(clean(r.text ?? "")),
+      log: clean(r.text ?? ""),
       stat: location,
       poster: posterUrl(r.image),
       photos: (r.photos ?? []).map(assetUrl).filter((u): u is string => Boolean(u)),

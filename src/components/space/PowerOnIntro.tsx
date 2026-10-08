@@ -48,6 +48,7 @@ const FONT = "/fonts/Ethnocentric-Regular.otf";
 const LETTERS = ["C", "S", "A", "U"] as const;
 
 const EARTH_R = 9;
+const EARTH_SPIN = 0.07; // radians a second
 const LETTER_Z = [-30, -47, -64, -81];
 const END_Z = -100;
 const T_START = 0.1;
@@ -61,9 +62,18 @@ interface Control {
   done: boolean;
 }
 
-/** Earth as the start page shows it: its radius on screen, in px. It sits at the centre. */
+/** Earth as the start page shows it, at the centre, so the boot preloader can paint the same Earth (space/earth.ts) */
 export interface EarthOnScreen {
+  /** its radius on screen, px */
   r: number;
+  /** the camera's distance from it, in Earth radii */
+  dist: number;
+  /** direction to the Sun (unit, as the camera sees it) */
+  sun: [number, number, number];
+  /** Earth's turn (ParticlePlanet's rotation.y) at a given performance.now() */
+  turnAt: (ms: number) => number;
+  /** made of particles only (desktop), not a smooth surface (phones) */
+  particles: boolean;
 }
 
 /* ---------- streaked stars: world-fixed, stretched along the flight ---------- */
@@ -308,7 +318,7 @@ function IntroScene({
     };
   }, [reduced, mobile, gl, scene, camera]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     const now = performance.now() / 1000;
     const st = ctl.current;
@@ -319,7 +329,8 @@ function IntroScene({
     if (frames.current >= 0 && ++frames.current > 1 && startEl.current) {
       frames.current = -1;
       const r = (Math.tan(Math.asin(EARTH_R / zStart)) / Math.tan(THREE.MathUtils.degToRad(cam.fov / 2))) * (size.height / 2);
-      onReady({ r });
+      const clock = state.clock; // ParticlePlanet turns by this clock
+      onReady({ r, dist: zStart / EARTH_R, sun: sun.clone().normalize().toArray(), turnAt: (ms) => (-(ms - clock.startTime) / 1000) * EARTH_SPIN, particles: !mobile });
     }
 
     /* --- warm-up draw: one frame with a hidden set switched on, culling off and scaled to a point, so
@@ -461,7 +472,7 @@ function IntroScene({
 
       {/* Earth: the whole start page. Tap it to launch. */}
       <group>
-        <ParticlePlanet kind="earth" radius={EARTH_R} count={mobile ? 16000 : 90000} sun={sun} rotation={0.07} seed={2} grain={mobile ? 0.7 : 0.8} smooth={mobile} />
+        <ParticlePlanet kind="earth" radius={EARTH_R} count={mobile ? 16000 : 90000} sun={sun} rotation={EARTH_SPIN} seed={2} grain={mobile ? 0.7 : 0.8} smooth={mobile} />
         {geo.ringMats.map((m, i) => (
           <mesh
             key={i}

@@ -16,6 +16,8 @@ export interface PastEvent {
   /** display date, e.g. "31 OCT 2025" */
   date: string;
   blurb: string;
+  /** the full description (blurb is its excerpt) */
+  log?: string;
   /** the quiet last line of a card: where it was held */
   stat: string;
   /** Real poster URL. When absent, the UI renders a generated
