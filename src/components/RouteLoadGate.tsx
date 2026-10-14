@@ -41,6 +41,12 @@ const STAGGER_BASE_MS = 140;
 const STAGGER_STEP_MS = 45;
 const STAGGER_MAX_ITEMS = 12;
 
+/** The story's end starts its warp: ready the warp loader now, unseen (its 3D scene built and drawn once), so that
+ *  when the link is followed it shows the very same warp with no seam. `view`: "warp" (chase) or "cockpit". */
+export const warpPrep = (href: string, view: string) =>
+  window.dispatchEvent(new CustomEvent("csau:warp-prep", { detail: { href: normalize(href), warp: view } }));
+const PREP_MS = 5000; // a prepared loader whose link never came is dropped
+
 const normalize = (p: string) => (p.endsWith("/") && p.length > 1 ? p.slice(0, -1) : p);
 
 /* HomeClient's flag: the home page's boot preloader has played this session */
@@ -56,11 +62,13 @@ export default function RouteLoadGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hostRef = useRef<HTMLDivElement>(null);
   /* from "" is the first load: the loader is up from the first paint */
-  const [request, setRequest] = useState<{ href: string; from: string; startedAt: number } | null>(() => ({
+  /* warp: the story's end sent it (data-loader "warp", or "cockpit" from the cockpit), so the loader carries on its warp */
+  const [request, setRequest] = useState<{ href: string; from: string; startedAt: number; warp?: string } | null>(() => ({
     href: normalize(pathname),
     from: "",
     startedAt: Date.now(),
   }));
+  const [prep, setPrep] = useState<{ href: string; warp: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [exiting, setExiting] = useState(false);
   const revealHandledRef = useRef(false);
@@ -121,11 +129,24 @@ export default function RouteLoadGate({ children }: { children: ReactNode }) {
 
       revealHandledRef.current = false;
       setProgress(0);
-      setRequest({ href: target, from: current, startedAt: Date.now() });
+      setRequest({ href: target, from: current, startedAt: Date.now(), warp: a.dataset.loader });
+      setPrep(null); // the prepared loader (same place in the tree) is the one that shows
     };
     document.addEventListener("click", onDocClick, true);
     return () => document.removeEventListener("click", onDocClick, true);
   }, []);
+
+  /* ---- The story's warp: a loader readied unseen ---- */
+  useEffect(() => {
+    const onPrep = (e: Event) => setPrep((e as CustomEvent<{ href: string; warp: string }>).detail);
+    window.addEventListener("csau:warp-prep", onPrep);
+    return () => window.removeEventListener("csau:warp-prep", onPrep);
+  }, []);
+  useEffect(() => {
+    if (!prep) return;
+    const t = setTimeout(() => setPrep(null), PREP_MS);
+    return () => clearTimeout(t);
+  }, [prep]);
 
   /* ---- Lock body scroll while the loader is up ---- */
   useEffect(() => {
@@ -168,10 +189,16 @@ export default function RouteLoadGate({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {request && (
+      {request ? (
         <div className={request.from ? undefined : request.href === "/" ? "rl-first rl-boot" : "rl-first"}>
-          <LoadingOverlay phase={exiting ? "ending" : "loading"} href={request.href} progress={progress} />
+          <LoadingOverlay phase={exiting ? "ending" : "loading"} href={request.href} progress={progress} warp={request.warp} />
         </div>
+      ) : (
+        prep && (
+          <div style={{ opacity: 0, pointerEvents: "none" }} aria-hidden>
+            <LoadingOverlay phase="loading" href={prep.href} warp={prep.warp} standby />
+          </div>
+        )
       )}
       <div ref={hostRef} id="content">
         {children}

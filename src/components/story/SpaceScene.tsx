@@ -622,14 +622,17 @@ void main() {
   gl_FragColor = vec4(vec3(0.75, 0.9, 1.0) * pow(max(0.0, 1.0 - d), 3.0) * uFade * (0.4 + uSpeed), 1.0);
 }`;
 
-interface WarpUniforms {
+/** the warp tunnel's clock: wall time, so the loader's copy of the tunnel (WarpShip) streams in step with this one */
+export const warpClock = () => (performance.now() % 600000) / 1000;
+
+export interface WarpUniforms {
   uTime: { value: number };
   uSpeed: { value: number };
   uFade: { value: number };
 }
 
 /** A tunnel of light streaks in its own frame, running along -z; the Director puts it on the ship. */
-function WarpTunnel({ u, mobile, anchor }: { u: WarpUniforms; mobile: boolean; anchor: MutableRefObject<THREE.Group | null> }) {
+export function WarpTunnel({ u, mobile, anchor }: { u: WarpUniforms; mobile: boolean; anchor: MutableRefObject<THREE.Group | null> }) {
   const built = useMemo(() => {
     const rnd = seeded(91);
     const n = mobile ? 420 : 1200;
@@ -1269,7 +1272,7 @@ function Director({
       W_LOOK.copy(W_SHIP).addScaledVector(W_DIR, 40);
       target.lerp(W_LOOK, wIn);
     }
-    warpU.uTime.value = t;
+    warpU.uTime.value = warpClock();
     warpU.uSpeed.value = wSpeed;
     warpU.uFade.value = wIn;
     if (warpRef.current) {

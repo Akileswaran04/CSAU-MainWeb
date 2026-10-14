@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { warpPrep } from "../RouteLoadGate";
 import { useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
-import { createPortal } from "react-dom";
 import { NAV_DESTINATIONS } from "@/lib/destinations";
 
 /* ============================================================
@@ -11,8 +11,9 @@ import { NAV_DESTINATIONS } from "@/lib/destinations";
    (SpaceScene's Director) and the pages come up on the HUD as
    targets. Choose one: lock-on brackets close in on it, a 3-2-1
    countdown, then the jump: the scene's warp (light streams past in
-   a tunnel), a flash, and the page's own link is followed, so the
-   travel loader takes it from there. Reduced motion: the link is
+   a tunnel) at full speed, then the page's own link is followed and
+   the travel loader, readied under it, carries the same warp on
+   until the page is in (warpPrep, WarpShip). Reduced motion: the link is
    followed at once. Phones keep the sketch loop (Constellation.tsx).
    ============================================================ */
 
@@ -21,8 +22,8 @@ export const COCKPIT_MQ = "(min-width: 821px) and (min-aspect-ratio: 1/1)";
 
 const LOCK_MS = 450; // the brackets closing in (keep in step with .ck-lock's transition)
 const TICK_MS = 520; // each count of the countdown
-const WARP_MS = 2700; // keep in step with .cn-flash's animation
-const GO_AT = 2250; // the page's link is followed under the flash at the end of the warp
+const WARP_MS = 2700; // the scene's warp is let go (under the loader by then)
+const GO_AT = 1400; // the link is followed once the warp is at full speed: the loader carries the same warp on
 const now = () => performance.now(); // read on a click, never while rendering
 
 /** `warpRef`: set to when the warp began, for the 3D scene to fly it; back to 0 when it is over. */
@@ -56,7 +57,9 @@ export default function Cockpit({ on, warpRef }: { on: boolean; warpRef: Mutable
     const jump = LOCK_MS + 3 * TICK_MS;
     [3, 2, 1, 0].forEach((k, i) => at(LOCK_MS + i * TICK_MS, count(k)));
     at(jump, () => {
-      if (live.current) warpRef.current = now();
+      if (!live.current) return;
+      warpRef.current = now();
+      warpPrep(link.pathname, "cockpit");
     });
     at(jump + GO_AT, () => link.click());
     at(jump + WARP_MS, () => {
@@ -102,6 +105,7 @@ export default function Cockpit({ on, warpRef }: { on: boolean; warpRef: Mutable
             <Link
               href={d.href}
               data-route-load
+              data-loader="cockpit"
               tabIndex={-1}
               aria-hidden
               className="cn-link"
@@ -115,7 +119,6 @@ export default function Cockpit({ on, warpRef }: { on: boolean; warpRef: Mutable
       <div className="ck-count" aria-live="assertive">
         {lock && lock.n > 0 && lock.n < 4 && <span key={lock.n}>{lock.n}</span>}
       </div>
-      {lock?.n === 0 && createPortal(<div className="cn-flash" aria-hidden />, document.body)}
     </nav>
   );
 }

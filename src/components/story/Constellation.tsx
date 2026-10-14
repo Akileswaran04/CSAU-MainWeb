@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { warpPrep } from "../RouteLoadGate";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MutableRefObject } from "react";
-import { createPortal } from "react-dom";
 import { NAV_DESTINATIONS } from "@/lib/destinations";
 import Cockpit, { COCKPIT_MQ } from "./Cockpit";
 
@@ -12,8 +12,8 @@ import Cockpit, { COCKPIT_MQ } from "./Cockpit";
    four of its stars the pages, brighter, pulsing, each with its
    name. Choose one and it flares and the ship warps there: the
    scene's warp (the ship rushes on, light streams past in a tunnel),
-   a flash, and the page's own link is followed, so the travel loader
-   takes it from there. Reduced motion: the link is followed at once.
+   then the page's own link is followed and the travel loader, readied
+   under it, carries the same warp on until the page is in. Reduced motion: the link is followed at once.
 
    Seven stars in a loop (after the owner's sketch), drawn with spikes
    and their own colours, against a nebula, a band of the Milky Way,
@@ -72,8 +72,8 @@ const field = (count: number, size: number, seed: number): [number, number, numb
 };
 const FIELD_LOOP = field(110, 0.17, 23);
 
-const WARP_MS = 2700; // keep in step with .cn-flash's animation
-const GO_AT = 2250; // the page's link is followed under the flash at the end of the warp
+const WARP_MS = 2700; // the scene's warp is let go (under the loader by then)
+const GO_AT = 1400; // the link is followed once the warp is at full speed: the loader carries the same warp on
 const now = () => performance.now(); // read on a click, never while rendering
 
 const subscribe = (cb: () => void) => {
@@ -106,6 +106,7 @@ function SketchLoop({ on, warpRef }: { on: boolean; warpRef: MutableRefObject<nu
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return link.click();
     setGoing(page);
     warpRef.current = now();
+    warpPrep(link.pathname, "warp");
     timers.current.push(
       window.setTimeout(() => link.click(), GO_AT),
       window.setTimeout(() => {
@@ -151,6 +152,7 @@ function SketchLoop({ on, warpRef }: { on: boolean; warpRef: MutableRefObject<nu
               <Link
                 href={d.href}
                 data-route-load
+                data-loader="warp"
                 tabIndex={-1}
                 aria-hidden
                 className="cn-link"
@@ -162,7 +164,6 @@ function SketchLoop({ on, warpRef }: { on: boolean; warpRef: MutableRefObject<nu
           );
         })}
       </div>
-      {going !== null && createPortal(<div className="cn-flash" aria-hidden />, document.body)}
     </nav>
   );
 }

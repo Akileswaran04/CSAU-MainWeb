@@ -2660,16 +2660,10 @@ a.dm-member-link:active { transform: translateY(1px); }
 .cn-btn:is(:hover, :focus-visible) .cn-name { color: var(--lit); opacity: 1; }
 .cn-btn:focus-visible { outline: 2px solid var(--lit); outline-offset: 4px; border-radius: 8px; }
 .cn-link { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-/* chosen: its star flares, the rest fade, the warp (the 3D scene's), a flash, then the page */
+/* chosen: its star flares, the rest fade, the warp (the 3D scene's), carried on by the loader until the page is in */
 .cn[data-going="true"] .cn-star:not([data-picked]), .cn[data-going="true"] .cn-lines { opacity: 0; transition: opacity 0.35s ease; }
 .cn-star[data-picked] .cn-point { transform: scale(3); }
 .story-stage:has(:is(.cn[data-going="true"], .ck[data-lock="true"])) :is(.story-rail, .story-copy) { opacity: 0; transition: opacity 0.3s ease; }
-.cn-flash {
-  position: fixed; inset: 0; z-index: 600; pointer-events: none;
-  background: radial-gradient(circle, #f4f9ff 25%, #b9dcff 70%, #6aa8f0);
-  animation: cnFlash 2.7s linear both;
-}
-@keyframes cnFlash { 0%, 70% { opacity: 0; } 83%, 88% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ============================================================
    THE COCKPIT - the journey's end on wide windows: the camera is in
