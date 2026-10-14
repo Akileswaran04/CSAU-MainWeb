@@ -87,6 +87,6 @@ export const STOPS: Stop[] = [
     weight: 1,
   },
   { kind: "contact", lines: ["Contact"], body: MOCK.contact, cta: [{ label: "CONTACT →", href: "/contact" }], weight: 1 },
-  // heavy on purpose: half of it is the flight once round the Sun, drawn out slow (raise it to slow the loop more)
-  { kind: "map", lines: [], body: "", weight: 5 },
+  // heavier than a stop: half of it is the flight once round the Sun (the owner found 5 too long, 2.5 too short; raise it to slow the loop)
+  { kind: "map", lines: [], body: "", weight: 3 },
 ];
