@@ -22,7 +22,7 @@ export interface ContactChannel {
   copy?: boolean;
 }
 
-export const CONTACT_EMAIL = "csau.new@gmail.com";
+export const CONTACT_EMAIL = "cegcsau@gmail.com";
 
 export const CONTACT_CHANNELS: ContactChannel[] = [
   {
