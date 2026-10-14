@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import CursorBootPreloader from "./CursorBootPreloader";
 import LandingPage from "./LandingPage";
 import type { EarthOnScreen } from "./space/PowerOnIntro";
 import HeroSection from "./HeroSection";
 import Lenis from "lenis";
 import { lockScroll } from "@/lib/scrollLock";
-import StorySection, { STORY_HEIGHT } from "./story/StorySection";
-import EventsPreview, { type PreviewEvent } from "./EventsPreview";
-import { buildStops } from "./story/stops";
-import type { PastEvent, UpcomingEvent } from "@/data/events";
-import WhatsNew from "./WhatsNew";
+import StorySection, { STORY_HEIGHT, STORY_PULL } from "./story/StorySection";
 import type { WhatsNewItem } from "@/lib/whatsNew";
 import { setLenis } from "./story/lenis";
 
@@ -24,9 +20,11 @@ import { setLenis } from "./story/lenis";
       - Hero section (full viewport)
       - Scroll down reveals About Us section
 
-   The landing is built under the preloader from the start, and the
-   preloader follows it: it fills only once Earth has been drawn, then
-   falls onto it, so there is no gap between the two.
+   The landing is built under the preloader from the start, and so is
+   the space journey (the story's 3D scene, held still): the preloader
+   follows both, filling only once Earth has been drawn and the
+   journey is compiled, then falls onto the landing, so there is no
+   gap and no wait for the journey later.
 
    The preloader + landing gate plays ONCE per browser session.
    On refresh, the page goes straight to content with freshly
@@ -39,22 +37,7 @@ const GATE_KEY = "csau-gate-seen";
 /* safety net: never hold the page still longer than this waiting for the story's scene */
 const STORY_MAX_WAIT_MS = 12000;
 
-export default function HomeClient({
-  whatsNew = [],
-  preview,
-  eventCount,
-  storyPast,
-  storyUpcoming,
-}: {
-  whatsNew?: WhatsNewItem[];
-  /** the events preview strip and the total number of events */
-  preview: PreviewEvent[];
-  eventCount: number;
-  /** the events the story visits (see story/stops.ts) */
-  storyPast: PastEvent[];
-  storyUpcoming: UpcomingEvent[];
-}) {
-  const stops = useMemo(() => buildStops(storyPast, storyUpcoming), [storyPast, storyUpcoming]);
+export default function HomeClient({ news }: { news: WhatsNewItem | null }) {
   // Start with "boot" on both server and client to avoid hydration mismatch.
   // After mount, check sessionStorage to decide whether to skip the gate.
   const [phase, setPhase] = useState<Phase>("boot");
@@ -123,6 +106,7 @@ export default function HomeClient({
       // Build the 3D intro under the boot preloader (it reports when Earth is drawn), and warm the
       // story's scene chunk too, so neither is fetched and parsed in the middle of the flight.
       setLandingUp(true);
+      setStoryReady(true); // the space journey builds under the preloader too, which waits for it (journey)
       void import("./space/PowerOnIntro").then(
         () => setSceneLoaded(true),
         () => {} // the preloader's own time limit lets the visitor through
@@ -179,19 +163,20 @@ export default function HomeClient({
 
       {phase === "boot" && (
         <div className="gate">
-          <CursorBootPreloader scene={sceneLoaded} earth={earth} onComplete={handleBootComplete} />
+          <CursorBootPreloader scene={sceneLoaded} earth={earth} journey={storyWarm} onComplete={handleBootComplete} />
         </div>
       )}
 
-      {phase === "content" && (
-        <div style={{ background: "transparent", position: "relative" }}>
-          <HeroSection story={storyWarm ? "ready" : storyReady ? "build" : "wait"} />
-          {/* rocket + flag in the hero's bottom-right corner */}
-          <WhatsNew items={whatsNew} />
-          {storyReady ? <StorySection stops={stops} onWarm={onStoryWarm} /> : <div aria-hidden style={{ height: STORY_HEIGHT }} />}
-          <EventsPreview items={preview} total={eventCount} />
-        </div>
-      )}
+      {/* Mounted from the start, so the journey built under the preloader is the one that flies (the hero
+          joins it above once the gate clears); held still while the gate covers it. */}
+      <div style={{ background: "transparent", position: "relative" }} inert={phase !== "content"}>
+        {phase === "content" && <HeroSection story={storyWarm ? "ready" : storyReady ? "build" : "wait"} news={news} />}
+        {storyReady ? (
+          <StorySection onWarm={onStoryWarm} covered={phase !== "content"} />
+        ) : (
+          <div aria-hidden style={{ height: STORY_HEIGHT, marginTop: STORY_PULL }} />
+        )}
+      </div>
     </>
   );
 }

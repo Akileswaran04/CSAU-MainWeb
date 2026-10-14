@@ -297,6 +297,7 @@ const LEADERSHIP_ROWS: SanityTeamRow[] = [
   { name: "Subakshan Sivakumar", designation: "Deputy Head", domain: "HR and Logistics", department: "CSE", year: "3rd", slug: "subakshan-sivakumar", photo: "/images/team/subakshan-sivakumar.jpg" },
   { name: "Keshika ST", designation: "Deputy Head", domain: "Marketing and IR", department: "CSE", year: "3rd", slug: "keshika-st", photo: "/images/team/keshika-st.jpg" },
   { name: "Mohammed Ibrahim", designation: "Deputy Head", domain: "Marketing and IR", department: "BME", year: "3rd", slug: "mohammed-ibrahim", photo: "/images/team/mohammed-ibrahim.jpg" },
+  { name: "Harini", designation: "Deputy Head", domain: "Marketing and IR", department: "BME", year: "3rd", slug: "harini", photo: "/images/team/harini.jpg" },
 ];
 
 /* ============================================================

@@ -196,11 +196,16 @@ const imageIn = (img: HTMLImageElement) =>
 
 /* ---- Wait until the arrived page has its elements, reporting progress (0..1) as each lands ---- */
 async function pageReady(host: HTMLElement, live: () => boolean, report: (p: number) => void) {
-  report(ARRIVED);
+  let shown = 0;
+  const up = (p: number) => p > shown && report((shown = p)); // the bar only ever moves forward
+  up(ARRIVED);
   await frame(); // effects that swap a page's first render (the home gate, client-only parts) commit first
-  /* a loading.tsx skeleton, or a part still building itself (the team carousel), marks itself aria-busy */
-  while (host.querySelector('[aria-busy="true"]')) {
+  /* a loading.tsx skeleton, or a part still building itself (the team carousel), marks itself aria-busy; one
+     that says how far it has got (the home's 3D journey: data-load, 0 to 1) carries the bar along with it */
+  for (let busy; (busy = host.querySelector('[aria-busy="true"]')); ) {
     if (!live()) return;
+    const load = Number(busy.getAttribute("data-load"));
+    if (load > 0) up(ARRIVED + (1 - ARRIVED) * 0.85 * Math.min(1, load));
     await frame();
   }
   await document.fonts?.ready;
@@ -210,7 +215,7 @@ async function pageReady(host: HTMLElement, live: () => boolean, report: (p: num
     return r.width > 0 && r.bottom > 0 && r.top < vh;
   });
   let done = 0;
-  const step = () => report(ARRIVED + ((1 - ARRIVED) * ++done) / (imgs.length + 1));
+  const step = () => up(ARRIVED + ((1 - ARRIVED) * ++done) / (imgs.length + 1));
   await Promise.all(imgs.map((img) => imageIn(img).then(step)));
   await frame();
   await frame(); // canvases and the decoded images are on screen

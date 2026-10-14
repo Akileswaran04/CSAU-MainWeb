@@ -19,11 +19,13 @@ import { paintEarthInto } from "./space/earthCanvas";
 
    The only words are the percentage.
 
-   It follows real loading, not a clock. Five things, each worth a
+   It follows real loading, not a clock. Six things, each worth a
    share of the 100%: the page itself, its fonts, the browser's load
-   event, the start page's 3D code, and Earth drawn once. While some
-   are pending the count creeps toward them but never reaches them,
-   so the last planet lights (100%) only once Earth is on screen. It
+   event, the start page's 3D code, Earth drawn once, and the whole
+   space journey (the home story's 3D scene, built and compiled under
+   this). While some are pending the count creeps toward them but
+   never reaches them, so the last planet lights (100%) only once
+   Earth is on screen and the journey is ready to fly. It
    rises no faster than 100% in RISE_MS and lights one planet at a
    time, so it reads. After MAX_WAIT_MS it lets the visitor through,
    whatever is still pending.
@@ -51,11 +53,13 @@ interface Props {
   scene: boolean;
   /** Earth has been drawn on the start page, and how big it is there; null until then */
   earth: EarthOnScreen | null;
+  /** the space journey's 3D scene is compiled and ready */
+  journey: boolean;
   onComplete?: () => void;
 }
 
 /* what loading is made of, and each part's share of the 100% */
-const SHARE = { page: 10, fonts: 15, load: 20, scene: 25, earth: 30 } as const;
+const SHARE = { page: 8, fonts: 10, load: 14, scene: 18, earth: 22, journey: 28 } as const;
 type Part = keyof typeof SHARE;
 const CREEP = 0.6; // how far into the pending shares the count may creep while it waits
 const CREEP_MS = 3000;
@@ -152,9 +156,9 @@ const TWINKLE = [
   [89, 58, 2.6, 4.3], [14, 42, 3.1, 3.9], [52, 27, 0.9, 5.1], [94, 9, 1.4, 3.6], [67, 52, 2.3, 4.8],
 ] as const;
 
-export default function CursorBootPreloader({ scene, earth, onComplete }: Props) {
+export default function CursorBootPreloader({ scene, earth, journey, onComplete }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const parts = useRef<Record<Part, boolean>>({ page: false, fonts: false, load: false, scene: false, earth: false });
+  const parts = useRef<Record<Part, boolean>>({ page: false, fonts: false, load: false, scene: false, earth: false, journey: false });
   const earthRef = useRef(earth);
   const completeRef = useRef(onComplete);
 
@@ -163,7 +167,8 @@ export default function CursorBootPreloader({ scene, earth, onComplete }: Props)
     earthRef.current = earth;
     parts.current.scene ||= scene || !!earth;
     parts.current.earth ||= !!earth;
-  }, [onComplete, scene, earth]);
+    parts.current.journey ||= journey;
+  }, [onComplete, scene, earth, journey]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -270,6 +275,8 @@ export default function CursorBootPreloader({ scene, earth, onComplete }: Props)
       const giveUp = waited > MAX_WAIT_MS;
       let got = 0;
       for (const k of Object.keys(SHARE) as Part[]) if (has[k] || giveUp) got += SHARE[k];
+      // the journey fills its share as its scene is built (StorySection's data-load), not all at once at the end
+      if (!has.journey && !giveUp) got += SHARE.journey * 0.9 * Math.min(1, Number(document.querySelector("[data-section=story]")?.getAttribute("data-load")) || 0);
       const target = got >= 100 ? 100 : got + (100 - got) * CREEP * (1 - Math.exp(-waited / CREEP_MS));
       const nextPlanet = (Math.floor(p / STEP + 1e-6) + 1) * STEP; // one planet at a time, however long a frame took
       p = Math.min(target, p + rise * (now - last), nextPlanet, 100);

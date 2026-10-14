@@ -16,8 +16,10 @@ import { initials, memberMeta, photoUrl } from "@/lib/team";
      to the front where it faces the camera dead-centre.
    • A vertical "CSAU" wordmark (Ethnocentric brand font)
      stands at the centre of the ring, inside the carousel.
-   • role / name / dept / catchphrase / links crossfade beside the front panel;
-     the front card (or "View profile") opens the member profile.
+   • role / name / dept / links crossfade beside the front panel; each
+     card carries the member's name and department.
+   • The ring does not loop: the first member has nobody before it,
+     and the last nobody after it.
    • The ring is sized from the member count: past ten members it
      grows so every card keeps the same width, and is pushed back
      so the front card stays where it was.
@@ -27,8 +29,6 @@ import { initials, memberMeta, photoUrl } from "@/lib/team";
 
 interface TeamCarouselProps {
   members: TeamMember[];
-  /** Open the detailed profile for a member. */
-  onOpen?: (id: string) => void;
 }
 
 /* Ring geometry shared by the scene and the portrait canvases. The ring
@@ -201,6 +201,12 @@ function paintOrnament(
   }
   const nameY = PHOTO_CY + PHOTO_D / 2 + size * 0.2;
   lines.forEach((line, i) => ctx.fillText(line, PHOTO_CX, nameY + i * size * 0.085, W * 0.84));
+  // the department under the name
+  if (member.department) {
+    ctx.fillStyle = gold;
+    ctx.font = `500 ${size * 0.042}px ${monoFamily()}, monospace`;
+    ctx.fillText(member.department.toUpperCase().split("").join(" "), PHOTO_CX, nameY + lines.length * size * 0.085 + size * 0.02, W * 0.84);
+  }
   ctx.fillStyle = gold;
   ctx.fillRect(PHOTO_CX - size * 0.04, nameY - size * 0.12, size * 0.08, 3);
 
@@ -381,7 +387,7 @@ function totemDataURL(size = 384): Promise<string> {
   });
 }
 
-export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
+export default function TeamCarousel({ members }: TeamCarouselProps) {
   const holderRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -693,18 +699,13 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
           speed = Math.min(rampIn, rampOut);
         }
         if (autoRotate && !hovering) {
-          targetS = (targetS + AUTO_SPEED * speed * dt) % N;
+          targetS = Math.min(N - 1, targetS + AUTO_SPEED * speed * dt);
         }
 
-        /* ease toward the target, taking the shortest way around
-           so the loop wraps smoothly from member N-1 back to 0.
-           The factor is normalised to frame time so the glide
-           feels identical at 60 / 120 / 144 Hz. */
-        let diff = targetS - s;
-        diff -= N * Math.round(diff / N);
+        /* ease toward the target. The factor is normalised to frame
+           time so the glide feels identical at 60 / 120 / 144 Hz. */
         const ease = 1 - Math.pow(1 - 0.09, dt * 60);
-        s += diff * ease;
-        s = ((s % N) + N) % N;
+        s += (targetS - s) * ease;
         const idx = Math.min(N - 1, Math.max(0, Math.round(s)));
         setActive(idx);
 
@@ -740,8 +741,7 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
            hard switches when the active member changes */
         panels.forEach((panel, i) => {
           const mat = panel.material as THREE.MeshBasicMaterial;
-          let off = i - s; // cards away from the front, the short way round
-          off -= N * Math.round(off / N);
+          const off = i - s; // cards away from the front; no wrap, so the last card never shows before the first
           const frontness = Math.max(0, Math.cos(Math.min(Math.PI / 2, Math.abs(off) * FOCUS_STEP))) ** 1.4;
           mat.opacity = Math.pow(frontness, 1.2);
           const scl = 0.8 + 0.26 * frontness;
@@ -871,18 +871,6 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
           }}
         />
 
-        {/* the front card itself opens the profile (pointer shortcut;
-            "View profile" below is the keyboard / screen-reader control) */}
-        {onOpen && (
-          <button
-            type="button"
-            className="tc-card-hit"
-            tabIndex={-1}
-            aria-hidden
-            onClick={() => onOpen(member.id)}
-          />
-        )}
-
         {/* text overlay - desktop: role left / details right, vertically
             centred; mobile: pinned to the top corners of the photo */}
         <div className="tc-stage-overlay">
@@ -964,31 +952,11 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
             >
               {memberMeta(member)}
             </div>
-            {member.quote && (
-              <p
-                key={member.id + "-quote"}
-                className="tc-quote"
-                style={{ animation: "tw-fade-in .6s ease .2s both" }}
-              >
-                &ldquo;{member.quote}&rdquo;
-              </p>
-            )}
             <div
               key={member.id + "-links"}
               className="tc-links-row"
               style={{ animation: "tw-fade-in .6s ease .25s both" }}
             >
-              {onOpen && (
-                <button
-                  type="button"
-                  className="btn"
-                  data-team-open
-                  aria-label={`View profile: ${member.name}, ${member.role}`}
-                  onClick={() => onOpen(member.id)}
-                >
-                  View profile
-                </button>
-              )}
               {member.link && (
                 <a
                   className="btn btn-ghost"
@@ -1112,16 +1080,6 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
           @media (prefers-reduced-motion: reduce) {
             .tc-wave path { animation: none; stroke-dashoffset: 0; }
           }
-          .tc-quote {
-            max-width: 34ch;
-            margin: 12px 0 0 auto;
-            font-family: var(--font-mono);
-            font-size: 13px;
-            font-style: italic;
-            line-height: 1.5;
-            color: var(--on-surface-variant);
-            text-wrap: pretty;
-          }
           .tc-links-row {
             display: flex;
             gap: 10px;
@@ -1144,15 +1102,6 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
             .tc-role-block { padding: 0 0 0 14px; }
             .tc-detail-block { padding: 0; }
             .tc-wave { margin-left: 0; }
-            /* one line here - the full line is in the profile */
-            .tc-quote {
-              max-width: none;
-              margin: 6px 0 0;
-              font-size: 12px;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
             .tc-links-row { flex-wrap: wrap; justify-content: flex-start; margin-top: 14px; }
           }
           .tc-links-row .btn { pointer-events: auto; text-shadow: none; }
@@ -1169,20 +1118,6 @@ export default function TeamCarousel({ members, onOpen }: TeamCarouselProps) {
             color: var(--signal);
           }
           .tc-counter .tm-step { pointer-events: auto; }
-          .tc-card-hit {
-            position: absolute;
-            left: 50%;
-            top: 46%;
-            width: min(30vw, 440px);
-            height: 66%;
-            transform: translate(-50%, -50%);
-            border: 0;
-            background: none;
-            cursor: pointer;
-          }
-          @media (max-width: 640px) {
-            .tc-card-hit { width: 78vw; top: 38%; height: 56%; }
-          }
           /* Dust motes - drift upward and fade in/out on member change */
           .tc-dust {
             position: absolute;

@@ -1,5 +1,6 @@
-import type { PastEvent, UpcomingEvent } from "@/data/events";
+import { kindOf, type PastEvent, type UpcomingEvent } from "@/data/events";
 import { FALLBACK_EVENT_ROWS } from "./events.fallback";
+import { EVENTS_2026_ROWS } from "./events.2026";
 
 /* ============================================================
    EVENTS DATA - the club's real events.
@@ -20,7 +21,8 @@ import { FALLBACK_EVENT_ROWS } from "./events.fallback";
      eventPics    -> the card's photo strip (the photos taken at that event)
      location     -> stat line, and the tag (ON CAMPUS / ONLINE / HYBRID)
      registerLink -> the upcoming card's Register button
-   The CMS has no category or attendance fields, so none are shown.
+   The CMS has no category or attendance fields: the kind (hackathon,
+   workshop, ...) is read from the title and text (kindOf).
    An event is upcoming while its date is today or later (IST);
    everything else is archive.
    ============================================================ */
@@ -115,16 +117,17 @@ function modeOf(location: string): string {
   return "ON CAMPUS";
 }
 
-/** Full Sanity URL for an asset given as a URL or as a bare file name. */
+/** Full Sanity URL for an asset given as a URL or as a bare file name; a local /images/... path stays as it is. */
 function assetUrl(image?: string | null): string | undefined {
   const value = image?.trim();
   if (!value) return undefined;
-  return value.startsWith("http") ? value : SANITY_IMAGE_BASE + value;
+  return value.startsWith("http") || value.startsWith("/") ? value : SANITY_IMAGE_BASE + value;
 }
 
 function posterUrl(image?: string): string | undefined {
   const base = assetUrl(image);
-  return base ? `${base}?w=720&fit=max&auto=format&q=75` : undefined;
+  if (!base || base.startsWith("/")) return base;
+  return `${base}?w=720&fit=max&auto=format&q=75`;
 }
 
 function httpsLink(raw?: string): string | undefined {
@@ -151,6 +154,7 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
       id: r.slug?.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       year,
       name,
+      kind: kindOf(name, clean(r.text ?? "")),
       tag: location ? modeOf(location) : "",
       date,
       blurb: excerpt(clean(r.text ?? "")),
@@ -163,10 +167,11 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
 }
 
 function toUpcoming(e: MappedEvent): UpcomingEvent {
-  const { id, name, tag, date, blurb, poster } = e.past;
+  const { id, name, kind, tag, date, blurb, poster } = e.past;
   return {
     id,
     name,
+    kind,
     tag,
     date,
     status: "UPCOMING",
@@ -179,10 +184,18 @@ function toUpcoming(e: MappedEvent): UpcomingEvent {
 /** CrackIT is no longer on the site (2026-10-05): its events are left out wherever they come from */
 const DROPPED = /crack\s*-?\s*it/i;
 
+const key = (s?: string) => s?.toLowerCase().replace(/[^a-z0-9]/g, "") || undefined;
+
+/** The rows plus the 2026 events the CMS does not have yet (one it has, by slug or title, is left to the CMS). */
+function withLocal(rows: SanityEventRow[]): SanityEventRow[] {
+  const have = new Set(rows.flatMap((r) => [key(r.slug), key(r.title)]));
+  return [...rows, ...EVENTS_2026_ROWS.filter((r) => !have.has(key(r.slug)) && !have.has(key(r.title)))];
+}
+
 function build(rows: SanityEventRow[], now: number): { current: UpcomingEvent[]; past: PastEvent[] } {
   const seen = new Set<string>();
   const mapped: MappedEvent[] = [];
-  for (const r of rows) {
+  for (const r of withLocal(rows)) {
     if (DROPPED.test(r.title ?? "") || DROPPED.test(r.slug ?? "")) continue;
     const m = mapRow(r);
     if (!m || seen.has(m.past.id)) continue;

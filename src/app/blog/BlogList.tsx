@@ -1,120 +1,155 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { BlogPost } from "@/lib/blog";
-import { collectCategories } from "@/lib/blog";
-import { Cover, Meta } from "./parts";
-import BlogFlight from "./BlogFlight";
+import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { TOPICS, topicsOf, type BlogPost, type Topic } from "@/lib/blog";
+import { Cover, Meta, postDate } from "./parts";
 
 /* ============================================================
-   BLOG LIST (client) - the flight and the signal log.
-
-     • the flight (BlogFlight): the home story's ship visits one
-       post per scroll stop; the page header and the band selector
-       (ALL + every Medium tag) are its first stop
-     • below it, the signal log: one ruled row per transmission,
-       channel numbers in the same order as the flight's stops
-     • both follow the band filter
-   Posts arrive already sorted newest-first from the server.
+   BLOG LIST - topic filter and search above, then every post as
+   one ruled row (poster, date and reading time, title, excerpt,
+   author) opening its reading page; pages and a year archive
+   below. Posts arrive sorted newest-first from the server.
+   Switching filters runs in a view transition so rows glide to
+   their new places.
    ============================================================ */
 
-const pad = (n: number) => String(n).padStart(2, "0");
+const PER_PAGE = 6;
 
-export default function BlogList({ posts, header }: { posts: BlogPost[]; header?: React.ReactNode }) {
-  const categories = useMemo(() => ["ALL", ...collectCategories(posts)], [posts]);
-  const [active, setActive] = useState<string>("ALL");
+type Filters = { topic: Topic | "All"; year: number | "All"; q: string; page: number };
+const NONE: Filters = { topic: "All", year: "All", q: "", page: 0 };
 
-  const shown = useMemo(
-    () => (active === "ALL" ? posts : posts.filter((p) => p.categories.includes(active))),
-    [posts, active],
+/** Apply a filter change inside a view transition where the browser has one. */
+function glide(apply: () => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (!doc.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return apply();
+  doc.startViewTransition(() => flushSync(apply));
+}
+
+export default function BlogList({ posts }: { posts: BlogPost[] }) {
+  const [f, setF] = useState<Filters>(NONE);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const rows = useMemo(
+    () => posts.map((post) => ({ post, topics: topicsOf(post.categories), year: postDate(post.date)?.getUTCFullYear() })),
+    [posts],
+  );
+  const years = useMemo(
+    () => [...new Set(rows.map((r) => r.year).filter((y): y is number => y !== undefined))].sort((a, b) => b - a),
+    [rows],
   );
 
-  const intro = (
-    <>
-      {header}
-      <nav aria-label="Filter posts by topic" className="bl-band">
-        <span className="bl-band-label" aria-hidden>
-          Band
-        </span>
-        <div className="bl-band-chips">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              className="bl-band-chip"
-              onClick={() => setActive(cat)}
-              aria-pressed={active === cat}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-        <span className="bl-count tabular" aria-live="polite">
-          {shown.length} {shown.length === 1 ? "post" : "posts"}
-        </span>
-      </nav>
-    </>
+  const q = f.q.trim().toLowerCase();
+  const shown = rows.filter(
+    (r) =>
+      (f.topic === "All" || r.topics.includes(f.topic)) &&
+      (f.year === "All" || r.year === f.year) &&
+      (!q || `${r.post.title} ${r.post.excerpt} ${r.post.author}`.toLowerCase().includes(q)),
   );
+  const pages = Math.max(1, Math.ceil(shown.length / PER_PAGE));
+  const page = Math.min(f.page, pages - 1);
+  const slice = shown.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+
+  const pick = (next: Partial<Filters>) => glide(() => setF((cur) => ({ ...cur, page: 0, ...next })));
+  const turn = (to: number) => {
+    glide(() => setF((cur) => ({ ...cur, page: to })));
+    listRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  };
 
   return (
-    <>
-      {shown.length > 0 ? (
-        <BlogFlight posts={shown} intro={intro} />
-      ) : (
-        <div className="bl-rx">
-          <div className="bl-scope">
-            <div className="bl-rx-over">{intro}</div>
-          </div>
+    <div ref={listRef} className="bl-index">
+      <div className="bl-bar">
+        <div className="bl-topics" role="group" aria-label="Filter by category">
+          {(["All", ...TOPICS] as const).map((t) => {
+            const empty = t !== "All" && !rows.some((r) => r.topics.includes(t));
+            return (
+              <button
+                key={t}
+                type="button"
+                className="bl-topic"
+                aria-pressed={f.topic === t}
+                disabled={empty}
+                onClick={() => pick({ topic: t })}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
+        <label className="bl-search">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+            <path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+          <span className="sr-only">Search posts</span>
+          <input type="search" value={f.q} placeholder="Search" onChange={(e) => setF((cur) => ({ ...cur, q: e.target.value, page: 0 }))} />
+        </label>
+      </div>
+
+      {slice.length === 0 ? (
+        <p className="bl-none" role="status">
+          No posts match.{" "}
+          <button type="button" className="bl-ul" onClick={() => pick(NONE)}>
+            Clear filters
+          </button>
+        </p>
+      ) : (
+        <ol className="bl-log-list">
+          {slice.map(({ post }) => (
+            <li key={post.id} className="bl-log-row" style={{ viewTransitionName: `bl-${post.id.replace(/[^a-zA-Z0-9-]/g, "")}` }}>
+              <Link className="bl-log-link" href={`/blog/${post.id}`}>
+                <div className="bl-log-thumb">
+                  <Cover post={post} />
+                </div>
+                <div className="bl-log-body">
+                  <Meta post={post} />
+                  <h2 className="bl-log-title">
+                    <span className="bl-ul">{post.title}</span>
+                  </h2>
+                  <p className="bl-blurb">{post.excerpt}</p>
+                </div>
+                <div className="bl-log-foot">
+                  <span className="bl-author">{post.author}</span>
+                  <span className="bl-readmore bl-ul" aria-hidden>
+                    Read article →
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ol>
       )}
 
-      <section className="bl-log pg-in" aria-labelledby="bl-log-h">
-        <div className="bl-log-head">
-          <h2 id="bl-log-h" className="eyebrow">
-            Signal log
-          </h2>
-          <span className="eyebrow tabular" aria-hidden>
-            CH 01-{pad(shown.length)}
-          </span>
-        </div>
-
-        {shown.length === 0 ? (
-          <p className="bl-empty-body" role="status" style={{ marginTop: 32 }}>
-            No posts tagged “{active}”. Try another topic.
-          </p>
-        ) : (
-          <ol className="bl-log-list" key={active}>
-            {shown.map((post, i) => (
-              <li key={post.id} className="bl-log-row bl-enter" style={{ ["--i" as string]: Math.min(i, 8) }}>
-                <a
-                  className="bl-log-link"
-                  href={post.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Read “${post.title}” on Medium (opens in a new tab)`}
-                  data-latest={i === 0 || undefined}
-                >
-                  <span className="bl-log-ch tabular">{pad(i + 1)}</span>
-                  <div className="bl-log-thumb">
-                    <Cover post={post} />
-                  </div>
-                  <div className="bl-log-body">
-                    <Meta post={post} />
-                    <h3 className="bl-log-title">{post.title}</h3>
-                    <p className="bl-blurb">{post.excerpt}</p>
-                  </div>
-                  <div className="bl-log-foot">
-                    <span className="bl-author">{post.author}</span>
-                    <span className="bl-readmore" aria-hidden>
-                      {i === 0 ? "Read on Medium →" : "Read →"}
-                    </span>
-                  </div>
-                </a>
-              </li>
+      <div className="bl-foot">
+        {pages > 1 ? (
+          <nav className="bl-pages" aria-label="Pages">
+            <button type="button" className="bl-page-btn" disabled={page === 0} onClick={() => turn(page - 1)} aria-label="Previous page">
+              ←
+            </button>
+            {Array.from({ length: pages }, (_, i) => (
+              <button key={i} type="button" className="bl-page-btn" aria-current={i === page ? "page" : undefined} onClick={() => turn(i)}>
+                {String(i + 1).padStart(2, "0")}
+              </button>
             ))}
-          </ol>
+            <button type="button" className="bl-page-btn" disabled={page === pages - 1} onClick={() => turn(page + 1)} aria-label="Next page">
+              →
+            </button>
+          </nav>
+        ) : (
+          <span />
         )}
-      </section>
-    </>
+        {years.length > 1 && (
+          <div className="bl-years" role="group" aria-label="Archive by year">
+            <span className="bl-years-label">Archive</span>
+            {(["All", ...years] as const).map((y) => (
+              <button key={y} type="button" className="bl-year" aria-pressed={f.year === y} onClick={() => pick({ year: y })}>
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

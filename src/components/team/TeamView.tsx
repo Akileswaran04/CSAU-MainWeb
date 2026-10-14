@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import TeamCarousel from "@/components/TeamCarousel";
 import type { TeamGroup, TeamMember, TeamState } from "@/lib/team";
 import { TEAM_GROUPS, memberMeta } from "@/lib/team";
 import Portrait from "./Portrait";
-import TeamProfile from "./TeamProfile";
 
 /* ============================================================
-   TEAM VIEW - Full-circle carousel + crew grid + profile
+   TEAM VIEW - Full-circle carousel + crew grid
 
    • Pinned Three.js stage: the faculty advisor, office bearers
      and domain heads spin around a full circle - role on the
@@ -16,22 +15,13 @@ import TeamProfile from "./TeamProfile";
      wordmark standing at the centre of the ring.
    • Below the carousel: the deputy heads (and core members, if
      the CMS lists any), grouped by domain.
-   • Any member opens the detailed profile.
    Everything is driven by the `members` prop (see src/lib/team.ts).
    ============================================================ */
 
 /** Groups that ride the ring; the rest are listed below it. */
 const RING_GROUPS: TeamGroup[] = ["faculty", "office", "heads"];
 
-const CREW_LEDES: Partial<Record<TeamGroup, string>> = {
-  deputies: "The crew that keeps every build, event and round running.",
-};
-
 export default function TeamView({ members, state }: { members: TeamMember[]; state: TeamState }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const open = useCallback((id: string) => setOpenId(id), []);
-  const close = useCallback(() => setOpenId(null), []);
-
   const featured = useMemo(() => members.filter((m) => RING_GROUPS.includes(m.group)), [members]);
 
   /* crew sections: one per remaining group, members bucketed by domain */
@@ -50,24 +40,20 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
     [members],
   );
 
-  const current = openId ? members.find((m) => m.id === openId) : undefined;
-
   return (
     <main id="content" style={{ background: "transparent" }}>
       <h1 className="sr-only">Team</h1>
 
       {/* ── Full-circle member carousel ── */}
-      {featured.length > 0 && <TeamCarousel members={featured} onOpen={open} />}
+      {featured.length > 0 && <TeamCarousel members={featured} />}
 
       {/* ── Crew grid ── */}
       {crew.map((group, gi) => (
         <section key={group.id} className="tm-crew" aria-labelledby={`tm-${group.id}`}>
           <div className="tm-crew-in">
-            <div className="eyebrow">Support crew</div>
             <h2 id={`tm-${group.id}`} className="tm-title">
               {group.title}
             </h2>
-            {CREW_LEDES[group.id] && <p className="tm-lede">{CREW_LEDES[group.id]}</p>}
 
             {gi === 0 && state === "fallback" && (
               <p className="dm-notice" role="status">
@@ -88,12 +74,7 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
                   <ul className="tm-grid">
                     {d.list.map((m) => (
                       <li key={m.id}>
-                        <button
-                          type="button"
-                          className="clay-card card-photo tm-card"
-                          onClick={() => open(m.id)}
-                          aria-label={`View profile: ${m.name}, ${m.role}`}
-                        >
+                        <div className="clay-card card-photo tm-card">
                           <span className="tm-card-photo">
                             <Portrait member={m} size={400} />
                           </span>
@@ -103,7 +84,7 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
                             <span className="tm-card-role">{m.designation}</span>
                             <span className="tm-card-meta">{memberMeta(m)}</span>
                           </span>
-                        </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -113,8 +94,6 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
           </div>
         </section>
       ))}
-
-      {current && <TeamProfile member={current} roster={members} onSelect={open} onClose={close} />}
     </main>
   );
 }

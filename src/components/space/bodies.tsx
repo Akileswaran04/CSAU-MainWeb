@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { ConvexGeometry } from "three/examples/jsm/geometries/ConvexGeometry.js";
 import { seeded, type SpaceTokens } from "./tokens";
 import { cloudDensity, earthColor, fbm, h3, hex, mix3, smoothstep, type Rgb } from "./earth";
 
@@ -17,9 +18,9 @@ import { cloudDensity, earthColor, fbm, h3, hex, mix3, smoothstep, type Rgb } fr
                      Sun's corona. The smooth surface keeps close-ups clear;
                      a shader lights both from the Sun (day side, terminator,
                      night side, limb glow) while the GPU spins the planet.
-     ShipModel       an X-wing style fighter: long nose, cockpit,
-                     astromech, four S-foil wings with engines and
-                     laser cannons, animated engine flames
+     ShipModel       a sleek faceted fighter in the armour's family:
+                     gunmetal, cyan lines of light, lime trim, four
+                     swept foils with engines and cannons
      UfoModel        a saucer: lens hull, glass dome, chasing rim
                      lights and an optional tractor beam
      AsteroidField   cratered tumbling rocks in three shapes, with dust
@@ -456,75 +457,98 @@ export function ParticlePlanet({
 }
 
 /* ------------------------------------------------------------
-   SHIP - an X-wing style fighter. Nose points along -Z.
+   SHIP - a sleek faceted fighter, the same family as the armour
+   it evolves into (armour.tsx): gunmetal, lighter on top, cyan
+   lines of light, lime trim. A long wedge of a hull, a dark canopy
+   behind a V of cyan, four swept foils in a shallow X, each with a
+   hexagonal engine (a cyan ring, a cyan flame) and a cannon at its
+   tip. Nose points along -Z. Kept inside the armour's shell, so
+   the armour closes over it when the foils fold flat.
    ------------------------------------------------------------ */
 
-export function ShipModel({ tokens, scale = 1, low = false }: { tokens: SpaceTokens; scale?: number; low?: boolean }) {
+// four foils in a shallow X: angle above/below the horizontal, left and right
+const SHIP_FOILS: { rz: number; mirror: number; key: number }[] = [
+  { rz: 0.42, mirror: 1, key: 0 },
+  { rz: -0.42, mirror: 1, key: 1 },
+  { rz: Math.PI - 0.42, mirror: 1, key: 2 },
+  { rz: Math.PI + 0.42, mirror: 1, key: 3 },
+];
+
+const SHIP_CYAN = "#1fb4e0"; // the armour's cyan: brighter blooms to white
+const SHIP_LIME = "#a5e233";
+const shipFacets = (pts: number[][]) => new ConvexGeometry(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+/** gunmetal, lighter on top, darker underneath */
+function shipPaint(g: THREE.BufferGeometry) {
+  const top = new THREE.Color("#c3cad3");
+  const low = new THREE.Color("#3e444e");
+  const p = g.getAttribute("position");
+  const c = new Float32Array(p.count * 3);
+  const col = new THREE.Color();
+  for (let i = 0; i < p.count; i++) col.copy(low).lerp(top, Math.min(1, Math.max(0, (p.getY(i) + 0.3) / 0.75))).toArray(c, i * 3);
+  g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+  return g;
+}
+/** a line of light through a few points */
+const shipStrip = (pts: number[][], r: number) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(([x, y, z]) => new THREE.Vector3(x, y, z))), 16, r, 4);
+
+/** `fold`: 0 to 1, the foils closing flat (the story's ship folds them as armour locks onto it, space/armour.tsx) */
+export function ShipModel({ scale = 1, low = false, fold }: { tokens: SpaceTokens; scale?: number; low?: boolean; fold?: MutableRefObject<number> }) {
   const flames = useRef<(THREE.Mesh | null)[]>([]);
+  const foilGroups = useRef<(THREE.Group | null)[]>([]);
   const guns = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   const parts = useMemo(() => {
-    const seg = low ? 10 : 16;
-    // fuselage: long tapering nose, wide engine section
-    const profile = [
-      new THREE.Vector2(0, -2.7),
-      new THREE.Vector2(0.34, -2.7),
-      new THREE.Vector2(0.4, -2.1),
-      new THREE.Vector2(0.5, -0.7),
-      new THREE.Vector2(0.44, 0.6),
-      new THREE.Vector2(0.3, 1.9),
-      new THREE.Vector2(0.17, 2.8),
-      new THREE.Vector2(0.09, 3.5),
-      new THREE.Vector2(0.03, 3.9),
-      new THREE.Vector2(0, 4.0),
-    ];
-    const hull = new THREE.LatheGeometry(profile, seg);
-    hull.rotateX(-Math.PI / 2);
-    hull.scale(0.95, 0.72, 1);
-    const hullEdges = new THREE.EdgesGeometry(hull, 30);
-
-    // S-foil: trapezoid in (span, chord), thin extrusion
-    const shape = new THREE.Shape();
-    shape.moveTo(0.35, 0.2);
-    shape.lineTo(3.0, 0.75);
-    shape.lineTo(3.0, 1.35);
-    shape.lineTo(0.35, 2.0);
-    shape.closePath();
-    const wing = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false });
-    wing.rotateX(Math.PI / 2);
-    const wingEdges = new THREE.EdgesGeometry(wing);
-
-    const engine = new THREE.CylinderGeometry(0.24, 0.29, 1.5, 12);
+    // the hull: a long faceted wedge, a needle nose, wide and flat at the stern
+    const hull = shipPaint(
+      shipFacets([
+        [0, 0.02, -4.0], [0.16, 0.1, -3.3], [-0.16, 0.1, -3.3], [0.12, -0.1, -3.3], [-0.12, -0.1, -3.3],
+        [0.42, 0.28, -1.3], [-0.42, 0.28, -1.3], [0, 0.46, -1.0], [0.36, -0.28, -1.0], [-0.36, -0.28, -1.0],
+        [0.52, 0.12, 0.5], [-0.52, 0.12, 0.5], [0, -0.36, 0.4],
+        [0.46, 0.3, 2.1], [-0.46, 0.3, 2.1], [0, 0.44, 1.7], [0.42, -0.26, 2.4], [-0.42, -0.26, 2.4], [0.3, 0.06, 2.7], [-0.3, 0.06, 2.7],
+      ])
+    );
+    const hullEdges = new THREE.EdgesGeometry(hull, 20);
+    const canopy = shipFacets([[0, 0.34, -2.5], [0.2, 0.34, -1.7], [-0.2, 0.34, -1.7], [0.17, 0.4, -0.5], [-0.17, 0.4, -0.5], [0, 0.6, -1.3]]);
+    // a V of light ahead of the canopy and a line down each flank
+    const vee = shipStrip([[0.4, 0.3, -0.7], [0.18, 0.34, -1.8], [0, 0.36, -2.6], [-0.18, 0.34, -1.8], [-0.4, 0.3, -0.7]], 0.022);
+    const flank = shipStrip([[0.15, 0.04, -3.4], [0.44, 0.1, -1.0], [0.52, 0.12, 0.5], [0.47, 0.14, 2.3]], 0.018);
+    // a foil: swept back to its tip, thin, with a cyan leading edge and a lime stripe near the tip
+    const foil = shipPaint(
+      shipFacets([
+        [0.4, 0.04, -0.3], [0.4, -0.04, -0.3], [0.4, 0.04, 2.1], [0.4, -0.04, 2.1],
+        [3.0, 0.02, 0.9], [3.0, -0.02, 0.9], [3.0, 0.02, 1.55], [3.0, -0.02, 1.55],
+      ])
+    );
+    const foilEdges = new THREE.EdgesGeometry(foil, 20);
+    const lead = shipStrip([[0.45, 0.03, -0.32], [3.0, 0.02, 0.88]], 0.02);
+    const stripe = shipFacets([[2.2, 0.025, 0.62], [2.2, 0.045, 0.62], [2.65, 0.025, 0.78], [2.65, 0.045, 0.78], [2.2, 0.025, 1.7], [2.2, 0.045, 1.7], [2.65, 0.025, 1.6], [2.65, 0.045, 1.6]]);
+    // the engine: a hexagonal pod, a cyan ring at its nozzle, a cyan flame
+    const engine = new THREE.CylinderGeometry(0.22, 0.28, 1.5, 6);
     engine.rotateX(Math.PI / 2);
-    const nozzle = new THREE.CylinderGeometry(0.21, 0.25, 0.16, 12, 1, true);
-    nozzle.rotateX(Math.PI / 2);
-    const flame = new THREE.ConeGeometry(0.19, 1, 12, 1, true);
+    engine.rotateZ(Math.PI / 6);
+    const ring = new THREE.TorusGeometry(0.21, 0.035, 6, low ? 12 : 20);
+    const flame = new THREE.ConeGeometry(0.17, 1, 12, 1, true);
     flame.rotateX(Math.PI / 2);
     flame.translate(0, 0, 0.5);
-    const cannon = new THREE.CylinderGeometry(0.035, 0.05, 1.9, 8);
+    // the cannon at the tip: a slim six-sided barrel, its muzzle pulsing cyan
+    const cannon = new THREE.CylinderGeometry(0.03, 0.055, 1.9, 6);
     cannon.rotateX(Math.PI / 2);
     const tip = new THREE.SphereGeometry(0.06, 8, 6);
-    const cockpit = new THREE.SphereGeometry(0.34, 16, 10);
-    cockpit.scale(0.85, 0.65, 1.7);
-    const dome = new THREE.SphereGeometry(0.2, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-    const socket = new THREE.CylinderGeometry(0.2, 0.2, 0.16, 12);
-    const stripe = new THREE.BoxGeometry(0.03, 0.04, 0.75);
 
-    const white = tokens.hullLit.clone().lerp(tokens.starlight, 0.78);
-    const hullMat = new THREE.MeshStandardMaterial({ color: white, roughness: 0.55, metalness: 0.12, flatShading: true });
-    const wingMat = new THREE.MeshStandardMaterial({ color: white.clone().multiplyScalar(0.92), roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide, flatShading: true });
-    const darkMat = new THREE.MeshStandardMaterial({ color: tokens.hull.clone().lerp(tokens.hullLit, 0.35), roughness: 0.5, metalness: 0.35 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: tokens.void, roughness: 0.06, metalness: 0.7, emissive: tokens.dim, emissiveIntensity: 0.22 });
-    const domeMat = new THREE.MeshStandardMaterial({ color: tokens.dim.clone().lerp(tokens.starlight, 0.4), roughness: 0.5, metalness: 0.2 });
-    const flameMat = new THREE.MeshBasicMaterial({ color: tokens.lit, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
-    const stripeMat = new THREE.MeshBasicMaterial({ color: tokens.signal });
-    const lines = new THREE.LineBasicMaterial({ color: tokens.hull, transparent: true, opacity: 0.55 });
-    return { hull, hullEdges, wing, wingEdges, engine, nozzle, flame, cannon, tip, cockpit, dome, socket, stripe, hullMat, wingMat, darkMat, glassMat, domeMat, flameMat, stripeMat, lines };
-  }, [tokens, low]);
+    const metal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.35, emissive: new THREE.Color("#1a2028"), flatShading: true, side: THREE.DoubleSide });
+    const dark = new THREE.MeshStandardMaterial({ color: "#262a31", roughness: 0.5, metalness: 0.45, flatShading: true });
+    const glass = new THREE.MeshStandardMaterial({ color: "#0b1a24", roughness: 0.1, metalness: 0.8, emissive: new THREE.Color(SHIP_CYAN), emissiveIntensity: 0.1, flatShading: true });
+    const lime = new THREE.MeshStandardMaterial({ color: SHIP_LIME, roughness: 0.35, metalness: 0.2, emissive: new THREE.Color("#2c4a06"), flatShading: true });
+    const cyan = new THREE.MeshBasicMaterial({ color: SHIP_CYAN, toneMapped: false });
+    const flameMat = new THREE.MeshBasicMaterial({ color: SHIP_CYAN, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    const lines = new THREE.LineBasicMaterial({ color: "#14171c", transparent: true, opacity: 0.8 });
+    return { hull, hullEdges, canopy, vee, flank, foil, foilEdges, lead, stripe, engine, ring, flame, cannon, tip, metal, dark, glass, lime, cyan, flameMat, lines };
+  }, [low]);
   useDispose(
-    parts.hull, parts.hullEdges, parts.wing, parts.wingEdges, parts.engine, parts.nozzle, parts.flame, parts.cannon, parts.tip, parts.cockpit, parts.dome, parts.socket, parts.stripe,
-    parts.hullMat, parts.wingMat, parts.darkMat, parts.glassMat, parts.domeMat, parts.flameMat, parts.stripeMat, parts.lines
+    parts.hull, parts.hullEdges, parts.canopy, parts.vee, parts.flank, parts.foil, parts.foilEdges, parts.lead, parts.stripe, parts.engine, parts.ring, parts.flame, parts.cannon, parts.tip,
+    parts.metal, parts.dark, parts.glass, parts.lime, parts.cyan, parts.flameMat, parts.lines
   );
 
+  const muzzle = useMemo(() => ({ on: new THREE.Color(SHIP_CYAN), off: new THREE.Color("#262a31") }), []);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     flames.current.forEach((f, i) => {
@@ -532,57 +556,62 @@ export function ShipModel({ tokens, scale = 1, low = false }: { tokens: SpaceTok
       const flick = 0.85 + 0.15 * Math.sin(t * 38 + i * 2) + 0.08 * Math.sin(t * 91 + i);
       f.scale.set(1, 1, 1.4 * flick);
     });
-    // cannon tips pulse in turn
+    // the foils close towards flat (each stays a little open, so the upper and lower ones never lie in one plane)
+    if (fold)
+      foilGroups.current.forEach((g, i) => {
+        if (!g) return;
+        const rz = SHIP_FOILS[i].rz;
+        g.rotation.z = rz - 0.35 * Math.sign(Math.sin(rz)) * Math.sign(Math.cos(rz)) * fold.current;
+      });
+    // cannon muzzles pulse in turn
     guns.current.forEach((m, i) => {
-      if (m) m.color.copy(Math.sin(t * 6 + i * 1.6) > 0.55 ? tokens.signal : tokens.hull);
+      if (m) m.color.copy(Math.sin(t * 6 + i * 1.6) > 0.55 ? muzzle.on : muzzle.off);
     });
   });
 
-  // four S-foils in an X: angle above/below the horizontal, left and right
-  const foils: { rz: number; mirror: number; key: number }[] = [
-    { rz: 0.42, mirror: 1, key: 0 },
-    { rz: -0.42, mirror: 1, key: 1 },
-    { rz: Math.PI - 0.42, mirror: 1, key: 2 },
-    { rz: Math.PI + 0.42, mirror: 1, key: 3 },
-  ];
-
   return (
     <group scale={scale}>
-      <mesh geometry={parts.hull} material={parts.hullMat} />
+      <mesh geometry={parts.hull} material={parts.metal} />
       <lineSegments geometry={parts.hullEdges} material={parts.lines} />
-      <mesh geometry={parts.cockpit} material={parts.glassMat} position={[0, 0.36, -0.5]} />
-      <mesh geometry={parts.socket} material={parts.darkMat} position={[0, 0.34, 1.4]} />
-      <mesh geometry={parts.dome} material={parts.domeMat} position={[0, 0.42, 1.4]} />
-      {[-1, 1].map((s) => (
-        <mesh key={s} geometry={parts.stripe} material={parts.stripeMat} position={[s * 0.36, 0.25, 0.4]} />
+      <mesh geometry={parts.canopy} material={parts.glass} />
+      <mesh geometry={parts.vee} material={parts.cyan} />
+      {[1, -1].map((s) => (
+        <mesh key={s} geometry={parts.flank} material={parts.cyan} scale={[s, 1, 1]} />
       ))}
-      {foils.map((f) => (
-        <group key={f.key} rotation={[0, 0, f.rz]}>
-          <mesh geometry={parts.wing} material={parts.wingMat} />
-          <lineSegments geometry={parts.wingEdges} material={parts.lines} />
-          {/* engine pod at the wing root */}
-          <mesh geometry={parts.engine} material={parts.darkMat} position={[0.95, 0.03, 1.55]} />
-          <mesh geometry={parts.nozzle} material={parts.darkMat} position={[0.95, 0.03, 2.36]} />
+      {SHIP_FOILS.map((f) => (
+        <group
+          key={f.key}
+          rotation={[0, 0, f.rz]}
+          ref={(el) => {
+            foilGroups.current[f.key] = el;
+          }}
+        >
+          <mesh geometry={parts.foil} material={parts.metal} />
+          <lineSegments geometry={parts.foilEdges} material={parts.lines} />
+          <mesh geometry={parts.lead} material={parts.cyan} />
+          <mesh geometry={parts.stripe} material={parts.lime} />
+          {/* engine pod at the foil's root */}
+          <mesh geometry={parts.engine} material={parts.dark} position={[0.95, 0.03, 1.55]} />
+          <mesh geometry={parts.ring} material={parts.cyan} position={[0.95, 0.03, 2.32]} />
           <mesh
             geometry={parts.flame}
             material={parts.flameMat}
-            position={[0.95, 0.03, 2.4]}
+            position={[0.95, 0.03, 2.34]}
             ref={(el) => {
               flames.current[f.key] = el;
             }}
           />
-          {/* laser cannon at the wingtip */}
-          <mesh geometry={parts.cannon} material={parts.darkMat} position={[3.0, 0.03, -0.15]} />
+          {/* cannon at the tip */}
+          <mesh geometry={parts.cannon} material={parts.dark} position={[3.0, 0.03, -0.15]} />
           <mesh geometry={parts.tip} position={[3.0, 0.03, -1.12]}>
             <meshBasicMaterial
               ref={(m) => {
                 guns.current[f.key] = m;
               }}
-              color={tokens.hull}
+              color="#262a31"
               toneMapped={false}
             />
           </mesh>
-          <mesh geometry={parts.stripe} material={parts.stripeMat} position={[2.2, 0.06, 1.0]} />
         </group>
       ))}
     </group>

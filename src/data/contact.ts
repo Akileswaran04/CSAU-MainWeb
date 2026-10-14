@@ -48,20 +48,6 @@ export const CONTACT_CHANNELS: ContactChannel[] = [
     note: "Updates from the club and its members.",
   },
   {
-    id: "x",
-    label: "X / Twitter",
-    handle: "@csau_ceg",
-    href: "https://twitter.com/csau_ceg",
-    note: "Short updates.",
-  },
-  {
-    id: "facebook",
-    label: "Facebook",
-    handle: "csau.ceg",
-    href: "https://www.facebook.com/csau.ceg/",
-    note: "The club's page.",
-  },
-  {
     id: "medium",
     label: "Medium",
     handle: "@cegcsau",

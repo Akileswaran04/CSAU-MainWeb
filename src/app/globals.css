@@ -932,14 +932,20 @@ html.lenis, html.lenis body { height: auto; }
   --st-mute: #c1c4c9;
   --st-rule: rgba(246, 241, 228, 0.28);
 }
-.story-rule {
-  position: absolute; left: 0; top: 0; width: 100%; height: 1px;
-  background: var(--hull-700); pointer-events: none; z-index: 2;
-}
+/* pinned under the hero from the top of the page (StorySection's lead-in). The page's loader covers its build;
+   once its scene is drawing it shows, and the launch plays as the hero scrolls away.
+   The copy and the rail wait for the ship to reach the first stop. */
+.story { background: none; }
 .story-stage {
   position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: hidden;
   background: var(--space-black);
+  opacity: 0;
+  transition: opacity .6s ease;
 }
+.story[data-warm="true"] .story-stage { opacity: 1; }
+.story-copy, .story-rail { opacity: clamp(0, calc((var(--lead, 1) - 0.75) * 4), 1); }
+/* out round the Sun (StorySection's data-cruise): the screen is the flight's alone */
+.story[data-cruise] .story-copy { opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility 0s .5s; }
 .story-canvas { position: absolute; inset: 0; }
 
 .story-copy {
@@ -1001,6 +1007,9 @@ html.lenis, html.lenis body { height: auto; }
   transition: transform 0.7s var(--ease-out) 0.25s, opacity 0.7s ease 0.25s;
 }
 .story-chapter[data-state="active"] .story-body { transform: none; opacity: 1; }
+.story-body + .story-body { margin-top: 14px; }
+/* a stop's opening line, when it has more than one paragraph */
+.story-body[data-lead] { font-size: clamp(17px, 1.8vw, 22px); line-height: 1.4; color: var(--st-ink); }
 
 .story-meta {
   list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px;
@@ -1058,58 +1067,6 @@ html.lenis, html.lenis body { height: auto; }
   .story-tick-label { display: none; }
 }
 
-/* ===== Hero: Earth rises while the story gets ready (HeroSection's EarthRise) ===== */
-.earthrise {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-  pointer-events: none;
-  transform: translateY(100%);
-  transition: transform 2.4s cubic-bezier(.2, .7, .3, 1);
-  -webkit-mask-image: linear-gradient(#000 45%, transparent);
-  mask-image: linear-gradient(#000 45%, transparent);
-}
-.earthrise[data-story="wait"] { transform: translateY(55%); }
-.earthrise[data-story="build"] { transform: translateY(16%); transition-duration: 3.2s; }
-.earthrise[data-story="ready"] { transform: none; transition-duration: .9s; }
-.earthrise-map { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* the atmosphere's glow round the globe: it breathes while the story is built, and a light runs along the
-   horizon once it is drawing */
-.earthrise-air {
-  position: absolute;
-  border-radius: 50%;
-  box-shadow: 0 0 70px 14px rgba(63, 134, 224, .28);
-  animation: earthrise-breathe 2.6s ease-in-out infinite;
-}
-.earthrise[data-story="ready"] .earthrise-air { animation: none; }
-@keyframes earthrise-breathe { 50% { opacity: .45; } }
-.earthrise-ping {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 22px 4px rgba(170, 210, 255, .95), inset 0 0 12px 2px rgba(170, 210, 255, .6);
-  opacity: 0;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0 35%, #000 47% 53%, transparent 65% 100%);
-  mask-image: linear-gradient(90deg, transparent 0 35%, #000 47% 53%, transparent 65% 100%);
-  -webkit-mask-size: 300% 100%;
-  mask-size: 300% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-.earthrise[data-story="ready"] .earthrise-ping { animation: earthrise-ping 1.6s cubic-bezier(.4, 0, .2, 1) .5s both; }
-@keyframes earthrise-ping {
-  0% { opacity: 0; -webkit-mask-position: 100% 0; mask-position: 100% 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { opacity: 0; -webkit-mask-position: 0 0; mask-position: 0 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .earthrise, .earthrise[data-story] { transition: none; }
-  .earthrise-air, .earthrise[data-story="ready"] .earthrise-ping { animation: none; }
-}
-
 @keyframes ping-out {
   0%   { transform: scale(0.05); opacity: 0; }
   12%  { opacity: 0.7; }
@@ -1129,7 +1086,7 @@ html.scroll-locked { overflow: hidden; }
 
 .pg {
   min-height: 100dvh;
-  padding: clamp(96px, 14vh, 168px) var(--pg-x) 96px;
+  padding: 84px var(--pg-x) 96px; /* the top just clears the ORBIT button (20px down, 44px tall) */
 }
 .pg-in { max-width: 1120px; margin: 0 auto; }
 .pg-title {
@@ -1807,86 +1764,18 @@ html.scroll-locked { overflow: hidden; }
   .ev-year { position: sticky; top: 96px; }
 }
 
-/* ============================================================
-   HOME - EVENTS & INITIATIVES PREVIEW
-   ============================================================ */
-.evp {
-  position: relative;
-  padding: clamp(72px, 14vh, 160px) 8% clamp(72px, 12vh, 140px);
-  background: var(--background);
-  border-top: 1px solid var(--outline-variant);
-}
-.evp-in { max-width: 1120px; margin: 0 auto; }
-.evp-head { max-width: var(--measure); }
-.evp-title {
-  margin: 12px 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(30px, 6vw, 60px);
-  line-height: 1.04;
-  color: var(--on-surface);
-}
-.evp-lede {
-  margin: 18px 0 0;
-  font-size: clamp(15px, 1.5vw, 18px);
-  line-height: 1.7;
-  color: var(--on-surface-variant);
-  text-wrap: pretty;
-}
-.evp-explore { margin-top: 28px; }
-
-.evp-strip {
-  list-style: none;
-  margin: clamp(36px, 6vh, 56px) 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: clamp(14px, 2vw, 24px);
-}
-.evp-item {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
-  transition-delay: calc(var(--i, 0) * 90ms + 120ms);
-}
-.evp.is-in .evp-item { opacity: 1; transform: none; }
-.evp-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: 1px solid var(--outline-variant);
-  border-radius: var(--radius-md);
-  background: var(--surface-container-lowest);
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
-}
-.evp-card:hover,
-.evp-card:focus-visible { border-color: var(--on-surface); transform: translateY(-2px); }
-.evp-card:hover .ev-poster-img { transform: scale(1.03); }
-.evp-card-body { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
-.evp-card-status { font: 500 10px/1 var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--signal); }
-.evp-card-name { font-family: var(--font-display); font-weight: 400; font-size: clamp(17px, 2vw, 22px); line-height: 1.12; color: var(--on-surface); }
-.evp-card:hover .evp-card-name { color: var(--lit); }
-.evp-card-date { font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.06em; color: var(--on-surface-variant); font-variant-numeric: tabular-nums; }
-
 @media (prefers-reduced-motion: reduce) {
   .ev-poster-img,
   .ev-up-card,
   .ev-up-name,
   .ev-past-card,
-  .ev-past-card .ev-name,
-  .evp-card { transition: none; }
+  .ev-past-card .ev-name { transition: none; }
   .ev-up-card:hover,
-  .ev-past-card:hover,
-  .evp-card:hover { transform: none; }
+  .ev-past-card:hover { transform: none; }
   .ev-up-card:hover .ev-poster-img,
-  .ev-past-card:hover .ev-poster-img,
-  .evp-card:hover .ev-poster-img { transform: none; }
+  .ev-past-card:hover .ev-poster-img { transform: none; }
   .ev-status.is-live .ev-status-dot { animation: none; }
   .ev-reveal { opacity: 1; transform: none; transition: none; }
-  .evp-item { opacity: 1; transform: none; transition: none; }
   .ev-year { position: static; }
 }
 
@@ -2266,7 +2155,7 @@ a.dm-member-link:active { transform: translateY(1px); }
   text-align: left;
   color: inherit;
   font: inherit;
-  cursor: pointer;
+  cursor: default;
 }
 .tm-card:focus-visible { border-color: var(--on-surface); }
 .tm-card:focus-visible .photo-mono { filter: grayscale(0) contrast(1); }
@@ -2573,26 +2462,17 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 
 /* ============================================================
-   WHAT'S NEW - a small rocket towing a flag, in the bottom-right
-   corner of the home hero. Absolutely placed inside the home
-   content (not fixed), so it scrolls away with the hero.
+   THE ROCKET - beside the wordmark in the home hero, towing a
+   long flag with the ongoing event or announcement (a link).
    ============================================================ */
-
+.hero-name { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 28px; }
 .wn {
-  position: absolute;
-  z-index: 20;
-  top: calc(100dvh - 36px);
-  right: 8%;
-  transform: translateY(-100%);
-}
-.wn-btn {
   display: block;
+  max-width: 100%;
   min-height: var(--tap-min);
-  padding: 8px 0 8px 8px;
-  border: 0;
-  background: none;
+  padding: 8px 0;
   color: inherit;
-  cursor: pointer;
+  text-decoration: none;
   /* the rocket tows the flag in once the hero has settled */
   animation: wnFlyIn 1100ms var(--ease-out) 1300ms backwards;
 }
@@ -2610,20 +2490,23 @@ a.dm-member-link:active { transform: translateY(1px); }
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -3px; }
 }
-.wn-btn:hover .wn-tow,
-.wn-btn:focus-visible .wn-tow { transform: translateX(4px); }
+.wn:hover .wn-tow,
+.wn:focus-visible .wn-tow { transform: translateX(4px); }
 
-/* the flag: a swallow-tailed banner on a tether */
+/* the flag: a long swallow-tailed banner on a tether */
 .wn-flag {
-  position: relative;
-  padding: 7px 12px 7px 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  max-width: min(64ch, 52vw);
+  padding: 9px 16px 9px 24px;
   background: var(--lit-soft);
   color: var(--on-surface);
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.16em;
+  font: 500 12px/1.2 var(--font-mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  white-space: nowrap;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 9px 50%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 11px 50%);
   transform-origin: 100% 50%;
   animation: wnRipple 4s ease-in-out infinite;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
@@ -2633,19 +2516,13 @@ a.dm-member-link:active { transform: translateY(1px); }
   30% { transform: skewY(-2.5deg); }
   70% { transform: skewY(2deg); }
 }
-.wn-btn:hover .wn-flag,
-.wn-btn:focus-visible .wn-flag,
-.wn.is-open .wn-flag { background: var(--lit); color: var(--void-950); }
-.wn-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: 8px;
-  vertical-align: 1px;
-  border-radius: 50%;
-  background: var(--signal);
-}
-.wn-tether { width: 12px; height: 1px; background: var(--dim-300); }
+.wn-kind { flex: none; color: var(--signal); }
+.wn-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wn:hover .wn-flag,
+.wn:focus-visible .wn-flag { background: var(--lit); color: var(--void-950); }
+.wn:hover .wn-kind,
+.wn:focus-visible .wn-kind { color: var(--void-950); }
+.wn-tether { flex: none; width: 12px; height: 1px; background: var(--dim-300); }
 .wn-rocket { width: 52px; height: 24px; flex: none; overflow: visible; }
 .wn-flame {
   fill: var(--lit);
@@ -2657,64 +2534,259 @@ a.dm-member-link:active { transform: translateY(1px); }
   from { transform: scaleX(0.7); opacity: 0.7; }
   to { transform: scaleX(1.1); opacity: 1; }
 }
-
-/* the list, opening above the rocket */
-.wn-panel {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 10px);
-  width: min(340px, calc(100vw - 40px));
-  background: var(--surface-container-lowest);
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-md);
-  box-shadow: 0 16px 48px color-mix(in srgb, var(--void-950) 60%, transparent);
-  animation: wnPanelIn var(--dur-base) var(--ease-out);
-}
-@keyframes wnPanelIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-.wn-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 4px 2px 16px;
-  border-bottom: 1px solid var(--outline-variant);
-}
-.wn-close { font-size: 13px; }
-.wn-list { list-style: none; margin: 0; padding: 0; }
-.wn-list li + li { border-top: 1px solid var(--outline-variant); }
-.wn-item {
-  display: grid;
-  gap: 5px;
-  padding: 14px 16px;
-  color: inherit;
-  text-decoration: none;
-}
-.wn-kind {
-  font: 500 11px/1.3 var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--signal);
-}
-.wn-title {
-  font-size: 15px;
-  line-height: 1.35;
-  color: var(--on-surface);
-  transition: color var(--dur-fast) var(--ease-out);
-}
-.wn-arrow { color: var(--outline); }
-.wn-meta { font: 400 12px/1.4 var(--font-mono); letter-spacing: 0.06em; color: var(--on-surface-variant); }
-.wn-item:hover .wn-title,
-.wn-item:focus-visible .wn-title { color: var(--lit); }
-
 @media (max-width: 640px) {
-  .wn { right: 16px; top: calc(100dvh - 28px - env(safe-area-inset-bottom)); }
+  .wn-flag { max-width: calc(100vw - 32px - 8% - 70px); font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wn-btn, .wn-tow, .wn-flag, .wn-flame, .wn-panel { animation: none; }
-  .wn-tow, .wn-flag, .wn-title { transition: none; }
-  .wn-btn:hover .wn-tow, .wn-btn:focus-visible .wn-tow { transform: none; }
+  .wn, .wn-tow, .wn-flag, .wn-flame { animation: none; }
+  .wn-tow, .wn-flag { transition: none; }
+  .wn:hover .wn-tow, .wn:focus-visible .wn-tow { transform: none; }
+}
+
+/* ============================================================
+   THE CONSTELLATION - the journey's last stop, past the Sun: one
+   constellation comes up ahead of the ship, a star for each page,
+   pulsing, its name under it; a star flares, the ship warps there
+   (the scene's tunnel) and a flash ends it (story/Constellation.tsx).
+   ============================================================ */
+.cn {
+  position: absolute; z-index: 5; inset: 0;
+  pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.5s var(--ease-out), visibility 0s linear 0.5s;
+}
+.cn[data-on="true"] { opacity: 1; visibility: visible; transition: opacity 0.6s var(--ease-out), visibility 0s; }
+/* the sky it sits in: ahead of the ship, up and to the right; it comes up out of the distance as the ship arrives */
+.cn-sky {
+  position: absolute; right: 12%; top: 11%; width: min(50vw, 740px); aspect-ratio: 112 / 66;
+  transform: scale(0.55) translateY(8%); opacity: 0;
+  transition: transform 1.8s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 1.2s ease;
+}
+.cn[data-on="true"] .cn-sky { transform: none; opacity: 1; }
+/* the deep sky behind it, wider than the drawing: a nebula drifting, a band of the Milky Way, a far galaxy, faint
+   stars (some twinkling) */
+.cn-back { position: absolute; inset: -30% -22%; pointer-events: none; opacity: 0; transition: opacity 2s ease; }
+.cn[data-on="true"] .cn-back { opacity: 1; transition-delay: 0.3s; }
+.cn-back svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cn-tw { animation: cnTwinkle 3.4s ease-in-out infinite; animation-delay: calc(var(--k) * -0.4s); }
+@keyframes cnTwinkle { 50% { opacity: 0.08; } }
+.cn-nebula {
+  position: absolute; inset: 8% 6%;
+  background:
+    radial-gradient(38% 46% at 34% 42%, rgba(96, 70, 190, 0.32), transparent 70%),
+    radial-gradient(32% 40% at 64% 58%, rgba(40, 120, 210, 0.28), transparent 70%),
+    radial-gradient(26% 30% at 52% 30%, rgba(210, 90, 150, 0.16), transparent 70%),
+    radial-gradient(22% 26% at 78% 36%, rgba(60, 190, 200, 0.14), transparent 70%);
+  filter: blur(18px);
+  animation: cnDrift 28s ease-in-out infinite alternate;
+}
+@keyframes cnDrift { to { transform: translate(3%, -2%) scale(1.06) rotate(2deg); } }
+.cn-band {
+  position: absolute; left: -10%; right: -10%; top: 44%; height: 26%;
+  rotate: -16deg;
+  background: linear-gradient(180deg, transparent, rgba(190, 205, 255, 0.07) 35%, rgba(230, 220, 255, 0.11) 50%, rgba(190, 205, 255, 0.07) 65%, transparent);
+  filter: blur(10px);
+}
+.cn-galaxy {
+  position: absolute; left: 9%; top: 14%; width: 9%; aspect-ratio: 2.6;
+  rotate: -28deg; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 240, 220, 0.85), rgba(200, 190, 255, 0.35) 30%, rgba(120, 140, 230, 0.12) 65%, transparent);
+  filter: blur(1px);
+}
+.cn-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cn-lines path {
+  fill: none; stroke: rgba(200, 222, 255, 0.4); stroke-width: 0.22; stroke-linejoin: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; /* pathLength 1: the whole loop */
+  filter: drop-shadow(0 0 1.2px rgba(150, 200, 255, 0.8));
+  transition: stroke-dashoffset 1.6s var(--ease-out);
+}
+.cn[data-on="true"] .cn-lines path { stroke-dashoffset: 0; transition-delay: 0.9s; }
+/* a star of the loop that is no page: a small point in its own colour, short spikes, a twinkle */
+.cn-dim {
+  position: absolute; width: 5px; height: 5px; translate: -50% -50%; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 6px 2px color-mix(in srgb, var(--tint) 80%, transparent), 0 0 18px 4px color-mix(in srgb, var(--tint) 30%, transparent);
+  opacity: 0; transition: opacity 0.6s ease;
+  animation: cnStar 4.2s ease-in-out infinite; animation-delay: calc(var(--i) * -0.7s);
+}
+.cn[data-on="true"] .cn-dim { opacity: 0.9; transition-delay: calc(0.5s + var(--i) * 0.1s); }
+.cn-dim::before, .cn-dim::after { content: ""; position: absolute; left: 50%; top: 50%; translate: -50% -50%; }
+.cn-dim::before { width: 26px; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tint) 85%, #fff), transparent); }
+.cn-dim::after { width: 1px; height: 18px; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--tint) 85%, #fff), transparent); }
+@keyframes cnStar { 50% { transform: scale(0.8); filter: brightness(0.8); } }
+/* a page's star: a point of light that pulses (so it reads as something to press), its name under it */
+.cn-star { position: absolute; translate: -50% -17px; opacity: 0; transition: opacity 0.6s ease; }
+.cn[data-on="true"] .cn-star { opacity: 1; transition-delay: calc(0.6s + var(--i) * 0.12s); }
+.cn-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  min-width: var(--tap-min); padding: 12px; border: 0; background: none;
+  color: var(--starlight); cursor: pointer; pointer-events: auto;
+}
+/* a page's star: a white-hot core in a glow of its own colour, long level and upright diffraction spikes with two
+   short slanted ones, twinkling; a soft halo swells round it (so it reads as something to press) */
+.cn-point {
+  position: relative; width: 9px; height: 9px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 8px 3px color-mix(in srgb, var(--tint) 90%, #fff), 0 0 26px 9px color-mix(in srgb, var(--tint) 55%, transparent), 0 0 60px 22px color-mix(in srgb, var(--tint) 18%, transparent);
+  animation: cnGlow 3s ease-in-out infinite; animation-delay: calc(var(--i) * -0.5s);
+  transition: transform 0.35s var(--ease-out);
+}
+.cn-point::before, .cn-point::after { content: ""; position: absolute; left: 50%; top: 50%; translate: -50% -50%; pointer-events: none; }
+.cn-point::before {
+  width: 70px; height: 1.5px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tint) 90%, #fff), transparent);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tint) 60%, transparent);
+  animation: cnSpike 3s ease-in-out infinite; animation-delay: calc(var(--i) * -0.5s);
+}
+.cn-point::after {
+  width: 1.5px; height: 52px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--tint) 90%, #fff), transparent);
+  animation: cnSpike 3s ease-in-out infinite reverse; animation-delay: calc(var(--i) * -0.5s);
+}
+/* the halo (the button's own pseudo element, round the point) */
+.cn-btn { position: relative; }
+.cn-btn::before {
+  content: ""; position: absolute; left: 50%; top: 17px; width: 26px; height: 26px; translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 35%, transparent), transparent);
+  animation: cnPulse 3s ease-out infinite; animation-delay: calc(var(--i) * -0.5s); pointer-events: none;
+}
+@keyframes cnGlow { 50% { filter: brightness(1.25); } }
+@keyframes cnSpike { 50% { transform: scaleX(0.75) scaleY(0.75); opacity: 0.7; } }
+@keyframes cnPulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.8); opacity: 0; } }
+.cn-name {
+  font: 400 clamp(12px, 1.2vw, 16px)/1 var(--font-display); letter-spacing: 0.16em; white-space: nowrap;
+  opacity: 0.85; text-shadow: 0 0 10px rgba(140, 190, 255, 0.6);
+  transition: opacity 0.2s, color 0.2s;
+}
+.cn-btn:is(:hover, :focus-visible) .cn-point { transform: scale(1.6); }
+.cn-btn:is(:hover, :focus-visible) .cn-name { color: var(--lit); opacity: 1; }
+.cn-btn:focus-visible { outline: 2px solid var(--lit); outline-offset: 4px; border-radius: 8px; }
+.cn-link { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* chosen: its star flares, the rest fade, the warp (the 3D scene's), a flash, then the page */
+.cn[data-going="true"] .cn-star:not([data-picked]), .cn[data-going="true"] .cn-lines { opacity: 0; transition: opacity 0.35s ease; }
+.cn-star[data-picked] .cn-point { transform: scale(3); }
+.story-stage:has(:is(.cn[data-going="true"], .ck[data-lock="true"])) :is(.story-rail, .story-copy) { opacity: 0; transition: opacity 0.3s ease; }
+.cn-flash {
+  position: fixed; inset: 0; z-index: 600; pointer-events: none;
+  background: radial-gradient(circle, #f4f9ff 25%, #b9dcff 70%, #6aa8f0);
+  animation: cnFlash 2.7s linear both;
+}
+@keyframes cnFlash { 0%, 70% { opacity: 0; } 83%, 88% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ============================================================
+   THE COCKPIT - the journey's end on wide windows: the camera is in
+   the ship's seat (SpaceScene) and the pages are targets on its HUD;
+   one chosen, the lock-on brackets close in, 3-2-1, the jump (the
+   scene's warp and .cn-flash) (story/Cockpit.tsx). Static shapes
+   only, no SVG filters; only small elements animate.
+   ============================================================ */
+.ck {
+  --ck-hud: #8fe9ff; --ck-lock: #ff5d3a;
+  position: absolute; z-index: 5; inset: 0;
+  pointer-events: none; color: var(--ck-hud);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.5s var(--ease-out), visibility 0s linear 0.5s;
+}
+/* it comes up as the camera settles into the seat */
+.ck[data-on="true"] { opacity: 1; visibility: visible; transition: opacity 1.2s var(--ease-out) 0.5s, visibility 0s; }
+/* the canopy: its frame dark at the edges, a vignette */
+.ck-frame { position: absolute; inset: 0; background: radial-gradient(ellipse 78% 74% at 50% 50%, transparent 58%, rgba(0, 3, 8, 0.62)); }
+.ck-canopy { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ck-canopy path { fill: #010204; stroke: rgba(143, 233, 255, 0.16); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+/* the heading tape, up top, with its caret */
+.ck-tape {
+  position: absolute; left: 50%; top: 10%; width: min(36vw, 460px); height: 12px; translate: -50% 0; opacity: 0.4;
+  background:
+    repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 23px) bottom / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 115px) bottom / 100% 12px no-repeat;
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+}
+.ck-tape::after { content: ""; position: absolute; left: 50%; top: 100%; translate: -50% 3px; border: 5px solid transparent; border-bottom-color: currentColor; }
+/* the pitch bars either side of the reticle */
+.ck-ladder {
+  position: absolute; left: 50%; top: 50%; width: min(30vw, 380px); height: 26vh; translate: -50% -50%; opacity: 0.28;
+  border-block: 1px dashed currentColor;
+  mask-image: linear-gradient(90deg, #000 32%, transparent 32% 68%, #000 68%);
+}
+.ck-reticle { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; translate: -50% -50%; overflow: visible; }
+.ck-reticle :is(circle, path) { fill: none; stroke: currentColor; stroke-width: 1.2px; vector-effect: non-scaling-stroke; opacity: 0.7; }
+.ck[data-lock="true"] .ck-reticle { color: var(--ck-lock); }
+/* a target: corner brackets round a pip, its name, its range and bearing */
+.ck-tgt { position: absolute; translate: -50% -32px; opacity: 0; transition: opacity 0.5s ease; }
+.ck[data-on="true"] .ck-tgt { opacity: 1; transition-delay: calc(1.3s + var(--i) * 0.15s); }
+.ck-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-width: var(--tap-min); padding: 0 10px 8px; border: 0; background: none;
+  color: inherit; cursor: pointer; pointer-events: auto;
+}
+.ck-box, .ck-lock {
+  --w: 1.5px; --l: 14px;
+  background:
+    linear-gradient(currentColor 0 0) 0 0 / var(--l) var(--w), linear-gradient(currentColor 0 0) 0 0 / var(--w) var(--l),
+    linear-gradient(currentColor 0 0) 100% 0 / var(--l) var(--w), linear-gradient(currentColor 0 0) 100% 0 / var(--w) var(--l),
+    linear-gradient(currentColor 0 0) 0 100% / var(--l) var(--w), linear-gradient(currentColor 0 0) 0 100% / var(--w) var(--l),
+    linear-gradient(currentColor 0 0) 100% 100% / var(--l) var(--w), linear-gradient(currentColor 0 0) 100% 100% / var(--w) var(--l);
+  background-repeat: no-repeat;
+}
+.ck-box { position: relative; width: 64px; height: 64px; opacity: 0.75; transition: transform 0.35s var(--ease-out), opacity 0.2s; }
+.ck[data-on="true"] .ck-box { animation: ckAcquire 0.7s var(--ease-out) backwards; animation-delay: calc(1.3s + var(--i) * 0.15s); }
+@keyframes ckAcquire { from { transform: scale(1.7); opacity: 0; } }
+.ck-box::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; translate: -50% -50%; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 8px currentColor;
+  animation: ckPip 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * -0.4s);
+}
+@keyframes ckPip { 50% { opacity: 0.3; } }
+.ck-name { font: 400 clamp(12px, 1.1vw, 15px)/1 var(--font-display); letter-spacing: 0.16em; white-space: nowrap; text-shadow: 0 0 8px rgba(0, 200, 255, 0.45); }
+.ck-read { font: 400 10px/1 var(--font-mono); letter-spacing: 0.12em; white-space: nowrap; opacity: 0.6; }
+.ck-btn:is(:hover, :focus-visible) { color: #fff; }
+.ck-btn:is(:hover, :focus-visible) .ck-box { transform: scale(0.84); opacity: 1; }
+.ck-btn:focus-visible { outline: 2px solid var(--lit); outline-offset: 4px; border-radius: 8px; }
+/* the lock: brackets close in on the chosen target from wide and turned, then blink; the others drop away */
+.ck-lock {
+  --w: 2.5px; --l: 18px;
+  position: absolute; inset: -8px; color: var(--ck-lock);
+  opacity: 0; transform: scale(2.6) rotate(45deg);
+  transition: transform 0.45s cubic-bezier(0.3, 0.8, 0.3, 1), opacity 0.2s;
+}
+.ck-tgt[data-picked] { color: var(--ck-lock); }
+.ck[data-lock="true"] .ck-btn { color: inherit; cursor: default; }
+.ck-tgt[data-picked] .ck-lock { opacity: 1; transform: none; animation: ckBlink 0.26s steps(2) 0.45s 4; }
+@keyframes ckBlink { 50% { opacity: 0.25; } }
+.ck[data-lock="true"] .ck-tgt:not([data-picked]) { opacity: 0; transition: opacity 0.3s ease; }
+/* the countdown, under the reticle */
+.ck-count {
+  position: absolute; left: 50%; top: calc(50% + 92px); translate: -50% -50%; pointer-events: none;
+  font: 400 clamp(44px, 6vw, 88px)/1 var(--font-display); color: var(--ck-lock); text-shadow: 0 0 18px rgba(255, 93, 58, 0.55);
+}
+.ck-count span { display: block; animation: ckTick 0.52s var(--ease-out) both; }
+@keyframes ckTick { from { transform: scale(1.8); opacity: 0; } 30% { opacity: 1; } to { opacity: 0.85; } }
+/* the jump: the HUD's marks go, the canopy stays */
+.ck[data-jump="true"] :is(.ck-tgt, .ck-count, .ck-tape, .ck-ladder, .ck-reticle) { opacity: 0; transition: opacity 0.4s ease; }
+
+/* the Sun's heat as the ship swings round it: a warm glow over the stage (--heat, set by SpaceScene) */
+.story-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 170, 70, 0.28), rgba(255, 110, 30, 0.14) 45%, rgba(120, 30, 0, 0.18) 100%);
+  mix-blend-mode: screen;
+  opacity: calc(var(--heat, 0) * 0.55);
+}
+
+@media (max-width: 820px) {
+  /* arrived: the whole screen is the view, the constellation ahead of the ship, up top */
+  .story-stage:has(.cn[data-on="true"]) .story-copy { border-top-color: transparent; background: none; }
+  .story-stage:has(.cn[data-on="true"]) .story-rail { opacity: 0; pointer-events: none; }
+  .cn-sky { right: 7vw; top: 12%; width: 86vw; } /* room either side for the outer stars' names */
+  .cn-name { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn, .cn-sky, .cn-star, .cn-lines path { transition: none !important; }
+  .ck, .ck-tgt, .ck-box, .ck-lock { transition: none !important; }
+  .ck-box, .ck-box::after, .ck-lock, .ck-count span { animation: none !important; }
+  .cn-point, .cn-point::before, .cn-point::after, .cn-btn::before, .cn-dim, .cn-tw, .cn-nebula { animation: none; }
+  .story-stage::after { display: none; }
 }
 
 /* ============================================================
@@ -2794,7 +2866,6 @@ p, li { text-wrap: pretty; }
    ============================================================ */
 @media (max-width: 820px) {
   /* story: the stage is the top half, the copy is a solid panel that owns the bottom half */
-  .story-canvas { inset: 0 0 max(46%, 340px) 0; }
   .story-copy {
     left: 0; right: 0; top: auto; bottom: 0; width: auto; height: max(46%, 340px);
     padding: 0 20px calc(20px + env(safe-area-inset-bottom));
@@ -2843,7 +2914,7 @@ p, li { text-wrap: pretty; }
    ============================================================ */
 @media (max-width: 820px) {
   .story { --story-panel: max(46%, 340px); }
-  .story-canvas { inset: 0 0 var(--story-panel) 0; }
+  .story-canvas { inset: 0; } /* the scene frames itself above the panel (a view offset in SpaceScene) */
   .story-rail { bottom: var(--story-panel); }
   .story-copy {
     left: 0; right: 0; top: auto; bottom: 0; width: auto;

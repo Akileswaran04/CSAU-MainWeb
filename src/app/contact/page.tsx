@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CONTACT_BASE, CONTACT_CHANNELS } from "@/data/contact";
 import ContactChannels from "@/components/contact/ContactChannels";
 import "./contact-page.css";
@@ -15,7 +14,7 @@ import "./contact-page.css";
 export const metadata: Metadata = {
   title: "Contact // CSAU - Computer Society of Anna University",
   description:
-    "Reach the Computer Society of Anna University, CEG - email and the club's Instagram, LinkedIn, X, Facebook and Medium.",
+    "Reach the Computer Society of Anna University, CEG - email and the club's Instagram, LinkedIn and Medium.",
 };
 
 export default function ContactPage() {
@@ -33,14 +32,6 @@ export default function ContactPage() {
       </div>
 
       <ContactChannels channels={CONTACT_CHANNELS} base={CONTACT_BASE} />
-
-      <div className="pg-in">
-        <p className="pg-next">
-          <Link href="/team" className="btn btn-primary">
-            Meet the team →
-          </Link>
-        </p>
-      </div>
     </main>
   );
 }

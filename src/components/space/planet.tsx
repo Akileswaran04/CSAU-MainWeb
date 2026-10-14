@@ -316,6 +316,7 @@ varying vec2 vUv;
 void main() {
   vec2 p = (vUv - 0.5) * 2.0 * 3.0; // in Sun radii
   float r = length(p);
+  if (r < 0.96 || r > 2.8) discard; // no glow there: skip the noise (the plane covers much of the screen near the Sun)
   float a = atan(p.y, p.x);
   float streak = snoise(vec3(cos(a) * 2.5, sin(a) * 2.5, uTime * 0.03)) * 0.5 + 0.5;
   float fall = exp(-(r - 1.0) * mix(4.5, 2.2, streak));
@@ -366,7 +367,8 @@ export function Planet({
     const blank = new THREE.DataTexture(new Uint8Array([11, 90, 163, 0]), 1, 1); // open sea until the map is painted
     blank.needsUpdate = true;
     const mat = new THREE.ShaderMaterial({
-      defines: { [kind.toUpperCase()]: "", OCT: low ? 3 : 5 },
+      // the Sun's fine detail is its granulation noise; three octaves of its big cells are plenty
+      defines: { [kind.toUpperCase()]: "", OCT: low || kind === "sun" ? 3 : 5 },
       uniforms: {
         uSun: { value: sun.clone().normalize() },
         uTime: time,

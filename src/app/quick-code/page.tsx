@@ -1,27 +1,31 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ProbeMark } from "@/components/SpaceOrnaments";
 import { ARENA_CSS, QUICK_CODE_CSS } from "../arena-css";
+import { QC_ABOUT, QC_WEEKS } from "@/data/quickCode";
+import QuickCodeArchive from "./QuickCodeArchive";
 
 /* ============================================================
    QUICK CODE - 5 Questions. 5 Minutes. One Chance.
 
    The hero is a lightweight radar treatment (slow range rings) laid
    over the shared SpaceBackdrop, so the page needs no second WebGL
-   context.
-
-   The page describes the format only. There is no round data in
-   the CMS yet, so it shows no challenge, participant count or
-   leaderboard - nothing here is invented.
+   context. Below it: the five-week archive, played week by week in
+   QuickCodeArchive, then the About doc + poster. All copy is from
+   src/data/quickCode.ts (the archive's own documents).
 
    Route: /quick-code
    ============================================================ */
 
+export const metadata: Metadata = {
+  title: "Quick Code // CSAU - Computer Society of Anna University",
+  description: QC_ABOUT.paragraphs[0],
+};
+
+/* from the poster: 5 MINUTES | 5 MCQ'S | 5 WEEKS */
 const STATS = [
-  { value: "05", label: "QUESTIONS" },
-  { value: "05:00", label: "ON THE CLOCK" },
-  { value: "500", label: "MAX POINTS" },
+  { value: "05", label: "MINUTES" },
+  { value: "05", label: "MCQ'S" },
+  { value: "05", label: "WEEKS" },
 ];
 
 export default function QuickCodePage() {
@@ -48,7 +52,6 @@ export default function QuickCodePage() {
           </svg>
         </div>
 
-        {/* Hero content */}
         <div
           style={{
             position: "relative",
@@ -63,7 +66,7 @@ export default function QuickCodePage() {
           }}
         >
           <div className="eyebrow" style={{ marginBottom: 22 }}>
-            Competitive arena
+            Weekly MCQ Challenge Series
           </div>
 
           <h1
@@ -104,30 +107,19 @@ export default function QuickCodePage() {
               margin: "22px 0 0",
             }}
           >
-            Logic meets speed. A five-minute assessment format: five
-            questions, one timed run.
+            Think fast • Choose smart • Master the fundamentals
           </p>
 
-          {/* CTA row */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, justifyContent: "flex-start" }}>
-            <Link href="/events" data-route-load className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
-              SEE EVENTS →
+            <Link href="#archive" className="pa-btn pa-btn-primary" style={{ padding: "14px 26px" }}>
+              ARCHIVE →
             </Link>
-            <Link href="#current-challenge" className="pa-btn" style={{ padding: "14px 26px" }}>
-              ROUND STATUS
+            <Link href="#about" className="pa-btn" style={{ padding: "14px 26px" }}>
+              ABOUT
             </Link>
           </div>
 
-          {/* Stats row */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "10px 44px",
-              justifyContent: "flex-start",
-              marginTop: 54,
-            }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 44px", justifyContent: "flex-start", marginTop: 54 }}>
             {STATS.map((s) => (
               <div key={s.label} style={{ textAlign: "left" }}>
                 <div
@@ -160,115 +152,31 @@ export default function QuickCodePage() {
         </div>
       </section>
 
-      {/* ── CURRENT CHALLENGE ── */}
-      <section
-        id="current-challenge"
-        style={{
-          background: "transparent",
-          padding: "10vh 6%",
-        }}
-      >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      {/* ── ARCHIVE: the five weeks as a console ── */}
+      <section id="archive" className="qc-sec">
+        <QuickCodeArchive weeks={QC_WEEKS} />
+      </section>
 
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 400,
-              fontSize: "clamp(28px, 4.6vw, 54px)",
-              color: "var(--on-surface)",
-              margin: "14px 0 34px",
-              lineHeight: 1.1,
-            }}
-          >
-            ROUND STATUS
-          </h2>
-
-          <div className="pa-panel" style={{ padding: "clamp(22px, 4vw, 52px)" }}>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                gap: 26,
-              }}
-            >
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      letterSpacing: ".3em",
-                      color: "var(--outline)",
-                    }}
-                  >
-                    STATUS
-                  </span>
-                  <ProbeMark size={34} />
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "clamp(30px, 4vw, 52px)",
-                    fontWeight: 400,
-                    color: "var(--on-surface)",
-                    marginTop: 8,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  No round open
-                </div>
-                <p
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 15,
-                    lineHeight: 1.6,
-                    color: "var(--on-surface-variant)",
-                    maxWidth: "var(--measure)",
-                    margin: "14px 0 0",
-                  }}
-                >
-                  There is no Quick Code round running right now. The
-                  club&apos;s events are listed on the Events page.
-                </p>
-              </div>
-
-              <div style={{ minWidth: 200 }}>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {[
-                    ["05 QUESTIONS", "5 × 100 pts"],
-                    ["05:00 DURATION", "one timed run"],
-                  ].map(([top, sub]) => (
-                    <div key={top}>
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 15,
-                          fontWeight: 500,
-                          color: "var(--on-surface)",
-                        }}
-                      >
-                        {top}
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          letterSpacing: ".14em",
-                          color: "var(--outline)",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {sub}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Link href="/events" data-route-load className="pa-btn pa-btn-primary" style={{ marginTop: 26 }}>
-                  SEE EVENTS →
-                </Link>
-              </div>
+      {/* ── ABOUT: the About doc, verbatim, beside the poster ── */}
+      <section id="about" className="qc-sec">
+        <div className="qc-wrap">
+          <h2 className="qc-h2">ABOUT</h2>
+          <div className="qc-about">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="qc-img"
+              src={QC_ABOUT.poster.src}
+              width={QC_ABOUT.poster.width}
+              height={QC_ABOUT.poster.height}
+              alt="Quick Code poster"
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="qc-text">
+              <span className="qc-k">{QC_ABOUT.title}</span>
+              {QC_ABOUT.paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
           </div>
         </div>

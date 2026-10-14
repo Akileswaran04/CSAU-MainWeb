@@ -9,7 +9,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { AsteroidField, ParticlePlanet, ShipModel, UfoModel } from "./bodies";
-import { SatelliteModel } from "./models";
 import { Bloom } from "./Bloom";
 import { isMobileViewport, readTokens, reducedMotion, seeded } from "./tokens";
 import { useSettled } from "./useSettled";
@@ -28,7 +27,7 @@ import GLBoundary, { webglAvailable } from "./GLBoundary";
    with speed and a light shake make it read as a real craft.
 
    The corridor is busy. Things cross it in different directions -
-   satellites left and right, a fighter right to left, a saucer
+   a fighter right to left, a saucer
    falling diagonally, tumbling rocks rising and dropping, a small
    planet drifting past - while the letters C, S, A and U stand in
    the lane and power on (dim, one flicker, steady amber) as the
@@ -169,8 +168,6 @@ interface Crosser {
 }
 
 const CROSSERS: Record<string, Crosser> = {
-  satA: { z: 6, at: [0, 4.2], dir: [-1, 0.05], speed: 8 }, // right to left, above
-  satB: { z: -6, at: [1, -3.4], dir: [1, 0.12], speed: 7 }, // left to right, below
   rockA: { z: -12, at: [-3.4, -5], dir: [0.15, 1], speed: 6 }, // rising
   rockB: { z: -17, at: [4, 5.4], dir: [-0.25, -1], speed: 7 }, // falling
   fighter: { z: -38, at: [0.5, 1.4], dir: [-1, -0.04], speed: 15 }, // right to left, fast
@@ -420,8 +417,6 @@ function IntroScene({
         g.visible = t > 0.2 && Math.abs(dtc) < 6;
         g.position.set(c.at[0] + c.dir[0] * c.speed * dtc, c.at[1] + c.dir[1] * c.speed * dtc, c.z);
       };
-      place("satA", 14);
-      place("satB", 14);
       place("fighter", 15);
       place("saucer", 15);
       place("fighter2", 15);
@@ -499,16 +494,6 @@ function IntroScene({
       {/* the corridor's traffic, each crossing on its own line */}
       {!reduced && (
         <>
-          <group ref={(el) => {
-              traffic.current.satA = el;
-            }} visible={false}>
-            <SatelliteModel tokens={tokens} scale={narrow ? 0.9 : 1.2} />
-          </group>
-          <group ref={(el) => {
-              traffic.current.satB = el;
-            }} visible={false}>
-            <SatelliteModel tokens={tokens} scale={narrow ? 0.8 : 1.05} />
-          </group>
           <AsteroidField tokens={tokens} positions={rocks} size={narrow ? 0.9 : 1.2} low={mobile} />
           <group ref={(el) => {
               traffic.current.fighter = el;

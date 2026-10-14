@@ -261,7 +261,6 @@ export default function LoadingOverlay({
         .dg-orbit { animation: rl-turn 4.5s linear infinite; }
         .rl-to { font-family: var(--font-mono); font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--dim-300); }
         .rl-dest { font-family: var(--font-display); font-size: clamp(26px, 8vw, 44px); letter-spacing: .12em; color: var(--starlight); }
-        .rl-who { font-family: var(--font-mono); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--lit); }
         .rl-reticle { position: absolute; left: 50%; top: 46%; width: min(72vw, 360px); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; }
         .rl-reticle svg { width: 100%; height: 100%; overflow: visible; }
         .rl-spin { transform-origin: 50px 50px; animation: rl-turn 7s linear infinite; }
@@ -289,7 +288,6 @@ export default function LoadingOverlay({
         </div>
         <div className="rl-to">Now flying you to</div>
         <div className="rl-dest">{dest.label}</div>
-        <div className="rl-who">{dest.sector}</div>
       </div>
 
       <div className="rl-hud rl-top" aria-hidden>

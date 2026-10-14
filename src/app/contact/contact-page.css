@@ -106,12 +106,10 @@
 .pm-base-lines { display: grid; gap: 2px; font-style: normal; font-size: 14px; line-height: 1.5; color: var(--starlight); }
 .pm-base-coords { font: 500 11px/1 var(--font-mono); letter-spacing: .16em; color: var(--dim-300); }
 
-.pm-caption { margin: 12px 0 0; font: 500 11px/1.6 var(--font-mono); letter-spacing: .12em; color: var(--dim-300); }
 
 /* under 1100px: the map is a figure, the channels ruled rows numbered to match */
 @media (max-width: 1099px) {
   .pm-svg { max-width: 600px; margin: 0 auto; }
-  .pm-caption { text-align: center; }
   .pm-num { display: block; }
   .pm-nodes { margin-top: 28px; border-bottom: 1px solid var(--hull-700); }
   .pm-node,

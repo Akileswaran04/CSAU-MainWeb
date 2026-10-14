@@ -17,7 +17,7 @@ import { usePathname } from "next/navigation";
    when nothing is). No drifting craft, no stray pings - the
    scope's two slow rings are the only ambient motion.
 
-     • links are >=56px rows: name left, sector call right
+     • links are >=56px rows, the name on the left
      • the current page carries a signal bar and "You are here"
      • Esc or the close button dismisses it; focus moves in on
        open and back to the NAV button on close; the overlay is
@@ -221,13 +221,13 @@ export default function LaserNav() {
         .ln-list { display: flex; flex-direction: column; width: 100%; max-width: 620px; padding: 0; }
         .ln-eyebrow { margin-bottom: 14px; }
 
-        /* a destination: name on the left, sector call on the right */
+        /* a destination: the name, and "You are here" on the current page */
         .ln-link {
           position: relative;
           display: flex;
           align-items: baseline;
           justify-content: space-between;
-          flex-wrap: wrap; /* a long sector call drops under the name rather than overflowing */
+          flex-wrap: wrap;
           gap: 4px 20px;
           min-height: 56px;
           padding: 14px 0 12px 18px;
@@ -318,7 +318,7 @@ export default function LaserNav() {
         .ln-foot {
           display: flex;
           flex-wrap: wrap;
-          justify-content: space-between;
+          justify-content: flex-end;
           gap: 8px 24px;
           padding-top: 14px;
           border-top: 1px solid var(--hull-700);
@@ -368,7 +368,7 @@ export default function LaserNav() {
           <span />
           <span />
         </span>
-        <span className="ln-word">NAV</span>
+        <span className="ln-word">ORBIT</span>
       </button>
 
       {/* Fullscreen void navigation */}
@@ -397,7 +397,6 @@ export default function LaserNav() {
 
           <div className="ln-body">
             <nav aria-label="Primary" className="ln-list">
-              <div className="eyebrow ln-eyebrow">Navigate</div>
               {NAV_LINKS.map((link, i) => {
                 const active = isActive(link.href);
                 return (
@@ -418,7 +417,7 @@ export default function LaserNav() {
                     }}
                   >
                     <span className="ln-label">{link.label}</span>
-                    <span className="ln-cap">{active ? "You are here" : link.sector}</span>
+                    {active && <span className="ln-cap">You are here</span>}
                   </Link>
                 );
               })}
@@ -433,12 +432,10 @@ export default function LaserNav() {
                   <DestGlyph kind={shown.glyph} size={132} />
                 </span>
               </div>
-              <div className="ln-preview-cap">{shown.sector}</div>
             </div>
           </div>
 
           <div className="ln-foot">
-            <span>Computer Society of Anna University</span>
             <span className="ln-foot-hint">Esc to close</span>
           </div>
         </div>

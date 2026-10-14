@@ -30,6 +30,8 @@ export interface BlogPost {
   excerpt: string;
   /** Estimated reading time in minutes. */
   readingMinutes: number;
+  /** The article's raw HTML from the feed (absent in the fallback snapshot). Clean it with readArticle. */
+  html?: string;
 }
 
 export type BlogFetchState = "ok" | "fallback";
@@ -132,7 +134,90 @@ function toPost(item: Rss2JsonItem): BlogPost | null {
     image: item.thumbnail?.trim() || firstImage(bodyHtml),
     excerpt: makeExcerpt(text),
     readingMinutes: readingMinutes(text),
+    html: bodyHtml,
   };
+}
+
+/* ---- topics: the page's filter, read from each post's Medium tags ---- */
+
+export const TOPICS = ["Technology", "AI & ML", "Web Development", "Space Science", "Community"] as const;
+export type Topic = (typeof TOPICS)[number];
+
+const TOPIC_TAGS: [Topic, RegExp][] = [
+  ["Technology", /\b(tech|technology|programming|software|coding|computer|cloud|cyber|security|blockchain|devops)/],
+  ["AI & ML", /\b(ai|ml|artificial-intelligence|machine-learning|deep-learning|data|llm|nlp|chatgpt|chatbots?|neural|genai)\b/],
+  ["Web Development", /\b(web|javascript|js|typescript|react|next|node|front-?end|back-?end|server-side|css|html|api)/],
+  ["Space Science", /\b(space|astronom|astrophysic|nasa|isro|cosmo|rocket|planet|satellite)/],
+  ["Community", /\b(communit|club|csau|college|student|campus|event|hackathon|career|internship|placement)/],
+];
+
+/** A post's topics; a post no tag places goes under Technology. */
+export function topicsOf(categories: string[]): Topic[] {
+  const found = TOPIC_TAGS.filter(([, re]) => categories.some((c) => re.test(c))).map(([t]) => t);
+  return found.length ? found : ["Technology"];
+}
+
+/* ---- article: the feed's HTML cut down to safe reading markup ---- */
+
+/** Tags kept, with the attributes each may carry. Anything else is dropped (its text stays). */
+const KEEP: Record<string, string[]> = {
+  p: [], h2: [], h3: [], strong: [], b: [], em: [], i: [], u: [], s: [], sub: [], sup: [], br: [], hr: [],
+  a: ["href"], img: ["src", "alt"], figure: [], figcaption: [], ul: [], ol: [], li: [], blockquote: [], pre: [], code: [],
+};
+/** Medium titles sections with h3 and subsections with h4; the page's h1 is the post title. */
+const RENAME: Record<string, string> = { h1: "h2", h3: "h2", h4: "h3", h5: "h3", h6: "h3" };
+
+export interface TocEntry {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+/** Sanitize a post's feed HTML and list its headings. `cover` drops a leading
+ *  figure that repeats the cover image shown above the article. */
+export function readArticle(raw: string, cover = ""): { html: string; toc: TocEntry[] } {
+  let src = raw
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style|iframe|object|embed|noscript|template|form|svg|math|select|textarea)\b[\s\S]*?<\/\1\s*>/gi, "");
+  const coverFile = cover.split("?")[0].split("/").pop();
+  const lead = src.match(/<figure\b[\s\S]*?<\/figure>/i);
+  if (coverFile && lead && lead[0].includes(coverFile)) src = src.replace(lead[0], "");
+
+  let html = src.replace(/<(\/?)([a-z][a-z0-9]*)\b([^>]*)>/gi, (_, close: string, name: string, attrs: string) => {
+    const tag = RENAME[name.toLowerCase()] ?? name.toLowerCase();
+    const allowed = KEEP[tag];
+    if (!allowed) return "";
+    if (close) return `</${tag}>`;
+    let out = "";
+    for (const attr of allowed) {
+      const m = attrs.match(new RegExp(`(?:^|\\s)${attr}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i"));
+      const value = m ? (m[1] ?? m[2]) : "";
+      if (!value) continue;
+      if (attr !== "alt" && !/^https?:\/\//i.test(value)) continue;
+      out += ` ${attr}="${value.replace(/"/g, "&quot;")}"`;
+    }
+    if (tag === "img") {
+      if (!out.includes(" src=") || out.includes("medium.com/_/stat")) return ""; // Medium's view-tracking pixel
+      out += ' loading="lazy" decoding="async"';
+    }
+    if (tag === "a") out += ' target="_blank" rel="noopener noreferrer"';
+    return `<${tag}${out}>`;
+  });
+
+  const toc: TocEntry[] = [];
+  const used = new Set<string>();
+  html = html.replace(/<(h[23])>([\s\S]*?)<\/\1>/g, (whole, tag: string, inner: string) => {
+    const text = stripHtml(inner);
+    if (!text) return "";
+    const base = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+    let id = base;
+    for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+    used.add(id);
+    toc.push({ id, text, level: tag === "h2" ? 2 : 3 });
+    return `<${tag} id="${id}">${inner}</${tag}>`;
+  });
+
+  return { html: html.trim(), toc };
 }
 
 /* ---- source: Sanity -> Medium feed URLs ---- */
@@ -207,13 +292,6 @@ export async function getBlogPosts(): Promise<BlogFeed> {
   } finally {
     clearTimeout(timeout);
   }
-}
-
-/** All distinct categories across a set of posts, sorted. */
-export function collectCategories(posts: BlogPost[]): string[] {
-  const set = new Set<string>();
-  for (const p of posts) p.categories.forEach((c) => set.add(c));
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 /* ============================================================

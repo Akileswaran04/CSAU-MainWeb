@@ -16,7 +16,11 @@ export function Bloom({
   smoothing?: number;
 }) {
   const { gl, scene, camera, size } = useThree();
+  const dpr = useThree((s) => s.viewport.dpr); // the buffers follow the pixel ratio too (it adapts to the GPU)
   const composer = useMemo(() => {
+    // a lost context (a hot reload, the GPU dropping it) has no attributes and the composer cannot be built on it:
+    // draw plainly until the canvas is rebuilt with a new one (SpaceScene's watchdog)
+    if (!gl.getContext().getContextAttributes()) return null;
     const c = new EffectComposer(gl, { frameBufferType: THREE.HalfFloatType, multisampling: 0 });
     c.addPass(new RenderPass(scene, camera));
     c.addPass(
@@ -28,9 +32,9 @@ export function Bloom({
     return c;
   }, [gl, scene, camera, intensity, threshold, smoothing]);
   useEffect(() => {
-    composer.setSize(size.width, size.height);
-  }, [composer, size]);
-  useEffect(() => () => composer.dispose(), [composer]);
-  useFrame((_, dt) => composer.render(dt), 1);
+    composer?.setSize(size.width, size.height);
+  }, [composer, size, dpr]);
+  useEffect(() => () => composer?.dispose(), [composer]);
+  useFrame((_, dt) => (composer ? composer.render(dt) : gl.render(scene, camera)), 1);
   return null;
 }

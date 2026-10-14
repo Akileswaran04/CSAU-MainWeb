@@ -32,7 +32,7 @@ const CY = 320;
 /* each channel's line: its direction (degrees clockwise from east) and length, irregular like the pulsar map's.
    The space under the base is kept for the base's address. */
 const RAYS = [
-  { a: -158, l: 340 },
+  { a: -180, l: 360 }, // the email: level with the base, a gap under Instagram as between LinkedIn and Medium
   { a: -118, l: 270 },
   { a: -64, l: 270 },
   { a: -22, l: 330 },
@@ -119,10 +119,6 @@ export default function ContactChannels({
             <circle className="pm-core" cx={CX} cy={CY} r="5" />
           </g>
         </svg>
-
-        <div className="pm-caption">
-          Each line carries its channel&apos;s initial in binary, as the pulsar map on the Voyager Golden Record does.
-        </div>
 
         <ul className="pm-nodes" aria-label="Ways to reach CSAU">
           {channels.map((c, i) => {

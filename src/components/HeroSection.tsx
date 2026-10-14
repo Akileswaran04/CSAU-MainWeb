@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { paintEarthInto } from "./space/earthCanvas";
+import { useEffect, useState } from "react";
+import WhatsNew from "./WhatsNew";
+import type { WhatsNewItem } from "@/lib/whatsNew";
 
 /* ============================================================
    HERO SECTION - Full-viewport hero after the power-on handoff
@@ -10,17 +11,15 @@ import { paintEarthInto } from "./space/earthCanvas";
    widen from a signal dot on the right. Scroll down to follow
    the signal.
 
-   Earth, the story's own (space/earth.ts), rises at the foot while the
-   story below gets ready, and the page holds still until it has
-   (HomeClient): a little way while the story waits its turn, most of
-   the way while its scene is built, and the rest when it is drawing.
-   Then a light runs along the horizon and the Scroll hint appears.
+   Behind it is the story's own 3D opening (Earth and the ship), pinned
+   under the hero. The page's loader covers the time that scene takes to
+   build; the Scroll hint appears once it is drawing.
    ============================================================ */
 
 /** how far the story below has got: waiting its turn, its scene being built, drawing */
 export type StoryStage = "wait" | "build" | "ready";
 
-export default function HeroSection({ story = "ready" }: { story?: StoryStage }) {
+export default function HeroSection({ story = "ready", news = null }: { story?: StoryStage; news?: WhatsNewItem | null }) {
   const [visible, setVisible] = useState(false);
   const [scrollHint, setScrollHint] = useState(false);
 
@@ -51,6 +50,7 @@ export default function HeroSection({ story = "ready" }: { story?: StoryStage })
         padding: "0 8%",
         overflow: "hidden",
         background: "transparent",
+        zIndex: 2, // over the story's stage, which is pinned under the hero (StorySection's lead-in)
       }}
     >
       {/* Radar rings - three rings widening from a signal dot, off to the right */}
@@ -93,24 +93,24 @@ export default function HeroSection({ story = "ready" }: { story?: StoryStage })
         />
       </div>
 
-      <EarthRise story={story} />
-
       {/* Content */}
-      <div className="relative" style={{ zIndex: 10, display: "flex", flexDirection: "column", gap: 20, maxWidth: 720 }}>
-        <h1
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 400,
-            fontSize: "clamp(44px, 9vw, 120px)",
-            letterSpacing: ".04em",
-            color: "var(--on-surface)",
-            margin: 0,
-            lineHeight: 1,
-            ...rise(0.1, 24),
-          }}
-        >
-          CSAU
-        </h1>
+      <div className="relative" style={{ zIndex: 10, display: "flex", flexDirection: "column", gap: 20, maxWidth: "100%" }}>
+        <div className="hero-name" style={rise(0.1, 24)}>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 400,
+              fontSize: "clamp(44px, 9vw, 120px)",
+              letterSpacing: ".04em",
+              color: "var(--on-surface)",
+              margin: 0,
+              lineHeight: 1,
+            }}
+          >
+            CSAU
+          </h1>
+          {news && <WhatsNew item={news} />}
+        </div>
 
         <div style={{ width: 48, height: 1, background: "var(--lit)", ...rise(0.3, 0) }} />
 
@@ -126,20 +126,6 @@ export default function HeroSection({ story = "ready" }: { story?: StoryStage })
           }}
         >
           Computer Society of Anna University
-        </p>
-
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: ".2em",
-            color: "var(--outline)",
-            textTransform: "uppercase",
-            margin: 0,
-            ...rise(0.4, 0),
-          }}
-        >
-          CEG, Anna University, 13.08 N 80.27 E
         </p>
       </div>
 
@@ -177,60 +163,3 @@ export default function HeroSection({ story = "ready" }: { story?: StoryStage })
     </section>
   );
 }
-
-/* Earth's top, rising from the foot of the hero. A wide arc of a big globe, its pole tipped away so the
-   horizon shows the tropics rather than the ice, turned to the continents, lit from the upper right (the radar's
-   side). Its foot fades into the dark the story starts in, so there is no seam below the hero. It is painted once
-   (again only if the width changes: phones resize as the address bar comes and goes) and rises only
-   once painted, so it never rises empty. */
-function EarthRise({ story }: { story: StoryStage }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const [geo, setGeo] = useState<{ w: number; R: number; h: number; m: number } | null>(null);
-  const [painted, setPainted] = useState(false);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    let w = 0;
-    let live = true;
-    const paint = () => {
-      if (window.innerWidth === w) return;
-      w = window.innerWidth;
-      const R = Math.round(Math.min(1100, Math.max(320, w * 0.62))); // the globe's radius
-      const cap = Math.round(Math.min(220, Math.max(110, window.innerHeight * 0.2))); // how much of it shows
-      const m = Math.max(100, Math.round(R * 0.12)); // room above it for the atmosphere and its glow (the fade masks the box)
-      const h = cap + m;
-      setGeo({ w, R, h, m });
-      void paintEarthInto(canvas, w, h, { cx: w / 2, cy: m + R, r: R, dist: 3, tilt: -1.05, spin: 4.4, sun: [0.55, 0.45, 0.7] }, 150000).then(
-        () => live && setPainted(true)
-      );
-    };
-    paint();
-    let t = 0;
-    const onResize = () => {
-      clearTimeout(t);
-      t = window.setTimeout(paint, 250);
-    };
-    window.addEventListener("resize", onResize);
-    return () => {
-      live = false;
-      clearTimeout(t);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
-  return (
-    <div className="earthrise" data-story={painted ? story : "off"} aria-hidden style={{ height: geo?.h ?? 0 }}>
-      {geo && (
-        <i
-          className="earthrise-air"
-          style={{ left: geo.w / 2 - geo.R, top: geo.m, width: 2 * geo.R, height: 2 * geo.R } as CSSProperties}
-        >
-          <i className="earthrise-ping" />
-        </i>
-      )}
-      <canvas ref={ref} className="earthrise-map" />
-    </div>
-  );
-}
-

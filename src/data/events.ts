@@ -6,11 +6,40 @@
    src/lib/events.ts (with a real snapshot as the fallback).
    ============================================================ */
 
+/** What kind of event it was. The CMS has no such field, so it is read from the name (kindOf). */
+export type EventKind = "hackathon" | "workshop" | "contest" | "talk" | "games";
+
+/** The kinds, in the order the events page shows them. */
+export const EVENT_KINDS: { id: EventKind; label: string }[] = [
+  { id: "hackathon", label: "Hackathons" },
+  { id: "workshop", label: "Workshops" },
+  { id: "contest", label: "Contests" },
+  { id: "talk", label: "Talks" },
+  { id: "games", label: "Quizzes & games" },
+];
+
+/* first match wins: the name first, then (if the name says nothing) the description */
+const KIND_RULES: [EventKind, RegExp][] = [
+  ["hackathon", /hackathon|ideathon|code ?cycle/i],
+  ["talk", /webinar|seminar|\bintern\b|career|resume|profile boost|mentor|insights|\btalks?\b/i],
+  ["workshop", /workshop|masterclass|bootcamp|hands[- ]on|session|\b101\b|git set go|mern|open source|dsa express|ui\/ux|figma|inception|intro to/i],
+  ["games", /quiz|charades|bull'?s|fruit ninja|type guess|murder|hunt|escape room|roll no|\bgames?\b/i],
+  ["contest", /code|coding|dsa|sql|solver|showdown|gamble|contest|challenge|web design|battle/i],
+];
+
+
+/** The kind of an event, read from its name, else its description; a contest when neither says. */
+export function kindOf(name: string, text = ""): EventKind {
+  for (const src of [name, text]) for (const [kind, re] of KIND_RULES) if (re.test(src)) return kind;
+  return "contest";
+}
+
 export interface PastEvent {
   /** stable id (the CMS slug) */
   id: string;
   year: string;
   name: string;
+  kind: EventKind;
   /** how it ran: "ON CAMPUS" | "ONLINE" | "HYBRID" (read from the CMS location) */
   tag: string;
   /** display date, e.g. "31 OCT 2025" */
@@ -31,6 +60,7 @@ export interface UpcomingEvent {
   /** stable id (the CMS slug) */
   id: string;
   name: string;
+  kind: EventKind;
   tag: string;
   date: string;
   status: string;
