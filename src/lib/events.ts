@@ -42,6 +42,8 @@ export interface SanityEventRow {
   text?: string;
   /** photos taken at the event: full Sanity URLs, or asset file names in the snapshot */
   photos?: string[];
+  /** a page of the site about this event (local rows only) */
+  href?: string;
 }
 
 export type EventsState = "ok" | "fallback";
@@ -162,6 +164,7 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
       stat: location,
       poster: posterUrl(r.image),
       photos: (r.photos ?? []).map(assetUrl).filter((u): u is string => Boolean(u)),
+      ...(r.href ? { href: r.href } : {}),
     },
   };
 }

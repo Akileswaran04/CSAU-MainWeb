@@ -172,6 +172,11 @@ export function EntryPanel({
                 {up.cta} →
               </Link>
             ))}
+          {past?.href && (
+            <Link href={past.href} data-route-load className="btn btn-signal evo-cta">
+              Open →
+            </Link>
+          )}
           {photos.length > 0 && past && (
             <ul className="ev-photos" aria-label={`Photos from ${past.name}`}>
               {photos.map((photo, i) => (

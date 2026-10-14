@@ -41,20 +41,6 @@ export const ARENA_CSS = `
 `;
 
 export const QUICK_CODE_CSS = `
-  .qc-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-  .qc-rings { position: absolute; left: 50%; bottom: 8%; width: min(1100px, 150vw); transform: translateX(-50%); opacity: .9; }
-  .qc-rings ellipse { transform-box: fill-box; transform-origin: center; animation: qc-ring 9s ease-out infinite both; }
-  .qc-rings ellipse:nth-child(2) { animation-delay: 3s; }
-  .qc-rings ellipse:nth-child(3) { animation-delay: 6s; }
-  @keyframes qc-ring {
-    0% { transform: scale(.15); opacity: .6; }
-    100% { transform: scale(1); opacity: 0; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .qc-rings ellipse { animation: none; }
-    .qc-rings ellipse { opacity: .25; }
-  }
-
   /* archive: a console that plays the format */
   .qc-sec { background: transparent; padding: 8vh var(--pg-x); }
   .qc-wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 28px; }
@@ -159,6 +145,7 @@ export const QUICK_CODE_CSS = `
   .qc-ans { color: var(--on-surface); }
   @keyframes qc-up { from { opacity: 0; transform: translateY(8px); } }
   .qc-nav { justify-content: space-between; border-top: 1px solid var(--outline-variant); padding-top: 18px; }
+  .qc-nav > :first-child { margin-right: auto; }
 
   .qc-done-stats { display: flex; flex-wrap: wrap; gap: 20px 56px; }
   .qc-done-big { font-family: var(--font-display); font-size: clamp(44px, 9vw, 96px); line-height: 1; color: var(--on-surface); }

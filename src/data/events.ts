@@ -54,6 +54,8 @@ export interface PastEvent {
   poster?: string;
   /** Photographs taken at this event (Sanity image URLs without transform params). */
   photos?: string[];
+  /** a page of the site about this event (local rows only, e.g. /quick-code) */
+  href?: string;
 }
 
 export interface UpcomingEvent {

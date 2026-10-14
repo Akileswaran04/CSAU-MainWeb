@@ -30,7 +30,8 @@ const TAG_COLOURS: Record<string, string> = { orange: "#ee8a2a", brown: "#8a5a3a
 const dotsOf = (tag: string) => Object.keys(TAG_COLOURS).filter((c) => tag.toLowerCase().includes(c));
 
 export default function QuickCodeArchive({ weeks }: { weeks: QCWeek[] }) {
-  const [wi, setWi] = useState(0);
+  /* null: the week list; a number: that week, with BACK to the list */
+  const [wi, setWi] = useState<number | null>(null);
   const [ti, setTi] = useState(0);
 
   /* #week-03 opens on that week */
@@ -40,30 +41,41 @@ export default function QuickCodeArchive({ weeks }: { weeks: QCWeek[] }) {
     if (i >= 0) setWi(i);
   }, [weeks]);
 
-  const pickWeek = (i: number) => {
+  const pickWeek = (i: number | null) => {
     setWi(i);
     setTi(0);
-    history.replaceState(history.state, "", `#${weeks[i].id}`);
+    history.replaceState(history.state, "", i === null ? location.pathname + location.search : `#${weeks[i].id}`);
   };
+
+  if (wi === null)
+    return (
+      <div className="qc-wrap">
+        <h2 className="qc-h2">ARCHIVE</h2>
+        {/* the five weeks on one line */}
+        <nav className="qc-tl" aria-label="Weeks">
+          {weeks.map((w, i) => (
+            <button key={w.id} type="button" className="qc-tl-w" onClick={() => pickWeek(i)}>
+              <span className="qc-tl-dot" aria-hidden />
+              <span className="qc-tl-n">{w.label.replace(/\D/g, "")}</span>
+              <span className="qc-tl-l">{w.label.replace(/\d/g, "").trim()}</span>
+              {w.results && <span className="qc-tl-star" aria-hidden>★</span>}
+            </button>
+          ))}
+        </nav>
+      </div>
+    );
 
   const week = weeks[wi];
   const track = week.sets[Math.min(ti, week.sets.length - 1)];
 
   return (
     <div className="qc-wrap">
-      <h2 className="qc-h2">ARCHIVE</h2>
-
-      {/* the five weeks on one line */}
-      <nav className="qc-tl" aria-label="Weeks">
-        {weeks.map((w, i) => (
-          <button key={w.id} type="button" className="qc-tl-w" aria-pressed={i === wi} onClick={() => pickWeek(i)}>
-            <span className="qc-tl-dot" aria-hidden />
-            <span className="qc-tl-n">{w.label.replace(/\D/g, "")}</span>
-            <span className="qc-tl-l">{w.label.replace(/\d/g, "").trim()}</span>
-            {w.results && <span className="qc-tl-star" aria-hidden>★</span>}
-          </button>
-        ))}
-      </nav>
+      <div className="qc-row">
+        <button type="button" className="pa-btn" onClick={() => pickWeek(null)}>
+          ← BACK
+        </button>
+        <h2 className="qc-h2">{week.label}</h2>
+      </div>
 
       {week.sets.length > 1 && (
         <div className="qc-tracks" role="group" aria-label="Track">
@@ -286,6 +298,9 @@ function Player({ set, brief }: { set: QCSet; brief?: QCWeek["questionSet"] }) {
             </div>
           )}
           <div className="qc-row qc-nav">
+            <button type="button" className="pa-btn" onClick={() => setMode("idle")}>
+              EXIT ✕
+            </button>
             <button type="button" className="pa-btn" onClick={() => go(-1)} disabled={at === 0}>
               ← BACK
             </button>
