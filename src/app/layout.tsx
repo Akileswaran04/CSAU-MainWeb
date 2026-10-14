@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { JetBrains_Mono } from "next/font/google";
 import LaserNav from "@/components/LaserNav";
+import MusicToggle from "@/components/MusicToggle";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 import RouteLoadGate from "@/components/RouteLoadGate";
 import "./globals.css";
@@ -48,6 +49,7 @@ export default function RootLayout({
         {/* Laser navigation - a floating button opens the fullscreen
             Matrix Junction laser overlay with the site links. */}
         <LaserNav />
+        <MusicToggle />
         {/* RouteLoadGate shows the loading sequence when following any
             link to another page, opens once that page has its elements,
             and staggers them in as it clears. */}
