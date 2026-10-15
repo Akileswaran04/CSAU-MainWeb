@@ -13,16 +13,16 @@ import { EntryPanel, LEAD, LaunchPad, keyOf, nameOf, type Item } from "./parts";
      large, or (nothing upcoming) a slim launchpad strip;
    - on laptops and up, Saturn: every event on one wide ring round
      it, and the kinds are on its face (not on phones);
-   - one sticky bar: the kinds, the years, and whether the wall
-     is grouped by year or by kind;
+   - one sticky bar: the kinds, and whether the wall is grouped
+     by year or by kind;
    - the archive as one wall of posters, a block per year: the
      year itself is a tile of the wall (its number in outline, its
      kinds counted), the year's newest event is a big tile, the
      rest fill in round them, the count of big tiles picked so the
      year's last row comes out full. The year's tile stays pinned
      while its posters scroll by.
-   The kind is read from each event's name (kindOf). #2024 or
-   #workshop in the URL opens on that year or kind. A tile opens
+   The kind is read from each event's name (kindOf). #workshop
+   in the URL opens on that kind. A tile opens
    its entry panel.
    ============================================================ */
 
@@ -52,8 +52,6 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
   const past = useMemo(() => archive.map((e) => (e.year === "2021" ? { ...e, year: "2022" } : e)), [archive]);
   const years = useMemo(() => archiveYears(past), [past]);
   const [kind, setKind] = useState<Kind>("all");
-  /* opens on every year (the owner's pick) */
-  const [year, setYear] = useState("all");
   const [open, setOpen] = useState<{ items: Item[]; index: number } | null>(null);
   const wallRef = useRef<HTMLElement>(null);
   /* the bar: once it is stuck under the header it carries a band up to the top of the window (no gap between them) */
@@ -93,19 +91,16 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
     return () => ro.disconnect();
   }, []);
 
-  /* #2024 / #workshop opens on that year / kind */
+  /* #workshop opens on that kind */
   useEffect(() => {
     const h = decodeURIComponent(location.hash.slice(1));
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the URL after hydration
-    if (years.includes(h)) setYear(h);
-    else if (EVENT_KINDS.some((k) => k.id === h)) setKind(h as EventKind);
-  }, [years]);
+    if (EVENT_KINDS.some((k) => k.id === h)) setKind(h as EventKind);
+  }, []);
 
-  const pick = (k: Kind, y: string) => {
+  const pick = (k: Kind) => {
     setKind(k);
-    setYear(y);
-    const tag = k !== "all" ? k : y !== "all" ? y : "";
-    history.replaceState(history.state, "", tag ? `#${tag}` : location.pathname);
+    history.replaceState(history.state, "", k !== "all" ? `#${k}` : location.pathname);
     const bar = wallRef.current;
     if (bar && bar.getBoundingClientRect().top < 0) {
       const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -113,13 +108,12 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
     }
   };
 
-  const inYear = useMemo(() => past.filter((e) => year === "all" || e.year === year), [past, year]);
-  const shown = useMemo(() => inYear.filter((e) => kind === "all" || e.kind === kind), [inYear, kind]);
+  const shown = useMemo(() => past.filter((e) => kind === "all" || e.kind === kind), [past, kind]);
   /* the wall's blocks: one per year, or one per kind */
   const [by, setBy] = useState<"year" | "kind">("year");
   const kindCounts = useMemo(
-    () => Object.fromEntries([["all", inYear.length], ...EVENT_KINDS.map((k) => [k.id, inYear.filter((e) => e.kind === k.id).length])]) as Record<Kind, number>,
-    [inYear],
+    () => Object.fromEntries([["all", past.length], ...EVENT_KINDS.map((k) => [k.id, past.filter((e) => e.kind === k.id).length])]) as Record<Kind, number>,
+    [past],
   );
   const groups = useMemo(
     () =>
@@ -162,7 +156,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
           events={shown}
           counts={kindCounts}
           kind={kind}
-          onKind={(k) => pick(k, year)}
+          onKind={pick}
           onOpen={(ev) => setOpen({ items: wallItems, index: wallItems.findIndex((x) => "past" in x && x.past.id === ev.id) })}
         />
       )}
@@ -172,12 +166,12 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
         <div ref={stickRef} aria-hidden />
         <div ref={barRef} className="evb-bar">
           <div className="evb-kinds" role="group" aria-label="Kind">
-            <button type="button" className="evb-chip" aria-pressed={kind === "all"} onClick={() => pick("all", year)}>
+            <button type="button" className="evb-chip" aria-pressed={kind === "all"} onClick={() => pick("all")}>
               <KindIcon kind="all" />
-              All <span className="evb-n">{inYear.length}</span>
+              All <span className="evb-n">{past.length}</span>
             </button>
             {EVENT_KINDS.map((k) => {
-              const n = inYear.filter((e) => e.kind === k.id).length;
+              const n = kindCounts[k.id];
               return (
                 <button
                   key={k.id}
@@ -186,20 +180,13 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
                   data-kind={k.id}
                   aria-pressed={kind === k.id}
                   disabled={!n}
-                  onClick={() => pick(k.id, year)}
+                  onClick={() => pick(k.id)}
                 >
                   <KindIcon kind={k.id} />
                   {k.label} <span className="evb-n">{n}</span>
                 </button>
               );
             })}
-          </div>
-          <div className="evb-years" role="group" aria-label="Year">
-            {["all", ...years].map((y) => (
-              <button key={y} type="button" className="evb-year" aria-pressed={year === y} onClick={() => pick(kind, y)}>
-                {y === "all" ? "All" : y}
-              </button>
-            ))}
           </div>
           <div className="evb-by" role="group" aria-label="Group the wall">
             {(["year", "kind"] as const).map((b) => (
@@ -210,7 +197,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
           </div>
         </div>
 
-        <div className="evb-wall" key={`${by}-${kind}-${year}`}>
+        <div className="evb-wall" key={`${by}-${kind}`}>
           {groups.map((g) => (
             <section key={g.id} className="evb-block" aria-label={by === "year" ? g.id : EVENT_KINDS.find((k) => k.id === g.id)?.label} data-rise>
               <div className="evb-yearcol">

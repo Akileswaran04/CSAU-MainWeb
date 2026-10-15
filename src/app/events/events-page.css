@@ -279,10 +279,9 @@
   pointer-events: none;
 }
 .evb-kinds { flex: none; }
-.evb-years { margin-left: auto; }
 .evb-by { display: flex; flex: none; gap: 2px; margin-left: auto; padding-left: 10px; border-left: 1px solid rgba(190, 205, 230, 0.16); }
-.evb-kinds, .evb-years { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.evb-kinds::-webkit-scrollbar, .evb-years::-webkit-scrollbar { display: none; }
+.evb-kinds { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.evb-kinds::-webkit-scrollbar { display: none; }
 .evb-chip, .evb-year {
   display: inline-flex;
   flex: none;
@@ -444,7 +443,6 @@
   .evb-bar { flex-direction: column; flex-wrap: nowrap; align-items: stretch; border-radius: 18px; top: 68px; }
   .evb-bar[data-stuck]::before { top: -69px; }
   .evb-kinds { flex: initial; }
-  .evb-years { margin-left: 0; }
   .evb-by { margin-left: 0; padding-left: 0; border-left: 0; }
 }
 @media (max-width: 600px) {
