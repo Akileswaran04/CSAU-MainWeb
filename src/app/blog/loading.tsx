@@ -13,7 +13,6 @@ export default function BlogLoading() {
         {[12, 31, 47, 66, 83].map((x, i) => (
           <span key={x} className="bl-scope-carrier" style={{ left: `${x}%`, animationDelay: `${i * 0.37}s` }} />
         ))}
-        <p className="bl-scope-label bl-scope-label-scan">Scanning</p>
       </div>
       <span className="sr-only" role="status">
         Loading blog posts

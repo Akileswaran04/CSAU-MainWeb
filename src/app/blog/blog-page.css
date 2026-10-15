@@ -1,6 +1,6 @@
 /* ============================================================
-   BLOG PAGE - a quiet editorial page: the title, a topic filter
-   and search, the posts as ruled rows, pages and a year archive;
+   BLOG PAGE - a quiet editorial page: the title, the posts as
+   ruled rows and pages;
    the article reading page; and the loading state's scanning
    band. The space stays in the colours, a faint blue and violet
    glow and the site's star backdrop. Reuses the .bl-* pieces in
@@ -27,7 +27,6 @@
 .bl-wrap { max-width: 1120px; margin: 0 auto; }
 .bl-wrap .bl-head { margin-bottom: clamp(28px, 6vh, 56px); }
 .bl-wrap .pg-title { text-transform: uppercase; letter-spacing: 0.02em; }
-.bl-wrap .pg-lede { margin-top: 14px; }
 
 /* -- loading: a dead band, hairline channels, a sweep -- */
 .pg.bl-page:has(.bl-scope) { padding: 0; }
@@ -51,19 +50,6 @@
 @keyframes bl-sweep {
   from { transform: translateY(0); }
   to { transform: translateY(100dvh); }
-}
-.bl-scope-label {
-  margin: 0;
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--signal);
-}
-.bl-scope-label-scan {
-  position: absolute;
-  left: var(--pg-x);
-  bottom: max(24px, env(safe-area-inset-bottom));
-  color: var(--outline);
 }
 .bl-scope-carrier {
   position: absolute;
@@ -96,25 +82,6 @@
 .bl-log-link:hover .bl-ul,
 .bl-log-link:focus-visible .bl-ul { background-size: 100% 1px; }
 
-/* -- the bar: topics on the left, search on the right -- */
-.bl-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  padding-bottom: 16px;
-}
-.bl-topics {
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.bl-topic,
-.bl-year,
 .bl-page-btn {
   flex: none;
   min-height: 36px;
@@ -129,43 +96,13 @@
   cursor: pointer;
   transition: color var(--dur-fast) ease, border-color var(--dur-base) ease, box-shadow var(--dur-base) ease;
 }
-.bl-topic:hover:not(:disabled),
-.bl-year:hover,
 .bl-page-btn:hover:not(:disabled) { color: var(--on-surface); }
-.bl-topic[aria-pressed="true"],
-.bl-year[aria-pressed="true"],
 .bl-page-btn[aria-current="page"] {
   color: var(--on-surface);
   border-color: color-mix(in srgb, var(--bl-violet) 55%, transparent);
   box-shadow: 0 0 14px color-mix(in srgb, var(--bl-blue) 22%, transparent), inset 0 0 10px color-mix(in srgb, var(--bl-blue) 10%, transparent);
 }
-.bl-topic:disabled,
 .bl-page-btn:disabled { opacity: 0.32; cursor: default; }
-
-.bl-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 4px;
-  border-bottom: 1px solid var(--outline-variant);
-  color: var(--outline);
-  transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
-}
-.bl-search:focus-within { border-color: var(--bl-blue); color: var(--bl-blue); }
-.bl-search input {
-  width: 10ch;
-  border: 0;
-  outline: 0;
-  background: none;
-  font: 400 13px/1 var(--font-mono);
-  letter-spacing: 0.06em;
-  color: var(--on-surface);
-  transition: width 0.3s var(--ease-out);
-}
-.bl-search input::placeholder { color: var(--outline); text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; }
-.bl-search:focus-within input,
-.bl-search input:not(:placeholder-shown) { width: 22ch; }
 
 /* -- the posts: ruled rows -- */
 .bl-log-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--outline-variant); }
@@ -216,16 +153,8 @@
   gap: 8px 16px;
 }
 .bl-log-foot .bl-author { margin: 0; }
-.bl-log-foot .bl-readmore {
-  font: 500 12px/1.6 var(--font-mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-}
 .bl-log-link:hover .bl-log-title,
-.bl-log-link:focus-visible .bl-log-title,
-.bl-log-link:hover .bl-readmore,
-.bl-log-link:focus-visible .bl-readmore { color: var(--bl-blue); }
+.bl-log-link:focus-visible .bl-log-title { color: var(--bl-blue); }
 
 /* rows fade in as they scroll into view */
 @supports (animation-timeline: view()) {
@@ -238,20 +167,10 @@
 @keyframes bl-rise {
   from { opacity: 0; transform: translateY(18px); }
 }
-/* filter changes: rows glide to their new places */
+/* page turns: rows glide to their new places */
 html:has(.bl-index)::view-transition-group(*) { animation-duration: 0.38s; animation-timing-function: var(--ease-out); }
 
-.bl-none {
-  margin: 0;
-  padding: 48px 0;
-  border-top: 1px solid var(--outline-variant);
-  font: 400 13px/1.6 var(--font-mono);
-  letter-spacing: 0.06em;
-  color: var(--on-surface-variant);
-}
-.bl-none .bl-ul { color: var(--bl-blue); }
-
-/* -- under the list: pages, and the archive by year -- */
+/* -- under the list: pages -- */
 .bl-foot {
   display: flex;
   flex-wrap: wrap;
@@ -260,17 +179,8 @@ html:has(.bl-index)::view-transition-group(*) { animation-duration: 0.38s; anima
   gap: 16px 24px;
   margin-top: 28px;
 }
-.bl-pages,
-.bl-years { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.bl-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .bl-page-btn { min-width: 36px; padding: 0 8px; font-variant-numeric: tabular-nums; }
-.bl-years-label {
-  margin-right: 8px;
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--outline);
-}
-
 /* -- the reading page -- */
 .bl-read { max-width: 1120px; margin: 0 auto; }
 .bl-back {
@@ -381,10 +291,8 @@ html:has(.bl-index)::view-transition-group(*) { animation-duration: 0.38s; anima
   .bl-scope::after { animation: none; top: 38%; }
   .bl-scope-carrier { animation: none; opacity: 0.12; }
   .bl-log-title,
-  .bl-log-foot .bl-readmore,
   .bl-log-thumb .bl-cover,
-  .bl-ul,
-  .bl-search input { transition: none; }
+  .bl-ul { transition: none; }
   .bl-log-link:hover .bl-cover,
   .bl-log-link:focus-visible .bl-cover { transform: none; }
   .bl-log-row { animation: none; }

@@ -1,7 +1,7 @@
-// Checks the blog article sanitizer and topic mapping in src/lib/blog.ts.
+// Checks the blog article sanitizer in src/lib/blog.ts.
 // Run: node scripts/check-blog.mjs   (Node 23.6+ strips the TypeScript types)
 import assert from "node:assert/strict";
-import { readArticle, topicsOf } from "../src/lib/blog.ts";
+import { readArticle } from "../src/lib/blog.ts";
 
 const raw = `<figure><img src="https://cdn-images-1.medium.com/max/1024/0*cover.png"></figure>
 <h3>Intro</h3><p onclick="x()">Hi <a href="javascript:alert(1)">bad</a> <a href="https://ok.dev" style="c">ok</a></p>
@@ -19,9 +19,4 @@ assert.deepEqual(toc, [
   { id: "intro-2", text: "Intro", level: 3 },
 ]);
 
-assert.deepEqual(topicsOf(["ai", "data-science"]), ["AI & ML"]);
-assert.deepEqual(topicsOf(["nodejs", "backend-development"]), ["Web Development"]);
-assert.deepEqual(topicsOf(["ai", "technology", "chatbots"]), ["Technology", "AI & ML"]);
-assert.deepEqual(topicsOf(["roadmaps"]), ["Technology"]);
-assert.deepEqual(topicsOf(["html"]), ["Web Development"]);
 console.log("blog checks pass");

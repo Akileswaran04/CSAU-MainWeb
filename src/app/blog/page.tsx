@@ -7,7 +7,7 @@ import "./blog-page.css";
    BLOG - the club's writing, pulled live from the CSAU Medium
    feed (@cegcsau) via the same Sanity + rss2json path the main
    csau.in site uses (src/lib/blog.ts): the title, then the
-   filterable list (BlogList); each post opens /blog/[slug]. Fetched on the server (revalidated hourly);
+   list (BlogList); each post opens /blog/[slug]. Fetched on the server (revalidated hourly);
    `loading.tsx` is the scanning state.
    Route: /blog
    ============================================================ */
@@ -29,7 +29,6 @@ export default async function BlogPage() {
       <div className="bl-wrap">
         <header className="bl-head">
           <h1 className="pg-title">Blogs</h1>
-          <p className="pg-lede">Ideas, experiments, and perspectives from our community.</p>
           {state === "fallback" && (
             <p className="bl-notice" role="status">
               <span className="bl-notice-dot" aria-hidden />

@@ -138,25 +138,6 @@ function toPost(item: Rss2JsonItem): BlogPost | null {
   };
 }
 
-/* ---- topics: the page's filter, read from each post's Medium tags ---- */
-
-export const TOPICS = ["Technology", "AI & ML", "Web Development", "Space Science", "Community"] as const;
-export type Topic = (typeof TOPICS)[number];
-
-const TOPIC_TAGS: [Topic, RegExp][] = [
-  ["Technology", /\b(tech|technology|programming|software|coding|computer|cloud|cyber|security|blockchain|devops)/],
-  ["AI & ML", /\b(ai|ml|artificial-intelligence|machine-learning|deep-learning|data|llm|nlp|chatgpt|chatbots?|neural|genai)\b/],
-  ["Web Development", /\b(web|javascript|js|typescript|react|next|node|front-?end|back-?end|server-side|css|html|api)/],
-  ["Space Science", /\b(space|astronom|astrophysic|nasa|isro|cosmo|rocket|planet|satellite)/],
-  ["Community", /\b(communit|club|csau|college|student|campus|event|hackathon|career|internship|placement)/],
-];
-
-/** A post's topics; a post no tag places goes under Technology. */
-export function topicsOf(categories: string[]): Topic[] {
-  const found = TOPIC_TAGS.filter(([, re]) => categories.some((c) => re.test(c))).map(([t]) => t);
-  return found.length ? found : ["Technology"];
-}
-
 /* ---- article: the feed's HTML cut down to safe reading markup ---- */
 
 /** Tags kept, with the attributes each may carry. Anything else is dropped (its text stays). */
