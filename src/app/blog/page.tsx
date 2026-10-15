@@ -22,19 +22,13 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function BlogPage() {
-  const { posts, state, notice } = await getBlogPosts();
+  const { posts } = await getBlogPosts();
 
   return (
     <main id="content" className="pg bl-page">
       <div className="bl-wrap">
         <header className="bl-head">
           <h1 className="pg-title">Blogs</h1>
-          {state === "fallback" && (
-            <p className="bl-notice" role="status">
-              <span className="bl-notice-dot" aria-hidden />
-              Showing the latest cached posts.{notice ? ` ${notice}` : ""}
-            </p>
-          )}
         </header>
 
         {posts.length === 0 ? (

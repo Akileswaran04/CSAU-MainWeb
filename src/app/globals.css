@@ -1252,26 +1252,6 @@ html.scroll-locked { overflow: hidden; }
 }
 .bl-lede-link:hover { color: var(--lit); text-decoration-color: var(--lit); }
 
-/* fallback / cached notice - a status line, not an alarm */
-.bl-notice {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 28px 0 0;
-  font: 500 12px/1.5 var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--on-surface-variant);
-}
-.bl-notice-dot {
-  width: 8px;
-  height: 8px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--lit);
-  box-shadow: 0 0 0 4px var(--lit-soft);
-}
-
 /* empty state - centred, calm, one clear action */
 .bl-empty {
   margin: clamp(40px, 8vh, 88px) 0;
