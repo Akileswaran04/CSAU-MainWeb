@@ -74,8 +74,6 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
                     {d.list.map((m) => (
                       <li key={m.id}>
                         <div className="clay-card card-photo tm-card">
-                          {/* the designation, highlighted at the top of the card */}
-                          <span className="tm-card-tag">{d.name ? m.designation : m.role}</span>
                           <span className="tm-card-photo">
                             <Portrait member={m} size={400} />
                           </span>

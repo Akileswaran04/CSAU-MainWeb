@@ -132,8 +132,11 @@ function drawSatelliteCanvas(): HTMLCanvasElement {
   return c;
 }
 
-/* Printed-card detail painted on every portrait: scale texture, corner
-   brackets, a vermilion seal, the running number and a vertical role. */
+/* Printed-card detail painted on every portrait (the heads' and office
+   bearers' cards; owner, 2026-10-17): a faint grid, corner brackets,
+   department and year across the top, a thin gold orbit round the
+   portrait, the designation on a gold rank band under it, the name in
+   the display face, and the running number. */
 function paintOrnament(
   ctx: CanvasRenderingContext2D,
   member: TeamMember,
@@ -176,45 +179,94 @@ function paintOrnament(
   bracket(m, H - m, 1, -1);
   bracket(W - m, H - m, -1, -1);
 
-  // vermilion seal (hanko) with initials
-  const sealS = size * 0.17;
+  const photoBottom = PHOTO_CY + PHOTO_D / 2;
+  const spacing = (px: number) => {
+    if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${px.toFixed(1)}px`;
+  };
+
+  // a thin gold orbit round the portrait, one lit point on it
+  const orbit = PHOTO_D / 2 + size * 0.02;
   ctx.save();
-  // stamped over the lower-right rim of the portrait disc
-  ctx.translate(PHOTO_CX + PHOTO_D * 0.36, PHOTO_CY + PHOTO_D * 0.36);
-  ctx.rotate(0.09);
-  ctx.fillStyle = signal;
-  ctx.fillRect(-sealS / 2, -sealS / 2, sealS, sealS);
-  ctx.strokeStyle = tokenAlpha("--void-950", 0.55, "#0a0a0b");
+  ctx.strokeStyle = tokenAlpha("--lit", 0.5, "#f0b73a");
   ctx.lineWidth = 2;
-  ctx.strokeRect(-sealS / 2 + 5, -sealS / 2 + 5, sealS - 10, sealS - 10);
-  ctx.fillStyle = tokenColor("--void-950", "#0a0a0b");
-  ctx.font = `800 ${sealS * 0.42}px ${monoFamily()}, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(initials(member.name), 0, 2);
+  ctx.beginPath();
+  ctx.arc(PHOTO_CX, PHOTO_CY, orbit, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = gold;
+  ctx.beginPath();
+  ctx.arc(PHOTO_CX + Math.cos(-0.75) * orbit, PHOTO_CY + Math.sin(-0.75) * orbit, size * 0.013, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 
-  // name under the disc, so the cards either side of the front one can be read too
+  // department and year: a quiet readout across the top
+  const meta = memberMeta(member).toUpperCase();
+  if (meta) {
+    ctx.save();
+    ctx.font = `500 ${size * 0.03}px ${monoFamily()}, monospace`;
+    spacing(size * 0.006);
+    ctx.fillStyle = tokenAlpha("--starlight", 0.62, "#f6f1e4");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(meta, PHOTO_CX, m + size * 0.075, W * 0.7);
+    ctx.restore();
+  }
+
+  // the designation: a gold rank band with notched ends, dark letters on it
+  ctx.save();
+  ctx.font = `700 ${size * 0.036}px ${monoFamily()}, monospace`;
+  spacing(size * 0.006);
+  const tag = member.role.toUpperCase();
+  const bandH = size * 0.076;
+  const notch = bandH * 0.42;
+  const bandW = Math.min(W - 2 * m - size * 0.04, Math.max(W * 0.56, ctx.measureText(tag).width + notch * 2 + size * 0.1));
+  const bandY = photoBottom + size * 0.105;
+  const x0 = PHOTO_CX - bandW / 2;
+  const x1 = PHOTO_CX + bandW / 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, bandY - bandH / 2);
+  ctx.lineTo(x1, bandY - bandH / 2);
+  ctx.lineTo(x1 - notch, bandY);
+  ctx.lineTo(x1, bandY + bandH / 2);
+  ctx.lineTo(x0, bandY + bandH / 2);
+  ctx.lineTo(x0 + notch, bandY);
+  ctx.closePath();
+  ctx.fillStyle = gold;
+  ctx.fill();
+  ctx.fillStyle = tokenColor("--hull-900", "#17181c");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(tag, PHOTO_CX, bandY + 1, bandW - notch * 2 - size * 0.03);
+  ctx.restore();
+
+  // the name in the display face, under the band: one line if it fits, else two balanced ones, shrunk to fit
+  ctx.save();
+  ctx.fillStyle = foam;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = foam;
-  ctx.font = `500 ${size * 0.062}px ${monoFamily()}, monospace`;
-  const words = member.name.toUpperCase().split(/\s+/);
+  const face = (px: number) => `400 ${px}px 'Ethnocentric', ${monoFamily()}, monospace`;
+  const maxW = W * 0.8;
+  const words = member.name.toUpperCase().split(/\s+/).filter(Boolean);
+  let px = size * 0.06;
+  ctx.font = face(px);
+  const widest = (ls: string[]) => Math.max(...ls.map((l) => ctx.measureText(l).width));
   let lines = [words.join(" ")];
-  if (words.length > 1 && ctx.measureText(lines[0]).width > W * 0.8) {
-    const half = Math.ceil(words.length / 2);
-    lines = [words.slice(0, half).join(" "), words.slice(half).join(" ")];
+  if (widest(lines) > maxW && words.length > 1) {
+    let best = lines;
+    let bestW = Infinity;
+    for (let k = 1; k < words.length; k++) {
+      const pair = [words.slice(0, k).join(" "), words.slice(k).join(" ")];
+      const w = widest(pair);
+      if (w < bestW) [best, bestW] = [pair, w];
+    }
+    lines = best;
   }
-  const nameY = PHOTO_CY + PHOTO_D / 2 + size * 0.2;
-  lines.forEach((line, i) => ctx.fillText(line, PHOTO_CX, nameY + i * size * 0.085, W * 0.84));
-  // the department under the name
-  if (member.department) {
-    ctx.fillStyle = gold;
-    ctx.font = `500 ${size * 0.042}px ${monoFamily()}, monospace`;
-    ctx.fillText(member.department.toUpperCase().split("").join(" "), PHOTO_CX, nameY + lines.length * size * 0.085 + size * 0.02, W * 0.84);
+  while (widest(lines) > maxW && px > size * 0.034) {
+    px -= 1;
+    ctx.font = face(px);
   }
-  ctx.fillStyle = gold;
-  ctx.fillRect(PHOTO_CX - size * 0.04, nameY - size * 0.12, size * 0.08, 3);
+  const nameY = photoBottom + size * 0.255;
+  lines.forEach((line, i) => ctx.fillText(line, PHOTO_CX, nameY + i * px * 1.32, maxW));
+  ctx.restore();
 
   // running number, bottom-left
   const num = String(index + 1).padStart(2, "0");
@@ -229,16 +281,6 @@ function paintOrnament(
   ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
   ctx.fillText(`/ ${String(total).padStart(2, "0")}`, m + size * 0.02 + size * 0.27, H - m - size * 0.06);
 
-  // vertical role along the right edge
-  ctx.save();
-  ctx.translate(W - m - size * 0.02, H - m - size * 0.08);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = tokenAlpha("--starlight", 0.78, "#f6f1e4");
-  ctx.font = `500 ${size * 0.03}px 'JetBrains Mono', monospace`;
-  ctx.textAlign = "left";
-  const role = member.role.toUpperCase().split("").join("\u200A");
-  ctx.fillText(role, 0, 0);
-  ctx.restore();
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -271,6 +313,8 @@ async function loadPortrait(member: TeamMember): Promise<HTMLImageElement | null
 }
 
 async function portraitDataURL(member: TeamMember, index: number, total: number): Promise<string> {
+  // the names are set in the display face: wait for it, or the first paint falls back to the mono
+  await document.fonts?.load(`400 32px 'Ethnocentric'`).catch(() => undefined);
   const W = CARD_W;
   const H = CARD_H;
   const canvas = document.createElement("canvas");

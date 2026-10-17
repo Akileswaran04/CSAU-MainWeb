@@ -2131,19 +2131,6 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 .tm-card:focus-visible { border-color: var(--on-surface); }
 .tm-card:focus-visible .photo-mono { filter: grayscale(0) contrast(1); }
-/* the designation: a highlighted tag across the top of the card */
-.tm-card-tag {
-  align-self: flex-start;
-  margin: 10px 10px 0;
-  padding: 5px 9px;
-  border: 1px solid color-mix(in srgb, var(--lit) 55%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--lit) 14%, transparent);
-  font: 600 10px/1.2 var(--font-mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--lit);
-}
 .tm-card-photo {
   position: relative;
   display: grid;
