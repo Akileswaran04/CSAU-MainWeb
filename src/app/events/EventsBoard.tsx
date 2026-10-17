@@ -109,6 +109,8 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
   };
 
   const shown = useMemo(() => past.filter((e) => kind === "all" || e.kind === kind), [past, kind]);
+  /* the ring carries the newest RING_MAX of them (the wall below has every one) */
+  const ringEvents = useMemo(() => shown.slice(0, RING_MAX), [shown]);
   /* the wall's blocks: one per year, or one per kind */
   const [by, setBy] = useState<"year" | "kind">("year");
   const kindCounts = useMemo(
@@ -126,7 +128,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
   /* the panel browses everything on the wall, in its order */
   const wallItems = useMemo(() => groups.flatMap((g) => g.events.map((e): Item => ({ past: e }))), [groups]);
 
-  /* each year block rises in as it arrives */
+  /* each tile (and each year's tile) rises in as it scrolls into view, a beat later the further right it stands */
   useEffect(() => {
     const els = Array.from(wallRef.current?.querySelectorAll<HTMLElement>("[data-rise]") ?? []);
     const io = new IntersectionObserver(
@@ -136,7 +138,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
           e.target.setAttribute("data-in", "");
           io.unobserve(e.target);
         }),
-      { rootMargin: "0px 0px -8% 0px" },
+      { rootMargin: "0px 0px -6% 0px" },
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
@@ -153,7 +155,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
 
       {wide && (
         <Saturn
-          events={shown}
+          events={ringEvents}
           counts={kindCounts}
           kind={kind}
           onKind={pick}
@@ -199,8 +201,8 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
 
         <div className="evb-wall" key={`${by}-${kind}`}>
           {groups.map((g) => (
-            <section key={g.id} className="evb-block" aria-label={by === "year" ? g.id : EVENT_KINDS.find((k) => k.id === g.id)?.label} data-rise>
-              <div className="evb-yearcol">
+            <section key={g.id} className="evb-block" aria-label={by === "year" ? g.id : EVENT_KINDS.find((k) => k.id === g.id)?.label}>
+              <div className="evb-yearcol" data-rise>
                 {by === "year" ? <YearTile year={g.id} events={g.events} /> : <KindTile kind={g.id as EventKind} events={g.events} />}
               </div>
               <div className="evb-posters">
@@ -210,6 +212,7 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
                     ev={ev}
                     big={i < bigCount(g.events.length, cols)}
                     i={i}
+                    col={i % cols}
                     onOpen={() => setOpen({ items: wallItems, index: wallItems.findIndex((x) => "past" in x && x.past.id === ev.id) })}
                   />
                 ))}
@@ -286,6 +289,9 @@ function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void 
    circle, all on one clock), and the floor, orbits and rim are their own flat layer behind the cards, so the
    browser never re-styles the cards or sorts them against the floor while it turns. */
 const SPIN_MS = 160000;
+/* each ring card is its own turning 3D layer with a poster: with every event (120+) on it the page choked, and at 36
+   the cards stood shoulder to shoulder, so the ring holds the newest 24, with air between them */
+const RING_MAX = 24;
 const TILT = 78; // keep in step with .evsat --tilt
 const YAW = -34; // how far a card at the side turns with the ring's curve
 const STEPS = 24; // a card's poses round the circle
@@ -379,7 +385,11 @@ function Saturn({
         <div className="evsat-planet">
           <div className="evsat-globe" aria-hidden />
           <div className="evsat-prings" aria-hidden />
-          <div className="evsat-kinds" role="group" aria-label="Kind">
+        </div>
+      </div>
+      {/* the kinds: flat, over the planet's face and above everything in the scene (inside it, the back of the ring
+          and the planet's own rings cut through them) */}
+      <div className="evsat-kinds" role="group" aria-label="Kind">
             {([{ id: "all", label: "All" }, ...EVENT_KINDS] as { id: Kind; label: string }[]).map((k) => (
               <button
                 key={k.id}
@@ -394,8 +404,6 @@ function Saturn({
                 <span>{k.label}</span>
               </button>
             ))}
-          </div>
-        </div>
       </div>
     </section>
   );
@@ -447,9 +455,9 @@ function KindTile({ kind, events }: { kind: EventKind; events: PastEvent[] }) {
 }
 
 /* One event on the wall: its poster filling the tile, its name and date over the foot of it. */
-function Tile({ ev, big, i, onOpen }: { ev: PastEvent; big: boolean; i: number; onOpen: () => void }) {
+function Tile({ ev, big, i, col, onOpen }: { ev: PastEvent; big: boolean; i: number; col: number; onOpen: () => void }) {
   return (
-    <article className="evb-tile" data-big={big || undefined} data-kind={ev.kind} style={{ "--i": Math.min(i, 12) } as CSSProperties}>
+    <article className="evb-tile" data-big={big || undefined} data-kind={ev.kind} data-rise style={{ "--i": Math.min(i, 12), "--col": col } as CSSProperties}>
       <EventPoster name={ev.name} tag={ev.tag} poster={ev.poster} />
       <span className="evb-badge" aria-hidden>
         <KindIcon kind={ev.kind} />

@@ -55,7 +55,7 @@ const LOOP_TO = MID[N - 1] - (MID[N - 1] - MID[N - 2]) * 0.06;
 /* Past Contact the story takes the scroll and plays itself, like a film, at a set pace to the last stop: a scroll
    down there starts it, a scroll up hands control back (StorySection, with the home's smooth scroll) */
 const PLAY_FROM = MID[N - 2] + (MID[N - 1] - MID[N - 2]) * 0.02;
-const PLAY_SECONDS = 10; // the whole flight from Contact round the Sun to the last stop (the owner found 22, then 14, too slow; 8 too fast)
+const PLAY_SECONDS = 12; // the whole flight from Contact round the Sun to the last stop (the owner found 22, then 14, too slow; 8 too fast; then asked for 12)
 /* the ship arrives at the last stop (past the Sun) here, in scroll progress: the constellation forms then, not before */
 const ARRIVED = (TOTAL_W - STOPS[N - 1].weight / 2) / TOTAL_W - 0.004;
 

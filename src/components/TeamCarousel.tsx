@@ -20,6 +20,12 @@ import { initials, memberMeta, photoUrl } from "@/lib/team";
      card carries the member's name and department.
    • The ring does not loop: the first member has nobody before it,
      and the last nobody after it.
+   • Restored 2026-10-17 as the very first carousel, without its
+     continuous motion (owner): no idle auto-spin, no bobbing cards,
+     no breathing floor or circling satellites. It moves only when
+     you do, one member per scroll gesture or key (useStepScroll):
+     a trackpad flick's momentum is swallowed, there is no hold,
+     and scrolling outward at the first or last member leaves it.
    • The ring is sized from the member count: past ten members it
      grows so every card keeps the same width, and is pushed back
      so the front card stays where it was.
@@ -387,6 +393,123 @@ function totemDataURL(size = 384): Promise<string> {
   });
 }
 
+/* One member per gesture (owner, 2026-10-17): a wheel or touchpad gesture, or an arrow / page key, moves the page to
+   the next member's stop and no further. A gesture is a run of wheel events without a 220ms pause; small touchpad
+   deltas add up, and once it has stepped, the rest of it (momentum) is swallowed, even at the ends, so it can't carry
+   the page out. A full mouse notch re-arms 110ms after a step. A push mid-glide goes on from the glide's goal; there
+   is no hold. At the first and last member, a new push outward leaves the ring as usual, and arriving from above or
+   below stops on the first or last member. Any other scroll (a scrollbar drag) settles on the nearer member. */
+function useStepScroll(holderRef: React.RefObject<HTMLDivElement | null>, N: number) {
+  useEffect(() => {
+    const holder = holderRef.current;
+    if (!holder || N < 2) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const range = () => ({ top: holder.getBoundingClientRect().top + window.scrollY, total: holder.offsetHeight - window.innerHeight });
+    const indexNow = () => {
+      const { top, total } = range();
+      return total > 0 ? ((window.scrollY - top) / total) * (N - 1) : 0;
+    };
+    let lockUntil = 0; // a step is gliding until then (no settle meanwhile)
+    let goal = -1;
+    let lastStep = 0;
+    let lastWheel = 0;
+    let acc = 0;
+    let armed = true;
+    const goStop = (k: number) => {
+      const { top, total } = range();
+      const idx = Math.min(N - 1, Math.max(0, k));
+      goal = idx;
+      lastStep = performance.now();
+      lockUntil = lastStep + (reduced ? 200 : 650);
+      window.scrollTo({ top: top + (idx / (N - 1)) * total, behavior: reduced ? "auto" : "smooth" });
+    };
+    const step = (dir: number) => {
+      if (performance.now() < lockUntil && goal >= 0) return goStop(goal + dir);
+      const t = indexNow();
+      goStop(dir > 0 ? Math.floor(t + 0.02) + 1 : Math.ceil(t - 0.02) - 1);
+    };
+    const inside = (dir: number) => {
+      const { top, total } = range();
+      const into = window.scrollY - top;
+      if (total <= 0 || into < -2 || into > total + 2) return false;
+      const t = indexNow();
+      return dir > 0 ? t < N - 1 - 0.02 : t > 0.02;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // pinch zoom
+      const raw = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      const dy = raw * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+      if (!dy) return;
+      const { top, total } = range();
+      const into = window.scrollY - top;
+      // when the event was made, not when this busy page got round to it, so a slow frame can't split one gesture
+      const now = e.timeStamp || performance.now();
+      if (now - lastWheel > 220 || (now - lastStep > 110 && Math.abs(dy) >= 50)) {
+        if (!armed) acc = 0;
+        armed = true;
+      }
+      lastWheel = now;
+      if (!armed && into >= -2 && into <= total + 2) {
+        e.preventDefault();
+        return;
+      }
+      if (into < -2 && into + dy > 0) {
+        e.preventDefault();
+        if (armed) {
+          armed = false;
+          goStop(0);
+        }
+        return;
+      }
+      if (into > total + 2 && into + dy < total) {
+        e.preventDefault();
+        if (armed) {
+          armed = false;
+          goStop(N - 1);
+        }
+        return;
+      }
+      if (!inside(Math.sign(dy))) return;
+      e.preventDefault();
+      if (!armed) return;
+      acc += dy;
+      if (Math.abs(acc) < 24) return;
+      armed = false;
+      step(Math.sign(acc));
+      acc = 0;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || (e.target as Element).closest?.("input, textarea, select, [contenteditable]")) return;
+      const dir = { ArrowRight: 1, ArrowDown: 1, PageDown: 1, " ": e.shiftKey ? -1 : 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }[e.key];
+      if (!dir || !inside(dir)) return;
+      e.preventDefault();
+      step(dir);
+    };
+    let rest = 0;
+    const settle = () => {
+      if (reduced) return;
+      const { top, total } = range();
+      const into = window.scrollY - top;
+      if (total <= 0 || into <= 0 || into >= total) return;
+      const t = (into / total) * (N - 1);
+      if (Math.abs(t - Math.round(t)) > 0.01) goStop(Math.round(t));
+    };
+    const onScroll = () => {
+      clearTimeout(rest);
+      if (performance.now() >= lockUntil) rest = window.setTimeout(settle, 180);
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(rest);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [holderRef, N]);
+}
+
 export default function TeamCarousel({ members }: TeamCarouselProps) {
   const holderRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -398,6 +521,7 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
   const [drawn, setDrawn] = useState(false);
 
   const N = members.length;
+  useStepScroll(holderRef, N);
 
   /* Pre-generate the portrait textures (client-side canvases) */
   useEffect(() => {
@@ -589,22 +713,8 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         ring.add(totem);
       }
 
-      /* ── Auto-rotate ────────────────────────────────────────
-         After the user stops scrolling, the ring slowly spins on
-         its own until the next scroll. Skipped for users who
-         prefer reduced motion.                               */
-      const AUTO_DELAY = 2500; // ms of no scrolling before rotating
-      const AUTO_SPEED = 0.3; // members per second (~33s per lap)
-      const HOLD_MS = 2000; // freeze the front image on each name change
-      const HOLD_RAMP = 400; // ms to ease speed down/up around the freeze
-      let idleTimer: ReturnType<typeof setTimeout> | undefined;
-      let autoRotate = false;
-      let holdStart = 0; // when the 2s freeze began
-      let holdUntil = 0; // when the freeze ends
+      /* No auto-rotate (owner, 2026-10-17): the ring turns only when the page scrolls. */
       let prevIdx = 0;
-      const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
 
       /* Scroll progress → rotate the ring */
       let s = 0; // continuous member index
@@ -617,36 +727,9 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         if (total <= 0) return;
         const p = Math.min(1, Math.max(0, -rect.top / total));
         targetS = p * (N - 1);
-
-        /* stop auto-rotate and re-arm the idle timer */
-        autoRotate = false;
-        holdUntil = 0; // user takes over - cancel any name-change freeze
-        if (idleTimer) clearTimeout(idleTimer);
-        if (!reducedMotion) {
-          idleTimer = setTimeout(() => {
-            /* only spin when the stage is actually on screen */
-            const r = holderRef.current?.getBoundingClientRect();
-            const inView = !!r && r.bottom > 0 && r.top < window.innerHeight;
-            if (inView) autoRotate = true;
-          }, AUTO_DELAY);
-        }
       };
       window.addEventListener("scroll", onScroll, { passive: true });
       onScroll();
-
-      /* Pause auto-rotate while the pointer hovers the stage
-         (only tracked on devices that actually support hover) */
-      let hovering = false;
-      const onPointerEnter = () => {
-        hovering = true;
-      };
-      const onPointerLeave = () => {
-        hovering = false;
-      };
-      if (window.matchMedia("(hover: hover)").matches) {
-        stage.addEventListener("pointerenter", onPointerEnter);
-        stage.addEventListener("pointerleave", onPointerLeave);
-      }
 
       /* Pointer parallax - subtle, adds depth while scrolling */
       let px = 0;
@@ -688,20 +771,6 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         const dt = Math.min(0.1, (now - lastT) / 1000); // clamp pauses
         lastT = now;
 
-        /* auto-rotate advances the target; the speed factor ramps
-           smoothly down to 0 before the freeze and back up after,
-           so the card decelerates into the front position and
-           accelerates away - no sudden changes in motion */
-        let speed = 1;
-        if (now < holdUntil) {
-          const rampIn = Math.min(1, (now - holdStart) / HOLD_RAMP);
-          const rampOut = Math.min(1, (holdUntil - now) / HOLD_RAMP);
-          speed = Math.min(rampIn, rampOut);
-        }
-        if (autoRotate && !hovering) {
-          targetS = Math.min(N - 1, targetS + AUTO_SPEED * speed * dt);
-        }
-
         /* ease toward the target. The factor is normalised to frame
            time so the glide feels identical at 60 / 120 / 144 Hz. */
         const ease = 1 - Math.pow(1 - 0.09, dt * 60);
@@ -709,17 +778,10 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
         const idx = Math.min(N - 1, Math.max(0, Math.round(s)));
         setActive(idx);
 
-        /* when auto-rotate brings a new member to the front, glide the
-           ring to dead-centre on it and freeze for 2s so the image
-           and the dust fade have time to breathe */
+        /* a new member at the front: one ping from the floor */
         if (idx !== prevIdx) {
           prevIdx = idx;
           pingStart = now / 1000;
-          if (autoRotate) {
-            targetS = idx;
-            holdStart = now;
-            holdUntil = now + HOLD_MS;
-          }
         }
 
         /* ring rotation: member `s` swings to the front (angle 0) */
@@ -747,10 +809,10 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
           const scl = 0.8 + 0.26 * frontness;
           panel.scale.set(scl, scl, 1);
           panel.renderOrder = i === idx ? 10 : 0;
-          panel.position.y = reducedMotion ? 0 : Math.sin((now / 1000) * 0.9 + i * 1.3) * 0.05;
+          panel.position.y = 0;
         });
 
-        updateFloor(now / 1000, reducedMotion);
+        updateFloor(now / 1000, true); // calm: the floor rings and satellites hold still
 
         renderer.render(scene, camera);
         if (!firstDrawn) {
@@ -764,11 +826,6 @@ export default function TeamCarousel({ members }: TeamCarouselProps) {
       cleanup = () => {
         disposed = true;
         cancelAnimationFrame(raf);
-        if (idleTimer) clearTimeout(idleTimer);
-        if (window.matchMedia("(hover: hover)").matches) {
-          stage.removeEventListener("pointerenter", onPointerEnter);
-          stage.removeEventListener("pointerleave", onPointerLeave);
-        }
         window.removeEventListener("scroll", onScroll);
         window.removeEventListener("pointermove", onPointer);
         ro.disconnect();

@@ -25,7 +25,9 @@ export default function QuickCodePage() {
 
       {/* ── ARCHIVE: the five weeks as a console ── */}
       <section id="archive" className="qc-sec" style={{ paddingTop: "clamp(96px, 14vh, 140px)" }}>
-        <h1 className="sr-only">Quick Code</h1>
+        <h1 className="pg-title" style={{ margin: "0 0 clamp(24px, 4vh, 44px)", textAlign: "center" }}>
+          Quick Code
+        </h1>
         <QuickCodeArchive weeks={QC_WEEKS} />
       </section>
 

@@ -1,6 +1,7 @@
 import { kindOf, type PastEvent, type UpcomingEvent } from "@/data/events";
 import { FALLBACK_EVENT_ROWS } from "./events.fallback";
 import { EVENTS_2026_ROWS } from "./events.2026";
+import { EVENT_RECAPS } from "./events.recaps";
 
 /* ============================================================
    EVENTS DATA - the club's real events.
@@ -16,7 +17,7 @@ import { EVENTS_2026_ROWS } from "./events.2026";
      title        -> name
      date         -> date ("31 OCT 2025", IST) and year (archive grouping)
      description  -> blurb (plain text, emoji removed, short excerpt)
-                     and log (the same text in full, for the flight log)
+                     and log (the full text, or its past-tense recap from events.recaps.ts)
      mainImage    -> poster (resized by the Sanity CDN)
      eventPics    -> the card's photo strip (the photos taken at that event)
      location     -> stat line, and the tag (ON CAMPUS / ONLINE / HYBRID)
@@ -149,18 +150,19 @@ function mapRow(r: SanityEventRow): MappedEvent | null {
   if (!name || Number.isNaN(ms)) return null;
   const location = clean(r.location ?? "");
   const { date, year } = formatDate(ms);
+  const id = r.slug?.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return {
     ms,
     registerLink: httpsLink(r.registerLink),
     past: {
-      id: r.slug?.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      id,
       year,
       name,
       kind: kindOf(name, clean(r.text ?? "")),
       tag: location ? modeOf(location) : "",
       date,
       blurb: excerpt(clean(r.text ?? "")),
-      log: clean(r.text ?? ""),
+      log: EVENT_RECAPS[id] ?? clean(r.text ?? ""),
       stat: location,
       poster: posterUrl(r.image),
       photos: (r.photos ?? []).map(assetUrl).filter((u): u is string => Boolean(u)),

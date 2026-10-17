@@ -25,9 +25,9 @@ export const DESTINATIONS: Destination[] = [
   // Out of the nav for now: the Saturn idea is kept for somewhere else.
   { href: "/domains", label: "DOMAINS", name: "Domains", glyph: "rings", planet: "Mars", au: "1.52 AU", gate: "IV", gateNo: 4, hidden: true },
   { href: "/team", label: "TEAM", name: "Team", glyph: "constellation", planet: "Venus", au: "0.72 AU", gate: "VI", gateNo: 6 },
-  // Out of the nav until a real, CMS-backed round exists; the page still explains the format.
-  { href: "/quick-code", label: "QUICK CODE", name: "Quick Code", glyph: "pulsar", planet: "Ceres", au: "2.77 AU", gate: "IX", gateNo: 9, hidden: true },
   { href: "/contact", label: "CONTACT", name: "Contact", glyph: "dish", planet: "Pluto", au: "39.5 AU", gate: "VIII", gateNo: 8 },
+  // last, so the phone constellation (story/Constellation.tsx LOOP, pages 0-3) keeps its four stars on the same pages
+  { href: "/quick-code", label: "QUICK CODE", name: "Quick Code", glyph: "pulsar", planet: "Ceres", au: "2.77 AU", gate: "IX", gateNo: 9 },
 ];
 
 /** The places listed in the nav menu and in the travel loader's row. */

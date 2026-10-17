@@ -13,7 +13,6 @@ import { Bloom } from "./Bloom";
 import { isMobileViewport, readTokens, reducedMotion, seeded } from "./tokens";
 import { useSettled } from "./useSettled";
 import GLBoundary, { webglAvailable } from "./GLBoundary";
-import { startMusic } from "@/lib/music";
 
 /* ============================================================
    START - Earth, alone, and a straight flight through traffic
@@ -487,8 +486,6 @@ function IntroScene({
                 startEl.current = el;
               }}
               onPress={() => {
-                /* the music starts here, inside the tap: play() needs a user gesture */
-                startMusic();
                 if (ctl.current.startedAt < 0) ctl.current.startedAt = performance.now() / 1000;
               }}
             />

@@ -135,10 +135,12 @@ export function EntryPanel({
                   <dd className="ev-stat">{past.stat}</dd>
                 </div>
               )}
-              <div>
-                <dt>Status</dt>
-                <dd className="evo-status">{up ? up.status : "PAST"}</dd>
-              </div>
+              {up && (
+                <div>
+                  <dt>Status</dt>
+                  <dd className="evo-status">{up.status}</dd>
+                </div>
+              )}
             </dl>
           )}
           {text && <p className="evo-log">{text}</p>}

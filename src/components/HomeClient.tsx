@@ -140,6 +140,10 @@ export default function HomeClient({ news }: { news: WhatsNewItem | null }) {
     }, 1300);
   }, []);
 
+  /* The page below is set to its opening (hero over the story's first shot) the moment the zoom-out starts, so
+     the fading gate reveals the hero, not the story's first stop ("Follow the signal") held where the gate left it. */
+  const revealed = phase === "content" || zooming;
+
   return (
     <>
       {/* The landing mounts once, under the preloader, and stays mounted when the preloader lifts. */}
@@ -170,9 +174,9 @@ export default function HomeClient({ news }: { news: WhatsNewItem | null }) {
       {/* Mounted from the start, so the journey built under the preloader is the one that flies (the hero
           joins it above once the gate clears); held still while the gate covers it. */}
       <div style={{ background: "transparent", position: "relative" }} inert={phase !== "content"}>
-        {phase === "content" && <HeroSection story={storyWarm ? "ready" : storyReady ? "build" : "wait"} news={news} />}
+        {revealed && <HeroSection story={storyWarm ? "ready" : storyReady ? "build" : "wait"} news={news} />}
         {storyReady ? (
-          <StorySection onWarm={onStoryWarm} covered={phase !== "content"} />
+          <StorySection onWarm={onStoryWarm} covered={!revealed} />
         ) : (
           <div aria-hidden style={{ height: STORY_HEIGHT, marginTop: STORY_PULL }} />
         )}

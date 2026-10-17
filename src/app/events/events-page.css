@@ -81,11 +81,11 @@
 .evsat {
   --tilt: 78deg;
   /* the ring's radius: from the count of events, so a few make a small ring and the whole archive a wide one */
-  --R: min(clamp(32vw, calc(var(--n) * 1.15vw), 46vw), 860px);
+  --R: min(clamp(34vw, calc(var(--n) * 1.6vw), 46vw), 860px);
   --lift: min(6.5vw, 120px); /* how far the planet floats above the ring's centre */
   --planet: min(25vw, 460px);
   /* the cards: as big as the reference's, smaller when there are many, so they stand side by side round the ring */
-  --cw: min(6.6vw, 124px, calc(6.2832 * var(--R) / (var(--n) * 1.12)));
+  --cw: min(6.6vw, 124px, calc(6.2832 * var(--R) / (var(--n) * 1.45))); /* 1.45: a third of a card's width between neighbours */
   position: relative;
   width: 100vw;
   height: min(41vw, 760px);
@@ -208,14 +208,18 @@
   border-radius: 50%;
   background: radial-gradient(circle closest-side, transparent 60%, rgba(255, 205, 130, 0.55) 61%, transparent 62.5%, rgba(255, 190, 100, 0.18) 67%, rgba(255, 215, 150, 0.7) 72%, transparent 73.5%, rgba(255, 190, 100, 0.22) 84%, transparent 86%);
 }
+/* flat, over the planet's face: the planet's centre is the tilt's origin (58% down) less its lift */
 .evsat-kinds {
   position: absolute;
-  inset: 26% 6% 28%;
-  transform: translateZ(calc(var(--planet) * 0.95)); /* in front of the near side of the planet's own rings */
+  z-index: 2;
+  left: 50%;
+  top: calc(58% - var(--lift) - var(--planet) * 0.04);
+  width: min(calc(var(--planet) * 1.04), 470px);
+  translate: -50% -50%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: center;
-  gap: 8px 10px;
+  grid-template-columns: repeat(2, minmax(max-content, 1fr)); /* a column is never narrower than its longest kind */
+  justify-content: center;
+  gap: 10px 12px;
 }
 .evsat-kind {
   --k: var(--lit);
@@ -227,8 +231,7 @@
   padding: 0 11px;
   border: 1px solid rgba(255, 220, 170, 0.28);
   border-radius: 999px;
-  background: rgba(10, 9, 12, 0.72);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 9, 12, 0.86);
   font: 600 clamp(9px, 0.72vw, 12px)/1 var(--font-mono);
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -237,7 +240,7 @@
   cursor: pointer;
   transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
 }
-.evsat-kind span { overflow: hidden; text-overflow: ellipsis; }
+.evsat-kind span { overflow: hidden; text-overflow: ellipsis; line-height: 1.5; } /* at 1 the clip cut the tops off the capitals */
 .evsat-kind .evb-icon { width: 16px; height: 16px; color: var(--k); }
 .evsat-kind:hover:not(:disabled) { border-color: var(--k); }
 .evsat-kind:disabled { opacity: 0.35; cursor: default; }
@@ -326,6 +329,9 @@
   display: grid;
   grid-template-columns: var(--colw) minmax(0, 1fr);
   gap: var(--gap);
+  /* a year off screen is not laid out or painted (its posters load lazily as it nears) */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 .evb-posters {
   display: grid;
@@ -382,12 +388,21 @@
 /* one event: the poster fills the tile, the name and date over its foot */
 .evb-tile {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
   border: 1px solid rgba(190, 205, 230, 0.14);
   border-radius: 10px;
   background: var(--surface-container-high);
   box-shadow: 0 14px 30px -18px #000;
-  transition: border-color 300ms var(--ease-out), box-shadow 300ms var(--ease-out), opacity 600ms var(--ease-out), translate 700ms var(--ease-out);
+  --rise: cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    border-color 300ms var(--ease-out),
+    box-shadow 300ms var(--ease-out),
+    opacity 700ms var(--ease-out) calc(var(--col, 0) * 70ms),
+    translate 900ms var(--rise) calc(var(--col, 0) * 70ms),
+    scale 900ms var(--rise) calc(var(--col, 0) * 70ms);
 }
 .evb-tile[data-big] { grid-column: span 2; grid-row: span 2; }
 .evb-tile .ev-poster { position: absolute; inset: 0; aspect-ratio: auto; border: 0; filter: brightness(0.82); transition: filter 400ms var(--ease-out), scale 600ms var(--ease-out); }
@@ -408,9 +423,9 @@
   color: var(--k);
 }
 .evb-badge .evb-icon { width: 14px; height: 14px; }
+/* not positioned, so the open button's ::after spans the whole tile (a z-index lifts it over the poster) */
 .evb-cap {
-  position: absolute;
-  inset: auto 0 0;
+  z-index: 1;
   padding: 38px 12px 11px;
   background: linear-gradient(180deg, transparent, rgba(3, 5, 10, 0.78) 40%, rgba(3, 5, 10, 0.95));
 }
@@ -434,9 +449,8 @@
 .evb-tile:has(.evb-open:focus-visible) { outline: 2px solid var(--signal); outline-offset: 3px; }
 
 /* rising in as each year arrives */
-[data-rise]:not([data-in]) > * { opacity: 0; translate: 0 24px; }
-[data-rise] > .evb-tile { transition-delay: 0s, 0s, calc(var(--i, 0) * 40ms), calc(var(--i, 0) * 40ms); }
-[data-rise] > .evb-yeartile { transition: opacity 600ms var(--ease-out), translate 700ms var(--ease-out); }
+[data-rise]:not([data-in]) { opacity: 0; translate: 0 36px; scale: 0.96; }
+.evb-yearcol[data-rise] { transition: opacity 700ms var(--ease-out), translate 900ms cubic-bezier(0.2, 0.8, 0.2, 1), scale 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 @media (max-width: 900px) {
   .evb-top { grid-template-columns: minmax(0, 1fr); }
@@ -542,6 +556,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .evb-tile, .evb-tile .ev-poster, .evb-chip, .evb-year { transition: none !important; }
-  [data-rise]:not([data-in]) > * { opacity: 1; translate: none; }
+  [data-rise]:not([data-in]) { opacity: 1; translate: none; scale: none; }
   .evo-panel-sheet, .evo-panel-body { animation: none; }
 }

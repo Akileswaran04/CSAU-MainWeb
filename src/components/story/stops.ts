@@ -66,7 +66,7 @@ const TOUR_DE_CODE =
 
 /* MOCK - placeholder copy, to be replaced by the club's own text */
 const MOCK = {
-  contact: "One line inviting people to get in touch.",
+  contact: "There’s always room for one more idea.",
 };
 
 const EVENTS_CTA: Cta[] = [{ label: "EVENTS →", href: "/events" }];
@@ -86,7 +86,7 @@ export const STOPS: Stop[] = [
     cta: [{ label: "MEET THE CREW →", href: "/team" }],
     weight: 1,
   },
-  { kind: "contact", lines: ["Contact"], body: MOCK.contact, cta: [{ label: "CONTACT →", href: "/contact" }], weight: 1 },
-  // heavier than a stop: half of it is the flight once round the Sun (the owner found 5 too long, 2.5 too short; raise it to slow the loop)
-  { kind: "map", lines: [], body: "", weight: 3 },
+  { kind: "contact", lines: ["Reach Out To Us"], body: MOCK.contact, cta: [{ label: "CONTACT →", href: "/contact" }], weight: 1 },
+  // heavier than a stop: half of it is the flight once round the Sun (the owner found 5 too long, 2.5 too short, then asked for 3.5; raise it to slow the loop)
+  { kind: "map", lines: [], body: "", weight: 3.5 },
 ];
