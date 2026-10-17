@@ -1310,14 +1310,14 @@ function Director({
            Sun's heat, where the stage glows too (--heat, globals.css) --- */
     const heat = clamp(1 - (shipPos.distanceTo(L.sun) - SUN_R - 45) / 70, 0, 1) * (launching ? 0 : 1);
     /* round the Sun (x: 0 to 1 round the loop): the hull heats up; a little past halfway an eruption rises under the
-       route and blasts across it, and the ship banks hard away; then it soaks up sunlight, charging for the warp, and
+       route and blasts across it (laptops only), and the ship banks gently away; then it soaks up sunlight, charging for the warp, and
        keeps some of the charge as it leaves */
     const leg = clamp(sf.current - (S - 2), 0, 1);
     const x = clamp(leg / loopShare, 0, 1);
     const away = smooth((leg - loopShare) / (1 - loopShare));
     const cme = clamp((x - 0.4) / 0.25, 0, 1);
-    const blast = cme > 0.5 ? 1 - (cme - 0.5) / 0.5 : 0;
-    const dodge = Math.sin(clamp((cme - 0.45) / 0.4, 0, 1) * Math.PI) * 0.9;
+    // phones have no eruption to dodge; laptops bank gently away from it (owner, 2026-10-17: less animation round the Sun)
+    const dodge = Math.sin(clamp((cme - 0.45) / 0.4, 0, 1) * Math.PI) * (mobile ? 0 : 0.35);
     const charge = smooth((x - 0.55) / 0.3);
     sunFx.current.heat = heat * (1 - smooth((x - 0.55) / 0.15)) * smooth((morph.current - 0.8) / 0.2); // once the armour is whole
     sunFx.current.charge = charge * (1 - 0.65 * away);
@@ -1326,7 +1326,9 @@ function Director({
     streamU.uOn.value = charge * (1 - away);
     streamU.uTime.value = t;
     /* how hard it shakes: in the Sun's heat, in the eruption's blast, and while the armour locks on */
-    const rough = reduced ? 0 : Math.max(heat, blast * 0.9, evolving * 0.55);
+    // laptops and desktops: no shaking round the Sun at all; phones keep the heat and the armour's, but there is no
+    // blast to shake them (the eruption is not shown on phones)
+    const rough = reduced || !mobile ? 0 : Math.max(heat, evolving * 0.55);
     /* now and then a bump: a sharp knock that rings out, at uneven times */
     if (rough > 0.05 && t > bump.current.next) bump.current = { at: t, amp: rough * (0.5 + Math.random() * 0.5), next: t + 0.6 + Math.random() * 1.1 };
     const since = t - bump.current.at;
@@ -1376,7 +1378,7 @@ function Director({
       heading.current += d * Math.min(1, dt * 8);
       bank.current = THREE.MathUtils.damp(bank.current, clamp(turn * 0.1, -0.5, 0.5), 5, dt);
       // nose up as it climbs (it was the other way round, which showed the camera its belly); a little buffeting
-      const shake = reduced ? 0 : (Math.sin(t * 2.1) + Math.sin(t * 3.4 + 1) * 0.5) * (0.015 + heat * 0.05);
+      const shake = reduced ? 0 : (Math.sin(t * 2.1) + Math.sin(t * 3.4 + 1) * 0.5) * (0.015 + (mobile ? heat * 0.05 : 0));
       g.rotation.set(sd.y * 0.8 + shake * 0.5, heading.current, bank.current + shake + dodge, "YXZ");
       streamU.uTo.value.copy(g.position);
     }
@@ -1443,7 +1445,8 @@ function Director({
       <group position={L.sun}>
         <Planet kind="sun" radius={60} sun={sunFacing} rotation={0.01} low={mobile} />
         <SolarFlares radius={60} low={mobile} on={flareOn} />
-        <Eruption radius={60} dir={erupt.dir} side={erupt.side} u={eruptU} low={mobile} />
+        {/* the eruption (the solar flare that strikes across the route): laptops and desktops only */}
+        {!mobile && <Eruption radius={60} dir={erupt.dir} side={erupt.side} u={eruptU} low={mobile} />}
       </group>
       <SunStream u={streamU} low={mobile} />
       {portrait && <SolarSystem sun={L.sun} earth={L.earth} ahead={ahead} low={mobile} />}
@@ -1451,6 +1454,28 @@ function Director({
       {!mobile && <Bloom intensity={0.85} threshold={0.32} smoothing={0.2} />}
     </>
   );
+}
+
+/* Laptops and desktops: once the journey is drawing, time 60 frames (after the first 40, which carry the compiles and
+   uploads); if their MEDIAN can't hold FPS_FLOOR at full resolution, draw at 0.75. Integrated graphics are fill-bound
+   here: on an Intel UHD at 1440x900, when busy, 0.75 took the journey from ~30 to 60+ fps (2026-10-17), while a strong
+   card keeps full sharpness. The median, so a few startup hitches can't trip it. (PerformanceMonitor below never
+   declined in those runs; this decides quickly and once.) */
+const FPS_FLOOR = 45;
+function FpsGuard({ onSlow }: { onSlow: () => void }) {
+  const s = useRef({ n: 0, dts: [] as number[], done: false });
+  useFrame((_, dt) => {
+    const st = s.current;
+    if (st.done || dt > 0.25) return; // a pause (tab hidden, scene held), not a frame
+    st.n += 1;
+    if (st.n <= 40) return;
+    st.dts.push(dt);
+    if (st.dts.length < 60) return;
+    st.done = true;
+    const median = st.dts.sort((x, y) => x - y)[30];
+    if (median > 1 / FPS_FLOOR) onSlow();
+  });
+  return null;
 }
 
 /* ---------------- Canvas wrapper ---------------- */
@@ -1597,6 +1622,7 @@ export default function SpaceScene({
       <color attach="background" args={["#000000"]} />
       <Prewarm bloom={!mobile} onReady={setWarm} until={earth} onStep={onLoad} />
       <PerformanceMonitor onDecline={() => setDpr((d) => Math.min(d, mobile ? 1 : 0.75))} />
+      {!mobile && warm && dpr > 0.75 && <FpsGuard onSlow={() => setDpr(0.75)} />}
       <Director progress={progress} lead={lead} reduced={reduced} mobile={mobile} warp={warp} beat={beat} />
     </Canvas>
   );

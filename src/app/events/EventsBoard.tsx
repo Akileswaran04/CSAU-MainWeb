@@ -235,7 +235,7 @@ function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void 
         <h2 className="evb-label">{LEAD}</h2>
         <div className="evb-pad-row">
           <LaunchPad />
-          <p className="evb-pad-name">
+          <div className="evb-pad-name">
             {ANNOUNCEMENT?.href ? (
               isExternal(ANNOUNCEMENT.href) ? (
                 <a href={ANNOUNCEMENT.href} target="_blank" rel="noopener noreferrer">
@@ -249,7 +249,7 @@ function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void 
             ) : (
               nameOf({ pad: true })
             )}
-          </p>
+          </div>
         </div>
       </section>
     );
@@ -268,9 +268,9 @@ function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void 
                     {it.up.name}
                   </button>
                 </h3>
-                <p className="evb-date tabular">
+                <div className="evb-date tabular">
                   {it.up.date} · <span className="evb-status">{it.up.status}</span>
-                </p>
+                </div>
               </div>
             </li>
           ) : null,
@@ -468,7 +468,7 @@ function Tile({ ev, big, i, col, onOpen }: { ev: PastEvent; big: boolean; i: num
             {ev.name}
           </button>
         </h3>
-        <p className="evb-date tabular">{ev.date}</p>
+        <div className="evb-date tabular">{ev.date}</div>
       </div>
     </article>
   );

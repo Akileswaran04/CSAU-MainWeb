@@ -319,7 +319,7 @@
 .evb-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 
 /* ── the wall: a block per year; the year is a tile of it, the newest event a big one ── */
-.evb-wall { container-type: inline-size; display: grid; gap: 28px; }
+.evb-wall { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 /* the year column, then its posters (--pcols across; EventsBoard's posterCols has the same steps) */
 .evb-block {
   --cols: 6;
@@ -331,7 +331,9 @@
   gap: var(--gap);
   /* a year off screen is not laid out or painted (its posters load lazily as it nears) */
   content-visibility: auto;
-  contain-intrinsic-size: auto 900px;
+  /* a placeholder HEIGHT only: "contain-intrinsic-size: auto 900px" sized the width too, and a 900px-wide block
+     stretched the wall's column past the screen on phones and tablets */
+  contain-intrinsic-block-size: auto 900px;
 }
 .evb-posters {
   display: grid;
