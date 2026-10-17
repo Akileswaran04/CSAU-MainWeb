@@ -35,10 +35,11 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
           }
           let domains = Array.from(byDomain, ([name, list]) => ({ name, list }));
           // one person per domain (the heads, the office bearers): no domain headings, one list
-          if (domains.every((d) => d.list.length === 1)) domains = [{ name: "", list: domains.flatMap((d) => d.list) }];
-          return { ...g, domains };
+          if (domains.length && domains.every((d) => d.list.length === 1)) domains = [{ name: "", list: domains.flatMap((d) => d.list) }];
+          return { ...g, domains, count: domains.reduce((n, d) => n + d.list.length, 0) };
         })
-        .filter((g) => g.domains.length > 0),
+        // a rank with nobody in it (no core members in the CMS yet) is not shown at all
+        .filter((g) => g.count > 0),
     [members],
   );
 
@@ -68,25 +69,19 @@ export default function TeamView({ members, state }: { members: TeamMember[]; st
               {group.domains.map((d) => (
                 <div key={d.name} className="tm-group">
                   {/* a domain's heading; an unnamed list sits straight under the section title, which already names it */}
-                  {d.name && (
-                    <h3 className="tm-group-name">
-                      {d.name}
-                      <span className="tm-group-count tabular">
-                        {String(d.list.length).padStart(2, "0")} {d.list.length === 1 ? "member" : "members"}
-                      </span>
-                    </h3>
-                  )}
+                  {d.name && <h3 className="tm-group-name">{d.name}</h3>}
                   <ul className="tm-grid">
                     {d.list.map((m) => (
                       <li key={m.id}>
                         <div className="clay-card card-photo tm-card">
+                          {/* the designation, highlighted at the top of the card */}
+                          <span className="tm-card-tag">{d.name ? m.designation : m.role}</span>
                           <span className="tm-card-photo">
                             <Portrait member={m} size={400} />
                           </span>
                           <span className="tm-card-body">
                             <span className="tm-card-name">{m.name}</span>
                             <span className="tm-card-bar" aria-hidden />
-                            <span className="tm-card-role">{d.name ? m.designation : m.role}</span>
                             <span className="tm-card-meta">{memberMeta(m)}</span>
                           </span>
                         </div>

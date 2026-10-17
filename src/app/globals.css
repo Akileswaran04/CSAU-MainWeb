@@ -2073,7 +2073,7 @@ a.dm-member-link:active { transform: translateY(1px); }
    profile reuses the Domains detail shell (.dm-detail*).
    ============================================================ */
 
-.tm-crew { padding: 10vh var(--pg-x) 12vh; }
+.tm-crew { padding: 8vh var(--pg-x) 10vh; }
 .tm-crew + .tm-crew { padding-top: 0; }
 .tm-crew-in { max-width: 1120px; margin: 0 auto; }
 .tm-title {
@@ -2108,14 +2108,6 @@ a.dm-member-link:active { transform: translateY(1px); }
   line-height: 1.2;
   color: var(--on-surface);
 }
-.tm-group-count {
-  display: block;
-  margin-top: 8px;
-  font: 500 11px/1 var(--font-mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--outline);
-}
 .tm-grid {
   list-style: none;
   margin: 0;
@@ -2139,6 +2131,19 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 .tm-card:focus-visible { border-color: var(--on-surface); }
 .tm-card:focus-visible .photo-mono { filter: grayscale(0) contrast(1); }
+/* the designation: a highlighted tag across the top of the card */
+.tm-card-tag {
+  align-self: flex-start;
+  margin: 10px 10px 0;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--lit) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lit) 14%, transparent);
+  font: 600 10px/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lit);
+}
 .tm-card-photo {
   position: relative;
   display: grid;
@@ -2158,9 +2163,9 @@ a.dm-member-link:active { transform: translateY(1px); }
 }
 .tm-card-photo .tm-photo,
 .tm-card-photo .tm-initials {
-  inset: 9%;
-  width: 82%;
-  height: 82%;
+  inset: 7%;
+  width: 86%;
+  height: 86%;
   border-radius: 50%;
   outline: 1px solid var(--outline-variant);
   outline-offset: 5px;
@@ -2177,16 +2182,16 @@ a.dm-member-link:active { transform: translateY(1px); }
   color: var(--on-surface-variant);
 }
 .tm-card-photo, .tm-profile-photo, .tm-avatar { container-type: inline-size; }
-.tm-card-body { display: flex; flex-direction: column; padding: 4px 14px 16px; }
+.tm-card-body { display: flex; flex-direction: column; padding: 2px 12px 14px; }
 .tm-card-name { font-size: 16px; line-height: 1.2; color: var(--on-surface); overflow-wrap: anywhere; }
-.tm-card-bar { width: 28px; height: 2px; margin: 10px 0 8px; background: var(--signal); }
+.tm-card-bar { width: 28px; height: 2px; margin: 8px 0 7px; background: var(--signal); }
 .tm-card-role {
   font: 500 11px/1.4 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--on-surface);
 }
-.tm-card-meta { margin-top: 4px; font-size: 12px; color: var(--on-surface-variant); }
+.tm-card-meta { margin-top: 2px; font-size: 12px; color: var(--on-surface-variant); }
 
 /* arrow buttons: ring counter and profile header */
 .tm-step {
