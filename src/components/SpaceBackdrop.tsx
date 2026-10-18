@@ -82,12 +82,17 @@ export default function SpaceBackdrop() {
       if (pings.length) drawPings(ctx, pings, time, pal.dim, 0.35);
     };
 
+    /* ~25fps is plenty for slow stars. The next frame is asked for only when it is due: a frame asked for on
+       every refresh (60-165 a second) made the browser restyle the whole page that often for nothing */
+    let wait = 0;
+    const next = () => {
+      wait = window.setTimeout(() => (raf = requestAnimationFrame(frame)), 40);
+    };
     const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
+      next();
       const root = document.documentElement;
       // nothing to draw for while the menu or a full-screen stage (html[data-stage-covered]) covers it
       if (document.hidden || root.dataset.navOpen || root.dataset.stageCovered) return;
-      if (now - last < 40) return; // ~25fps is plenty for slow stars
       const dt = last ? (now - last) / 1000 : 0;
       last = now;
       t += dt;
@@ -111,6 +116,7 @@ export default function SpaceBackdrop() {
     }
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(wait);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
     };

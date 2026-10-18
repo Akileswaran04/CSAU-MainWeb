@@ -9,10 +9,11 @@ import { EntryPanel, LEAD, LaunchPad, keyOf, nameOf, type Item } from "./parts";
 
 /* ============================================================
    EVENTS BOARD - the page, in order:
-   - the title, with Upcoming & Current beside it: their posters
-     large, or (nothing upcoming) a slim launchpad strip;
-   - on laptops and up, Saturn: every event on one wide ring round
-     it, and the kinds are on its face (not on phones);
+   - the title, then Upcoming & Current: each upcoming event as a
+     featured card (its poster, then its name, line, date and
+     Register), or (nothing upcoming) a slim launchpad strip;
+   - on laptops and up, Saturn: the newest events on one wide ring
+     round it, and the kinds are on its face (not on phones);
    - one sticky bar: the kinds, and whether the wall is grouped
      by year or by kind;
    - the archive as one wall of posters, a block per year: the
@@ -71,6 +72,23 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
     const ro = new ResizeObserver(() => wallRef.current?.style.setProperty("--evb-under", `${top + bar.offsetHeight + 18}px`));
     ro.observe(bar);
     return () => (io.disconnect(), ro.disconnect());
+  }, []);
+  /* while the page scrolls, the wall takes no hover: every tile sliding under a resting cursor started its glow and
+     zoom, and that was half the work of a scroll frame. Back 150ms after the scroll stops */
+  useEffect(() => {
+    const wall = wallRef.current;
+    if (!wall) return;
+    let t = 0;
+    const onScroll = () => {
+      if (!t) wall.toggleAttribute("data-scrolling", true);
+      clearTimeout(t);
+      t = window.setTimeout(() => {
+        t = 0;
+        wall.toggleAttribute("data-scrolling", false);
+      }, 150);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => (window.removeEventListener("scroll", onScroll), clearTimeout(t));
   }, []);
   /* Saturn is for laptops and up; on phones it is not drawn at all (and its posters never load) */
   const [wide, setWide] = useState(false);
@@ -148,10 +166,8 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
 
   return (
     <div className="evb">
-      <div className="evb-top">
-        <div className="evb-head">{head}</div>
-        <Launch items={upItems} onOpen={(i) => setOpen({ items: upItems, index: i })} />
-      </div>
+      <div className="evb-head">{head}</div>
+      <Launch items={upItems} onOpen={(i) => setOpen({ items: upItems, index: i })} />
 
       {wide && (
         <Saturn
@@ -227,7 +243,8 @@ export default function EventsBoard({ past: archive, current, head }: { past: Pa
   );
 }
 
-/* Upcoming & Current: their posters, large. With nothing upcoming, one slim strip (the launchpad and its line). */
+/* Upcoming & Current: each as a featured card, its poster beside its name, line, date and Register. With nothing
+   upcoming, one slim strip (the launchpad and its line). */
 function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void }) {
   if (!items.length) {
     return (
@@ -257,25 +274,39 @@ function Launch({ items, onOpen }: { items: Item[]; onOpen: (i: number) => void 
   return (
     <section className="evb-up" aria-label={LEAD}>
       <h2 className="evb-label">{LEAD}</h2>
-      <ul className="evb-up-row">
-        {items.map((it, i) =>
-          "up" in it ? (
-            <li key={keyOf(it)} className="evb-tile evb-up-tile" data-kind={it.up.kind}>
+      {items.map((it, i) =>
+        "up" in it ? (
+          <article key={keyOf(it)} className="evb-feat" data-kind={it.up.kind}>
+            <button type="button" className="evb-feat-poster" aria-haspopup="dialog" aria-label={it.up.name} onClick={() => onOpen(i)}>
               <EventPoster name={it.up.name} tag={it.up.tag} poster={it.up.poster} loading="eager" />
-              <div className="evb-cap">
-                <h3 className="evb-name">
-                  <button type="button" className="evb-open" aria-haspopup="dialog" onClick={() => onOpen(i)}>
-                    {it.up.name}
-                  </button>
-                </h3>
-                <div className="evb-date tabular">
-                  {it.up.date} · <span className="evb-status">{it.up.status}</span>
-                </div>
+            </button>
+            <div className="evb-feat-info">
+              <div className="evb-feat-eyebrow">Featured event</div>
+              <h3 className="evb-feat-name">{it.up.name}</h3>
+              {it.up.blurb && <div className="evb-feat-blurb">{it.up.blurb}</div>}
+              <div className="evb-feat-date tabular">
+                {it.up.date} · <span className="evb-status">{it.up.status}</span>
               </div>
-            </li>
-          ) : null,
-        )}
-      </ul>
+              <div className="evb-feat-cta">
+                {it.up.href &&
+                  it.up.cta &&
+                  (isExternal(it.up.href) ? (
+                    <a href={it.up.href} target="_blank" rel="noopener noreferrer" className="btn btn-signal">
+                      {it.up.cta} ↗
+                    </a>
+                  ) : (
+                    <Link href={it.up.href} data-route-load className="btn btn-signal">
+                      {it.up.cta} →
+                    </Link>
+                  ))}
+                <button type="button" className="btn btn-ghost" aria-haspopup="dialog" onClick={() => onOpen(i)}>
+                  Details
+                </button>
+              </div>
+            </div>
+          </article>
+        ) : null,
+      )}
     </section>
   );
 }
@@ -297,7 +328,7 @@ const YAW = -34; // how far a card at the side turns with the ring's curve
 const STEPS = 24; // a card's poses round the circle
 /* a ring card is at most 124px wide: its poster at 256px, not the archive's 720 (fifty big images on turning 3D
    layers made the ring stutter) */
-const ringPoster = (url?: string) => url?.replace(/([?&])w=\d+/, "$1w=256");
+const posterAt = (url: string | undefined, w: number) => url?.replace(/([?&])w=\d+/, `$1w=${w}`);
 
 const pose = (deg: number) => `rotateZ(${-deg}deg) rotateX(${-TILT}deg) rotateY(${(Math.sin((deg * Math.PI) / 180) * YAW).toFixed(2)}deg)`;
 
@@ -375,7 +406,7 @@ function Saturn({
               <li key={ev.id} className="evsat-item" style={{ "--a": `${a}deg` } as CSSProperties}>
                 <div className="evsat-face" data-a={a} style={{ transform: pose(a) }}>
                   <button type="button" className="evsat-card" data-kind={ev.kind} aria-haspopup="dialog" aria-label={`${ev.name}, ${ev.date}`} onClick={() => onOpen(ev)}>
-                    <EventPoster name={ev.name} tag={ev.tag} poster={ringPoster(ev.poster)} />
+                    <EventPoster name={ev.name} tag={ev.tag} poster={posterAt(ev.poster, 256)} />
                   </button>
                 </div>
               </li>
@@ -458,7 +489,8 @@ function KindTile({ kind, events }: { kind: EventKind; events: PastEvent[] }) {
 function Tile({ ev, big, i, col, onOpen }: { ev: PastEvent; big: boolean; i: number; col: number; onOpen: () => void }) {
   return (
     <article className="evb-tile" data-big={big || undefined} data-kind={ev.kind} data-rise style={{ "--i": Math.min(i, 12), "--col": col } as CSSProperties}>
-      <EventPoster name={ev.name} tag={ev.tag} poster={ev.poster} />
+      {/* a small tile is at most ~250px wide: its poster at 480px, not 720 (less to download and decode while scrolling) */}
+      <EventPoster name={ev.name} tag={ev.tag} poster={big ? ev.poster : posterAt(ev.poster, 480)} />
       <span className="evb-badge" aria-hidden>
         <KindIcon kind={ev.kind} />
       </span>
